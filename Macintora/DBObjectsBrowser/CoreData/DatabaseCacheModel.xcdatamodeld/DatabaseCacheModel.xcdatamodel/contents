@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="20086" systemVersion="21G83" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="ConnDatabase" representedClassName="ConnDatabase" syncable="YES">
+        <attribute name="dbid" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="lastUpdate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="tnsAlias_" attributeType="String"/>
+        <attribute name="versionFull" optional="YES" attributeType="String"/>
+        <attribute name="versionMajor" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="DBCacheIndex" representedClassName="DBCacheIndex" syncable="YES">
+        <attribute name="avgDataBlocksPerKey" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="avgLeafBlocksPerKey" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="clusteringFactor" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="degree_" optional="YES" attributeType="String"/>
+        <attribute name="distinctKeys" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isPartitioned" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isUnique" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isValid" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isVisible" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="lastAnalyzed" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="leafBlocks" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name_" optional="YES" attributeType="String"/>
+        <attribute name="numRows" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="owner_" optional="YES" attributeType="String"/>
+        <attribute name="sampleSize" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="tableName_" optional="YES" attributeType="String"/>
+        <attribute name="tableOwner_" optional="YES" attributeType="String"/>
+        <attribute name="tablespaceName_" optional="YES" attributeType="String"/>
+        <attribute name="type_" optional="YES" attributeType="String"/>
+        <fetchIndex name="byIndex">
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="name_" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="byTable">
+            <fetchIndexElement property="tableOwner_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="tableName_" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="DBCacheIndexColumn" representedClassName="DBCacheIndexColumn" syncable="YES">
+        <attribute name="columnName_" optional="YES" attributeType="String"/>
+        <attribute name="indexName_" optional="YES" attributeType="String"/>
+        <attribute name="isDescending" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="length" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="owner_" optional="YES" attributeType="String"/>
+        <attribute name="position" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <fetchIndex name="byIndex">
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="indexName_" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="DBCacheObject" representedClassName="DBCacheObject" syncable="YES">
+        <attribute name="lastDDLDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="name_" optional="YES" attributeType="String"/>
+        <attribute name="owner_" optional="YES" attributeType="String"/>
+        <attribute name="type_" optional="YES" attributeType="String" versionHashModifier="Added Index"/>
+        <fetchIndex name="byType">
+            <fetchIndexElement property="type_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="name_" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="DBCacheSource" representedClassName="DBCacheSource" syncable="YES">
+        <attribute name="name_" optional="YES" attributeType="String"/>
+        <attribute name="owner_" optional="YES" attributeType="String"/>
+        <attribute name="textBody" optional="YES" attributeType="String"/>
+        <attribute name="textSpec" optional="YES" attributeType="String"/>
+        <attribute name="type_" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="DBCacheTable" representedClassName="DBCacheTable" syncable="YES">
+        <attribute name="isEditioning" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isPartitioned" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isReadOnly" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isView" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="lastAnalyzed" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="name_" optional="YES" attributeType="String"/>
+        <attribute name="numRows" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="owner_" optional="YES" attributeType="String"/>
+        <attribute name="sqltext" optional="YES" attributeType="String"/>
+        <fetchIndex name="byTable">
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="name_" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="DBCacheTableColumn" representedClassName="DBCacheTableColumn" syncable="YES">
+        <attribute name="columnID" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="columnName_" optional="YES" attributeType="String"/>
+        <attribute name="dataType_" optional="YES" attributeType="String"/>
+        <attribute name="dataTypeMod_" optional="YES" attributeType="String"/>
+        <attribute name="dataTypeOwner_" optional="YES" attributeType="String"/>
+        <attribute name="defaultValue" optional="YES" attributeType="String"/>
+        <attribute name="internalColumnID" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isHidden" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isIdentity" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isNullable" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isSysGen" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isVirtual" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="length" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="numDistinct" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="numNulls" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="owner_" optional="YES" attributeType="String"/>
+        <attribute name="precision" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="scale" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="tableName_" optional="YES" attributeType="String"/>
+        <fetchIndex name="byTable">
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="tableName_" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="Item" representedClassName="Item" syncable="YES">
+        <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <elements>
+        <element name="ConnDatabase" positionX="-45" positionY="0" width="128" height="104"/>
+        <element name="DBCacheIndex" positionX="-243" positionY="162" width="128" height="314"/>
+        <element name="DBCacheIndexColumn" positionX="-234" positionY="171" width="128" height="119"/>
+        <element name="DBCacheObject" positionX="204.351318359375" positionY="24.83657836914062" width="128" height="103"/>
+        <element name="DBCacheSource" positionX="152.1181640625" positionY="205.1347045898438" width="128" height="104"/>
+        <element name="DBCacheTable" positionX="-450.23291015625" positionY="375.5834350585938" width="128" height="164"/>
+        <element name="DBCacheTableColumn" positionX="-97.259765625" positionY="294.3717651367188" width="128" height="314"/>
+        <element name="Item" positionX="-243" positionY="162" width="128" height="44"/>
+    </elements>
+</model>

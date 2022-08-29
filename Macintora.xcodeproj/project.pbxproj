@@ -1,0 +1,855 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 55;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		4919589D273757AD00423B95 /* SwiftOracle in Sources */ = {isa = PBXBuildFile; fileRef = 493A199A2718E19200803AC9 /* SwiftOracle */; };
+		4927FBF72746DFB4007EED5B /* TnsReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4927FBF62746DFB4007EED5B /* TnsReader.swift */; };
+		49438678273753A000D7D464 /* ResultViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49438677273753A000D7D464 /* ResultViewModel.swift */; };
+		4947FEA6286FA39D00AEBE60 /* TableViewWithPasteboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEA5286FA39D00AEBE60 /* TableViewWithPasteboard.swift */; };
+		4947FEA8286FA3E200AEBE60 /* ResultsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEA7286FA3E200AEBE60 /* ResultsController.swift */; };
+		4947FEAA286FA73B00AEBE60 /* RunnableSQL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEA9286FA73B00AEBE60 /* RunnableSQL.swift */; };
+		4947FEAC2870F8E400AEBE60 /* BindVarInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEAB2870F8E400AEBE60 /* BindVarInputView.swift */; };
+		496FF1A12775259900CC0AD2 /* ResultViewWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496FF1A02775259900CC0AD2 /* ResultViewWrapper.swift */; };
+		4982889728B1C41700A28B04 /* Formatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982889628B1C41700A28B04 /* Formatter.swift */; };
+		4982889F28B41F3A00A28B04 /* MacintoraTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982889E28B41F3A00A28B04 /* MacintoraTests.swift */; };
+		498288AC28B7DBE500A28B04 /* DatabaseCacheModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 498288AA28B7DBE400A28B04 /* DatabaseCacheModel.xcdatamodeld */; };
+		498288BF28B7DC5700A28B04 /* DBCacheTableColumn+CoreData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288AE28B7DC5700A28B04 /* DBCacheTableColumn+CoreData.swift */; };
+		498288C028B7DC5700A28B04 /* DBCacheObject+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288AF28B7DC5700A28B04 /* DBCacheObject+CoreDataProperties.swift */; };
+		498288C128B7DC5700A28B04 /* DBCacheIndex+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288B028B7DC5700A28B04 /* DBCacheIndex+CoreDataClass.swift */; };
+		498288C228B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288B128B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataClass.swift */; };
+		498288C328B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288B228B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataProperties.swift */; };
+		498288C428B7DC5700A28B04 /* DBCacheSource+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288B328B7DC5700A28B04 /* DBCacheSource+CoreDataClass.swift */; };
+		498288C528B7DC5700A28B04 /* DBCacheTable+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288B428B7DC5700A28B04 /* DBCacheTable+CoreDataProperties.swift */; };
+		498288C628B7DC5700A28B04 /* ConnDatabase+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288B528B7DC5700A28B04 /* ConnDatabase+CoreDataProperties.swift */; };
+		498288C728B7DC5700A28B04 /* DBCacheTableColumn+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288B628B7DC5700A28B04 /* DBCacheTableColumn+CoreDataProperties.swift */; };
+		498288C828B7DC5700A28B04 /* DBCacheTableColumn+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288B728B7DC5700A28B04 /* DBCacheTableColumn+CoreDataClass.swift */; };
+		498288C928B7DC5700A28B04 /* DBCacheIndex+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288B828B7DC5700A28B04 /* DBCacheIndex+CoreDataProperties.swift */; };
+		498288CA28B7DC5700A28B04 /* Item+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288B928B7DC5700A28B04 /* Item+CoreDataProperties.swift */; };
+		498288CB28B7DC5700A28B04 /* ConnDatabase+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288BA28B7DC5700A28B04 /* ConnDatabase+CoreDataClass.swift */; };
+		498288CC28B7DC5700A28B04 /* DBCacheObject+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288BB28B7DC5700A28B04 /* DBCacheObject+CoreDataClass.swift */; };
+		498288CD28B7DC5700A28B04 /* Item+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288BC28B7DC5700A28B04 /* Item+CoreDataClass.swift */; };
+		498288CE28B7DC5700A28B04 /* DBCacheTable+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288BD28B7DC5700A28B04 /* DBCacheTable+CoreDataClass.swift */; };
+		498288CF28B7DC5700A28B04 /* DBCacheSource+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288BE28B7DC5700A28B04 /* DBCacheSource+CoreDataProperties.swift */; };
+		498288E928B7DCB000A28B04 /* WindowModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D028B7DCB000A28B04 /* WindowModifier.swift */; };
+		498288EA28B7DCB000A28B04 /* HorizontalLabelStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D128B7DCB000A28B04 /* HorizontalLabelStyle.swift */; };
+		498288EB28B7DCB000A28B04 /* DBTableDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D228B7DCB000A28B04 /* DBTableDetailView.swift */; };
+		498288EC28B7DCB000A28B04 /* SwiftUIWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D328B7DCB000A28B04 /* SwiftUIWindow.swift */; };
+		498288F028B7DCB000A28B04 /* DBCacheBrowserMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D728B7DCB000A28B04 /* DBCacheBrowserMainView.swift */; };
+		498288F228B7DCB000A28B04 /* DBCacheSearchCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */; };
+		498288F328B7DCB000A28B04 /* DBCacheSearchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DA28B7DCB000A28B04 /* DBCacheSearchState.swift */; };
+		498288F428B7DCB000A28B04 /* FormField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DB28B7DCB000A28B04 /* FormField.swift */; };
+		498288F528B7DCB000A28B04 /* DBCacheListEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */; };
+		498288F628B7DCB000A28B04 /* DetailGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DD28B7DCB000A28B04 /* DetailGridView.swift */; };
+		498288F728B7DCB000A28B04 /* DBIndexDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DE28B7DCB000A28B04 /* DBIndexDetailView.swift */; };
+		498288F828B7DCB000A28B04 /* HostingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DF28B7DCB000A28B04 /* HostingView.swift */; };
+		498288F928B7DCB000A28B04 /* DBCacheVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E028B7DCB000A28B04 /* DBCacheVM.swift */; };
+		498288FB28B7DCB000A28B04 /* FormattedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E228B7DCB000A28B04 /* FormattedView.swift */; };
+		498288FC28B7DCB000A28B04 /* DBSourceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E328B7DCB000A28B04 /* DBSourceDetailView.swift */; };
+		498288FD28B7DCB000A28B04 /* TableIndexListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E428B7DCB000A28B04 /* TableIndexListView.swift */; };
+		498288FE28B7DCB000A28B04 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E528B7DCB000A28B04 /* Persistence.swift */; };
+		4982890128B7DCB000A28B04 /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E828B7DCB000A28B04 /* Queue.swift */; };
+		4982890528B7EF5E00A28B04 /* ConnectionDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982890428B7EF5E00A28B04 /* ConnectionDetails.swift */; };
+		4982890D28B95BC100A28B04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982890C28B95BC100A28B04 /* SettingsView.swift */; };
+		4999469427E1777700C62AB7 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4999469327E1777700C62AB7 /* LogView.swift */; };
+		49B55F32270ADD8B00CFB3C7 /* MacintoraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */; };
+		49B55F36270ADD8B00CFB3C7 /* MainDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */; };
+		49B55F38270ADD8D00CFB3C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49B55F37270ADD8D00CFB3C7 /* Assets.xcassets */; };
+		49B55F3B270ADD8D00CFB3C7 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49B55F3A270ADD8D00CFB3C7 /* Preview Assets.xcassets */; };
+		49B55F60270ADFE300CFB3C7 /* MainModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B55F5F270ADFE300CFB3C7 /* MainModel.swift */; };
+		49B6D12F2733446B00D9D788 /* CodeEditor in Sources */ = {isa = PBXBuildFile; fileRef = 49B6D12B2733439900D9D788 /* CodeEditor */; };
+		49B6D1312733450800D9D788 /* CodeEditor in Frameworks */ = {isa = PBXBuildFile; productRef = 49B6D1302733450800D9D788 /* CodeEditor */; };
+		49B6D13327335FF400D9D788 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B6D13227335FF400D9D788 /* Utils.swift */; };
+		49C5A1DD2718F5E40044CF0F /* SwiftOracle in Frameworks */ = {isa = PBXBuildFile; productRef = 49C5A1DC2718F5E40044CF0F /* SwiftOracle */; };
+		49C62C1C27DD7BAF00DE69E4 /* MainDocumentVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */; };
+		49C62C2427E010AE00DE69E4 /* ConnectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */; };
+		49CE5FF027279F3A009C2A94 /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CE5FEF27279F3A009C2A94 /* ResultView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		498288A028B41F3A00A28B04 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 49B55F26270ADD8B00CFB3C7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 49B55F2D270ADD8B00CFB3C7;
+			remoteInfo = Macintora;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		4927FBF62746DFB4007EED5B /* TnsReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsReader.swift; sourceTree = "<group>"; };
+		49330ED2275416EC004EAA48 /* DBObjectsBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectsBrowser.swift; sourceTree = "<group>"; };
+		49330ED827570649004EAA48 /* FilteredList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilteredList.swift; sourceTree = "<group>"; };
+		493A199A2718E19200803AC9 /* SwiftOracle */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SwiftOracle; path = ../SwiftOracle; sourceTree = "<group>"; };
+		49438677273753A000D7D464 /* ResultViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResultViewModel.swift; sourceTree = "<group>"; };
+		4947FEA5286FA39D00AEBE60 /* TableViewWithPasteboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TableViewWithPasteboard.swift; path = Macintora/Results/TableViewWithPasteboard.swift; sourceTree = SOURCE_ROOT; };
+		4947FEA7286FA3E200AEBE60 /* ResultsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsController.swift; sourceTree = "<group>"; };
+		4947FEA9286FA73B00AEBE60 /* RunnableSQL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnableSQL.swift; sourceTree = "<group>"; };
+		4947FEAB2870F8E400AEBE60 /* BindVarInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BindVarInputView.swift; path = Macintora/Results/BindVarInputView.swift; sourceTree = SOURCE_ROOT; };
+		494E66D4276AA803000BC07A /* TableViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableViewModel.swift; sourceTree = "<group>"; };
+		494E66D6276AB5B3000BC07A /* TableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableView.swift; sourceTree = "<group>"; };
+		496D76E527C067C0009B8328 /* NOTUSED_Logo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NOTUSED_Logo.swift; sourceTree = "<group>"; };
+		496D76E727C06A49009B8328 /* NOTUSED_AppWelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NOTUSED_AppWelcomeView.swift; sourceTree = "<group>"; };
+		496FC8F527693FAA00B689F4 /* DBObjectSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectSearch.swift; sourceTree = "<group>"; };
+		496FF1A02775259900CC0AD2 /* ResultViewWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultViewWrapper.swift; sourceTree = "<group>"; };
+		4982889628B1C41700A28B04 /* Formatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatter.swift; sourceTree = "<group>"; };
+		4982889C28B41F3A00A28B04 /* MacintoraTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacintoraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4982889E28B41F3A00A28B04 /* MacintoraTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraTests.swift; sourceTree = "<group>"; };
+		498288AB28B7DBE400A28B04 /* DatabaseCacheModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = DatabaseCacheModel.xcdatamodel; sourceTree = "<group>"; };
+		498288AE28B7DC5700A28B04 /* DBCacheTableColumn+CoreData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheTableColumn+CoreData.swift"; sourceTree = "<group>"; };
+		498288AF28B7DC5700A28B04 /* DBCacheObject+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheObject+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		498288B028B7DC5700A28B04 /* DBCacheIndex+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheIndex+CoreDataClass.swift"; sourceTree = "<group>"; };
+		498288B128B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheIndexColumn+CoreDataClass.swift"; sourceTree = "<group>"; };
+		498288B228B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheIndexColumn+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		498288B328B7DC5700A28B04 /* DBCacheSource+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheSource+CoreDataClass.swift"; sourceTree = "<group>"; };
+		498288B428B7DC5700A28B04 /* DBCacheTable+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheTable+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		498288B528B7DC5700A28B04 /* ConnDatabase+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "ConnDatabase+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		498288B628B7DC5700A28B04 /* DBCacheTableColumn+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheTableColumn+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		498288B728B7DC5700A28B04 /* DBCacheTableColumn+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheTableColumn+CoreDataClass.swift"; sourceTree = "<group>"; };
+		498288B828B7DC5700A28B04 /* DBCacheIndex+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheIndex+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		498288B928B7DC5700A28B04 /* Item+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Item+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		498288BA28B7DC5700A28B04 /* ConnDatabase+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "ConnDatabase+CoreDataClass.swift"; sourceTree = "<group>"; };
+		498288BB28B7DC5700A28B04 /* DBCacheObject+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheObject+CoreDataClass.swift"; sourceTree = "<group>"; };
+		498288BC28B7DC5700A28B04 /* Item+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Item+CoreDataClass.swift"; sourceTree = "<group>"; };
+		498288BD28B7DC5700A28B04 /* DBCacheTable+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheTable+CoreDataClass.swift"; sourceTree = "<group>"; };
+		498288BE28B7DC5700A28B04 /* DBCacheSource+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DBCacheSource+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		498288D028B7DCB000A28B04 /* WindowModifier.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WindowModifier.swift; sourceTree = "<group>"; };
+		498288D128B7DCB000A28B04 /* HorizontalLabelStyle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HorizontalLabelStyle.swift; sourceTree = "<group>"; };
+		498288D228B7DCB000A28B04 /* DBTableDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBTableDetailView.swift; sourceTree = "<group>"; };
+		498288D328B7DCB000A28B04 /* SwiftUIWindow.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SwiftUIWindow.swift; sourceTree = "<group>"; };
+		498288D428B7DCB000A28B04 /* DBObjectsBrowserApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBObjectsBrowserApp.swift; sourceTree = "<group>"; };
+		498288D728B7DCB000A28B04 /* DBCacheBrowserMainView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheBrowserMainView.swift; sourceTree = "<group>"; };
+		498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheSearchCriteria.swift; sourceTree = "<group>"; };
+		498288DA28B7DCB000A28B04 /* DBCacheSearchState.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheSearchState.swift; sourceTree = "<group>"; };
+		498288DB28B7DCB000A28B04 /* FormField.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FormField.swift; sourceTree = "<group>"; };
+		498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheListEntryView.swift; sourceTree = "<group>"; };
+		498288DD28B7DCB000A28B04 /* DetailGridView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DetailGridView.swift; sourceTree = "<group>"; };
+		498288DE28B7DCB000A28B04 /* DBIndexDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBIndexDetailView.swift; sourceTree = "<group>"; };
+		498288DF28B7DCB000A28B04 /* HostingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HostingView.swift; sourceTree = "<group>"; };
+		498288E028B7DCB000A28B04 /* DBCacheVM.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheVM.swift; sourceTree = "<group>"; };
+		498288E228B7DCB000A28B04 /* FormattedView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FormattedView.swift; sourceTree = "<group>"; };
+		498288E328B7DCB000A28B04 /* DBSourceDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBSourceDetailView.swift; sourceTree = "<group>"; };
+		498288E428B7DCB000A28B04 /* TableIndexListView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TableIndexListView.swift; sourceTree = "<group>"; };
+		498288E528B7DCB000A28B04 /* Persistence.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
+		498288E828B7DCB000A28B04 /* Queue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Queue.swift; sourceTree = "<group>"; };
+		4982890228B7DF9A00A28B04 /* NOTUSED_MainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NOTUSED_MainApp.swift; path = Macintora/NOTUSED/NOTUSED_MainApp.swift; sourceTree = SOURCE_ROOT; };
+		4982890428B7EF5E00A28B04 /* ConnectionDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionDetails.swift; sourceTree = "<group>"; };
+		4982890C28B95BC100A28B04 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		4996124C275C4E3100CBA849 /* DBCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCache.swift; sourceTree = "<group>"; };
+		4996124E2763F79800CBA849 /* DBObjectsListEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectsListEntry.swift; sourceTree = "<group>"; };
+		4999469327E1777700C62AB7 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
+		49B55F2E270ADD8B00CFB3C7 /* Macintora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Macintora.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MacintoraApp.swift; sourceTree = "<group>"; };
+		49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainDocumentView.swift; sourceTree = "<group>"; };
+		49B55F37270ADD8D00CFB3C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		49B55F3A270ADD8D00CFB3C7 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		49B55F3C270ADD8D00CFB3C7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		49B55F3D270ADD8D00CFB3C7 /* Macintora.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Macintora.entitlements; sourceTree = "<group>"; };
+		49B55F5F270ADFE300CFB3C7 /* MainModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainModel.swift; sourceTree = "<group>"; };
+		49B5749F28BD149F0021F3E6 /* QueryResults.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QueryResults.swift; sourceTree = "<group>"; };
+		49B6D12B2733439900D9D788 /* CodeEditor */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CodeEditor; path = ../CodeEditor; sourceTree = "<group>"; };
+		49B6D13227335FF400D9D788 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
+		49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainDocumentVM.swift; sourceTree = "<group>"; };
+		49C62C1D27DD7DA400DE69E4 /* NOTUSED_SQLDocumentVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NOTUSED_SQLDocumentVM.swift; sourceTree = "<group>"; };
+		49C62C1F27DD7F4D00DE69E4 /* NOTUSED_SQLDocumentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NOTUSED_SQLDocumentView.swift; sourceTree = "<group>"; };
+		49C62C2127DD805800DE69E4 /* NOTUSED_LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NOTUSED_LoginView.swift; sourceTree = "<group>"; };
+		49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionListView.swift; sourceTree = "<group>"; };
+		49CD08F62817B0C2006657ED /* DBObjectDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBObjectDetailView.swift; sourceTree = "<group>"; };
+		49CD08F72817B0C2006657ED /* DBCacheBrowserMainView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheBrowserMainView.swift; sourceTree = "<group>"; };
+		49CD08F82817B0C2006657ED /* DBCacheListEntryView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheListEntryView.swift; sourceTree = "<group>"; };
+		49CD08F92817B0C2006657ED /* DBCacheSearchCriteria.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheSearchCriteria.swift; sourceTree = "<group>"; };
+		49CD08FA2817B0C2006657ED /* DBCacheSearchState.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheSearchState.swift; sourceTree = "<group>"; };
+		49CD08FB2817B0C2006657ED /* TableColumnsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TableColumnsView.swift; sourceTree = "<group>"; };
+		49CE5FEF27279F3A009C2A94 /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
+		49E8E66A2752EC5600A99C05 /* Persistence.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4982889928B41F3A00A28B04 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		49B55F2B270ADD8B00CFB3C7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				49B6D1312733450800D9D788 /* CodeEditor in Frameworks */,
+				49C5A1DD2718F5E40044CF0F /* SwiftOracle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		496FC8F7276AA5F900B689F4 /* DBObjectsBrowser */ = {
+			isa = PBXGroup;
+			children = (
+				498288D728B7DCB000A28B04 /* DBCacheBrowserMainView.swift */,
+				498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */,
+				498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */,
+				498288DA28B7DCB000A28B04 /* DBCacheSearchState.swift */,
+				498288E028B7DCB000A28B04 /* DBCacheVM.swift */,
+				498288DE28B7DCB000A28B04 /* DBIndexDetailView.swift */,
+				498288E328B7DCB000A28B04 /* DBSourceDetailView.swift */,
+				498288D228B7DCB000A28B04 /* DBTableDetailView.swift */,
+				498288DD28B7DCB000A28B04 /* DetailGridView.swift */,
+				498288E228B7DCB000A28B04 /* FormattedView.swift */,
+				498288DB28B7DCB000A28B04 /* FormField.swift */,
+				498288D128B7DCB000A28B04 /* HorizontalLabelStyle.swift */,
+				498288DF28B7DCB000A28B04 /* HostingView.swift */,
+				498288E528B7DCB000A28B04 /* Persistence.swift */,
+				498288E828B7DCB000A28B04 /* Queue.swift */,
+				498288D328B7DCB000A28B04 /* SwiftUIWindow.swift */,
+				498288E428B7DCB000A28B04 /* TableIndexListView.swift */,
+				498288D028B7DCB000A28B04 /* WindowModifier.swift */,
+				498288AD28B7DC5700A28B04 /* CoreData */,
+			);
+			path = DBObjectsBrowser;
+			sourceTree = "<group>";
+		};
+		4982889D28B41F3A00A28B04 /* MacintoraTests */ = {
+			isa = PBXGroup;
+			children = (
+				4982889E28B41F3A00A28B04 /* MacintoraTests.swift */,
+			);
+			path = MacintoraTests;
+			sourceTree = "<group>";
+		};
+		498288A828B7DB8400A28B04 /* MainApp */ = {
+			isa = PBXGroup;
+			children = (
+				49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */,
+				4927FBF62746DFB4007EED5B /* TnsReader.swift */,
+				49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */,
+				49B55F5F270ADFE300CFB3C7 /* MainModel.swift */,
+				4982890428B7EF5E00A28B04 /* ConnectionDetails.swift */,
+				49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */,
+				4982889628B1C41700A28B04 /* Formatter.swift */,
+				49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */,
+				4982890C28B95BC100A28B04 /* SettingsView.swift */,
+			);
+			path = MainApp;
+			sourceTree = "<group>";
+		};
+		498288A928B7DBAB00A28B04 /* NOTUSED */ = {
+			isa = PBXGroup;
+			children = (
+				49B5749F28BD149F0021F3E6 /* QueryResults.swift */,
+				498288D428B7DCB000A28B04 /* DBObjectsBrowserApp.swift */,
+				4982890228B7DF9A00A28B04 /* NOTUSED_MainApp.swift */,
+				49CD08F72817B0C2006657ED /* DBCacheBrowserMainView.swift */,
+				49CD08F82817B0C2006657ED /* DBCacheListEntryView.swift */,
+				49CD08F92817B0C2006657ED /* DBCacheSearchCriteria.swift */,
+				49CD08FA2817B0C2006657ED /* DBCacheSearchState.swift */,
+				49CD08F62817B0C2006657ED /* DBObjectDetailView.swift */,
+				49CD08FB2817B0C2006657ED /* TableColumnsView.swift */,
+				494E66D4276AA803000BC07A /* TableViewModel.swift */,
+				494E66D6276AB5B3000BC07A /* TableView.swift */,
+				49330ED827570649004EAA48 /* FilteredList.swift */,
+				4996124C275C4E3100CBA849 /* DBCache.swift */,
+				49330ED2275416EC004EAA48 /* DBObjectsBrowser.swift */,
+				496FC8F527693FAA00B689F4 /* DBObjectSearch.swift */,
+				4996124E2763F79800CBA849 /* DBObjectsListEntry.swift */,
+				49E8E66A2752EC5600A99C05 /* Persistence.swift */,
+				49C62C2127DD805800DE69E4 /* NOTUSED_LoginView.swift */,
+				49C62C1D27DD7DA400DE69E4 /* NOTUSED_SQLDocumentVM.swift */,
+				496D76E727C06A49009B8328 /* NOTUSED_AppWelcomeView.swift */,
+				49C62C1F27DD7F4D00DE69E4 /* NOTUSED_SQLDocumentView.swift */,
+				496D76E527C067C0009B8328 /* NOTUSED_Logo.swift */,
+			);
+			path = NOTUSED;
+			sourceTree = "<group>";
+		};
+		498288AD28B7DC5700A28B04 /* CoreData */ = {
+			isa = PBXGroup;
+			children = (
+				498288AA28B7DBE400A28B04 /* DatabaseCacheModel.xcdatamodeld */,
+				498288AE28B7DC5700A28B04 /* DBCacheTableColumn+CoreData.swift */,
+				498288AF28B7DC5700A28B04 /* DBCacheObject+CoreDataProperties.swift */,
+				498288B028B7DC5700A28B04 /* DBCacheIndex+CoreDataClass.swift */,
+				498288B128B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataClass.swift */,
+				498288B228B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataProperties.swift */,
+				498288B328B7DC5700A28B04 /* DBCacheSource+CoreDataClass.swift */,
+				498288B428B7DC5700A28B04 /* DBCacheTable+CoreDataProperties.swift */,
+				498288B528B7DC5700A28B04 /* ConnDatabase+CoreDataProperties.swift */,
+				498288B628B7DC5700A28B04 /* DBCacheTableColumn+CoreDataProperties.swift */,
+				498288B728B7DC5700A28B04 /* DBCacheTableColumn+CoreDataClass.swift */,
+				498288B828B7DC5700A28B04 /* DBCacheIndex+CoreDataProperties.swift */,
+				498288B928B7DC5700A28B04 /* Item+CoreDataProperties.swift */,
+				498288BA28B7DC5700A28B04 /* ConnDatabase+CoreDataClass.swift */,
+				498288BB28B7DC5700A28B04 /* DBCacheObject+CoreDataClass.swift */,
+				498288BC28B7DC5700A28B04 /* Item+CoreDataClass.swift */,
+				498288BD28B7DC5700A28B04 /* DBCacheTable+CoreDataClass.swift */,
+				498288BE28B7DC5700A28B04 /* DBCacheSource+CoreDataProperties.swift */,
+			);
+			path = CoreData;
+			sourceTree = "<group>";
+		};
+		49B55F25270ADD8B00CFB3C7 = {
+			isa = PBXGroup;
+			children = (
+				49B55F63270AF79000CFB3C7 /* Packages */,
+				49B55F30270ADD8B00CFB3C7 /* Macintora */,
+				4982889D28B41F3A00A28B04 /* MacintoraTests */,
+				49B55F2F270ADD8B00CFB3C7 /* Products */,
+				49B55F65270AF8F900CFB3C7 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		49B55F2F270ADD8B00CFB3C7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				49B55F2E270ADD8B00CFB3C7 /* Macintora.app */,
+				4982889C28B41F3A00A28B04 /* MacintoraTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		49B55F30270ADD8B00CFB3C7 /* Macintora */ = {
+			isa = PBXGroup;
+			children = (
+				498288A828B7DB8400A28B04 /* MainApp */,
+				496FC8F7276AA5F900B689F4 /* DBObjectsBrowser */,
+				49CE5FEE27279F09009C2A94 /* Results */,
+				49B6D13227335FF400D9D788 /* Utils.swift */,
+				49B55F37270ADD8D00CFB3C7 /* Assets.xcassets */,
+				49B55F3C270ADD8D00CFB3C7 /* Info.plist */,
+				49B55F3D270ADD8D00CFB3C7 /* Macintora.entitlements */,
+				498288A928B7DBAB00A28B04 /* NOTUSED */,
+				49B55F39270ADD8D00CFB3C7 /* Preview Content */,
+			);
+			path = Macintora;
+			sourceTree = "<group>";
+		};
+		49B55F39270ADD8D00CFB3C7 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				49B55F3A270ADD8D00CFB3C7 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		49B55F63270AF79000CFB3C7 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				493A199A2718E19200803AC9 /* SwiftOracle */,
+				49B6D12B2733439900D9D788 /* CodeEditor */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		49B55F65270AF8F900CFB3C7 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		49CE5FEE27279F09009C2A94 /* Results */ = {
+			isa = PBXGroup;
+			children = (
+				4947FEAB2870F8E400AEBE60 /* BindVarInputView.swift */,
+				49438677273753A000D7D464 /* ResultViewModel.swift */,
+				49CE5FEF27279F3A009C2A94 /* ResultView.swift */,
+				4947FEA7286FA3E200AEBE60 /* ResultsController.swift */,
+				496FF1A02775259900CC0AD2 /* ResultViewWrapper.swift */,
+				4947FEA5286FA39D00AEBE60 /* TableViewWithPasteboard.swift */,
+				4999469327E1777700C62AB7 /* LogView.swift */,
+				4947FEA9286FA73B00AEBE60 /* RunnableSQL.swift */,
+			);
+			path = Results;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		4982889B28B41F3A00A28B04 /* MacintoraTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 498288A228B41F3A00A28B04 /* Build configuration list for PBXNativeTarget "MacintoraTests" */;
+			buildPhases = (
+				4982889828B41F3A00A28B04 /* Sources */,
+				4982889928B41F3A00A28B04 /* Frameworks */,
+				4982889A28B41F3A00A28B04 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				498288A128B41F3A00A28B04 /* PBXTargetDependency */,
+			);
+			name = MacintoraTests;
+			productName = MacintoraTests;
+			productReference = 4982889C28B41F3A00A28B04 /* MacintoraTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		49B55F2D270ADD8B00CFB3C7 /* Macintora */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 49B55F56270ADD8D00CFB3C7 /* Build configuration list for PBXNativeTarget "Macintora" */;
+			buildPhases = (
+				49B55F2A270ADD8B00CFB3C7 /* Sources */,
+				49B55F2B270ADD8B00CFB3C7 /* Frameworks */,
+				49B55F2C270ADD8B00CFB3C7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4919589F273757F100423B95 /* PBXTargetDependency */,
+				49B6D12D2733443E00D9D788 /* PBXTargetDependency */,
+			);
+			name = Macintora;
+			packageProductDependencies = (
+				49C5A1DC2718F5E40044CF0F /* SwiftOracle */,
+				49B6D1302733450800D9D788 /* CodeEditor */,
+			);
+			productName = MacOra;
+			productReference = 49B55F2E270ADD8B00CFB3C7 /* Macintora.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		49B55F26270ADD8B00CFB3C7 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1340;
+				LastUpgradeCheck = 1340;
+				TargetAttributes = {
+					4982889B28B41F3A00A28B04 = {
+						CreatedOnToolsVersion = 13.4.1;
+						TestTargetID = 49B55F2D270ADD8B00CFB3C7;
+					};
+					49B55F2D270ADD8B00CFB3C7 = {
+						CreatedOnToolsVersion = 13.0;
+					};
+				};
+			};
+			buildConfigurationList = 49B55F29270ADD8B00CFB3C7 /* Build configuration list for PBXProject "Macintora" */;
+			compatibilityVersion = "Xcode 13.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 49B55F25270ADD8B00CFB3C7;
+			packageReferences = (
+			);
+			productRefGroup = 49B55F2F270ADD8B00CFB3C7 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				49B55F2D270ADD8B00CFB3C7 /* Macintora */,
+				4982889B28B41F3A00A28B04 /* MacintoraTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4982889A28B41F3A00A28B04 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		49B55F2C270ADD8B00CFB3C7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				49B55F3B270ADD8D00CFB3C7 /* Preview Assets.xcassets in Resources */,
+				49B55F38270ADD8D00CFB3C7 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4982889828B41F3A00A28B04 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4982889F28B41F3A00A28B04 /* MacintoraTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		49B55F2A270ADD8B00CFB3C7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				498288EB28B7DCB000A28B04 /* DBTableDetailView.swift in Sources */,
+				498288F428B7DCB000A28B04 /* FormField.swift in Sources */,
+				498288C328B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataProperties.swift in Sources */,
+				498288F728B7DCB000A28B04 /* DBIndexDetailView.swift in Sources */,
+				498288C928B7DC5700A28B04 /* DBCacheIndex+CoreDataProperties.swift in Sources */,
+				498288CC28B7DC5700A28B04 /* DBCacheObject+CoreDataClass.swift in Sources */,
+				4982889728B1C41700A28B04 /* Formatter.swift in Sources */,
+				498288F528B7DCB000A28B04 /* DBCacheListEntryView.swift in Sources */,
+				498288E928B7DCB000A28B04 /* WindowModifier.swift in Sources */,
+				4947FEAC2870F8E400AEBE60 /* BindVarInputView.swift in Sources */,
+				498288CD28B7DC5700A28B04 /* Item+CoreDataClass.swift in Sources */,
+				498288C428B7DC5700A28B04 /* DBCacheSource+CoreDataClass.swift in Sources */,
+				4919589D273757AD00423B95 /* SwiftOracle in Sources */,
+				498288F928B7DCB000A28B04 /* DBCacheVM.swift in Sources */,
+				4982890528B7EF5E00A28B04 /* ConnectionDetails.swift in Sources */,
+				49B6D12F2733446B00D9D788 /* CodeEditor in Sources */,
+				4999469427E1777700C62AB7 /* LogView.swift in Sources */,
+				498288F628B7DCB000A28B04 /* DetailGridView.swift in Sources */,
+				4982890D28B95BC100A28B04 /* SettingsView.swift in Sources */,
+				49B55F60270ADFE300CFB3C7 /* MainModel.swift in Sources */,
+				498288EC28B7DCB000A28B04 /* SwiftUIWindow.swift in Sources */,
+				498288AC28B7DBE500A28B04 /* DatabaseCacheModel.xcdatamodeld in Sources */,
+				49438678273753A000D7D464 /* ResultViewModel.swift in Sources */,
+				498288FD28B7DCB000A28B04 /* TableIndexListView.swift in Sources */,
+				498288C628B7DC5700A28B04 /* ConnDatabase+CoreDataProperties.swift in Sources */,
+				49B55F32270ADD8B00CFB3C7 /* MacintoraApp.swift in Sources */,
+				498288EA28B7DCB000A28B04 /* HorizontalLabelStyle.swift in Sources */,
+				498288F328B7DCB000A28B04 /* DBCacheSearchState.swift in Sources */,
+				498288C228B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataClass.swift in Sources */,
+				498288C828B7DC5700A28B04 /* DBCacheTableColumn+CoreDataClass.swift in Sources */,
+				498288FB28B7DCB000A28B04 /* FormattedView.swift in Sources */,
+				498288C728B7DC5700A28B04 /* DBCacheTableColumn+CoreDataProperties.swift in Sources */,
+				4947FEA8286FA3E200AEBE60 /* ResultsController.swift in Sources */,
+				498288BF28B7DC5700A28B04 /* DBCacheTableColumn+CoreData.swift in Sources */,
+				498288FC28B7DCB000A28B04 /* DBSourceDetailView.swift in Sources */,
+				498288CF28B7DC5700A28B04 /* DBCacheSource+CoreDataProperties.swift in Sources */,
+				49B6D13327335FF400D9D788 /* Utils.swift in Sources */,
+				498288C028B7DC5700A28B04 /* DBCacheObject+CoreDataProperties.swift in Sources */,
+				498288F028B7DCB000A28B04 /* DBCacheBrowserMainView.swift in Sources */,
+				498288F828B7DCB000A28B04 /* HostingView.swift in Sources */,
+				49CE5FF027279F3A009C2A94 /* ResultView.swift in Sources */,
+				4947FEA6286FA39D00AEBE60 /* TableViewWithPasteboard.swift in Sources */,
+				49B55F36270ADD8B00CFB3C7 /* MainDocumentView.swift in Sources */,
+				49C62C2427E010AE00DE69E4 /* ConnectionListView.swift in Sources */,
+				498288F228B7DCB000A28B04 /* DBCacheSearchCriteria.swift in Sources */,
+				498288C128B7DC5700A28B04 /* DBCacheIndex+CoreDataClass.swift in Sources */,
+				496FF1A12775259900CC0AD2 /* ResultViewWrapper.swift in Sources */,
+				498288C528B7DC5700A28B04 /* DBCacheTable+CoreDataProperties.swift in Sources */,
+				498288FE28B7DCB000A28B04 /* Persistence.swift in Sources */,
+				498288CA28B7DC5700A28B04 /* Item+CoreDataProperties.swift in Sources */,
+				49C62C1C27DD7BAF00DE69E4 /* MainDocumentVM.swift in Sources */,
+				498288CB28B7DC5700A28B04 /* ConnDatabase+CoreDataClass.swift in Sources */,
+				4947FEAA286FA73B00AEBE60 /* RunnableSQL.swift in Sources */,
+				4982890128B7DCB000A28B04 /* Queue.swift in Sources */,
+				498288CE28B7DC5700A28B04 /* DBCacheTable+CoreDataClass.swift in Sources */,
+				4927FBF72746DFB4007EED5B /* TnsReader.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4919589F273757F100423B95 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 4919589E273757F100423B95 /* SwiftOracle */;
+		};
+		498288A128B41F3A00A28B04 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 49B55F2D270ADD8B00CFB3C7 /* Macintora */;
+			targetProxy = 498288A028B41F3A00A28B04 /* PBXContainerItemProxy */;
+		};
+		49B6D12D2733443E00D9D788 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 49B6D12C2733443E00D9D788 /* CodeEditor */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		498288A328B41F3A00A28B04 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6CGNH3LTV7;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Macintora.app/Contents/MacOS/Macintora";
+			};
+			name = Debug;
+		};
+		498288A428B41F3A00A28B04 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6CGNH3LTV7;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Macintora.app/Contents/MacOS/Macintora";
+			};
+			name = Release;
+		};
+		49B55F54270ADD8D00CFB3C7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				EXCLUDED_ARCHS = arm64;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LIBRARY_SEARCH_PATHS = /Users/ilia/instantclient_19_8;
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		49B55F55270ADD8D00CFB3C7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				EXCLUDED_ARCHS = arm64;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LIBRARY_SEARCH_PATHS = /Users/ilia/instantclient_19_8;
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		49B55F57270ADD8D00CFB3C7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Macintora/Macintora.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Macintora/Preview Content\"";
+				DEVELOPMENT_TEAM = 6CGNH3LTV7;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Macintora/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					/Users/ilia/instantclient_19_8,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.macintora;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		49B55F58270ADD8D00CFB3C7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Macintora/Macintora.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Macintora/Preview Content\"";
+				DEVELOPMENT_TEAM = 6CGNH3LTV7;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Macintora/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					/Users/ilia/instantclient_19_8,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.macintora;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		498288A228B41F3A00A28B04 /* Build configuration list for PBXNativeTarget "MacintoraTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				498288A328B41F3A00A28B04 /* Debug */,
+				498288A428B41F3A00A28B04 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		49B55F29270ADD8B00CFB3C7 /* Build configuration list for PBXProject "Macintora" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				49B55F54270ADD8D00CFB3C7 /* Debug */,
+				49B55F55270ADD8D00CFB3C7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		49B55F56270ADD8D00CFB3C7 /* Build configuration list for PBXNativeTarget "Macintora" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				49B55F57270ADD8D00CFB3C7 /* Debug */,
+				49B55F58270ADD8D00CFB3C7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4919589E273757F100423B95 /* SwiftOracle */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SwiftOracle;
+		};
+		49B6D12C2733443E00D9D788 /* CodeEditor */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CodeEditor;
+		};
+		49B6D1302733450800D9D788 /* CodeEditor */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CodeEditor;
+		};
+		49C5A1DC2718F5E40044CF0F /* SwiftOracle */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SwiftOracle;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+/* Begin XCVersionGroup section */
+		498288AA28B7DBE400A28B04 /* DatabaseCacheModel.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				498288AB28B7DBE400A28B04 /* DatabaseCacheModel.xcdatamodel */,
+			);
+			currentVersion = 498288AB28B7DBE400A28B04 /* DatabaseCacheModel.xcdatamodel */;
+			path = DatabaseCacheModel.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
+	};
+	rootObject = 49B55F26270ADD8B00CFB3C7 /* Project object */;
+}
