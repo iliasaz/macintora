@@ -1,6 +1,0 @@
-{
-  "arbori": "./trivadis_custom_format.arbori",
-  "files": [
-    "./cdr_view.sql"
-  ]
-}
