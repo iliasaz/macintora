@@ -33,6 +33,9 @@ struct EditorSettings: View {
     @AppStorage("tnsnamesPath") private var tnsnamesPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/instantclient_19_8/network/admin/tnsnames.ora"
     @AppStorage("formatterPath") private var formatterPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/Macintora/formatter"
     @AppStorage("shellPath") private var shellPath = "/bin/zsh"
+    @AppStorage("rowFetchLimit") private var rowFetchLimit: Int = 200
+    @AppStorage("queryPrefetchSize") private var queryPrefetchSize: Int = 200
+    
 
     var body: some View {
         Form {
@@ -47,6 +50,14 @@ struct EditorSettings: View {
             TextField("Shell Command", text: $shellPath)
                 .disableAutocorrection(true)
                 .textFieldStyle(.roundedBorder)
+            
+            TextField("Row Fetch Limit", value: $rowFetchLimit, format: .number)
+                .disableAutocorrection(true)
+                .textFieldStyle(.roundedBorder)
+            
+            TextField("Query PreFetch Size", value: $queryPrefetchSize, format: .number)
+                .disableAutocorrection(true)
+                .textFieldStyle(.roundedBorder)
         }
         .padding(20)
         .frame(width: 600, height: 200)
@@ -55,11 +66,31 @@ struct EditorSettings: View {
 
 struct DBBrowserSettings: View {
     @AppStorage("includeSystemObjects") private var includeSystemObjects = false
-
+    @AppStorage("cacheUpdatePrefetchSize") private var cacheUpdatePrefetchSize: Int = 10000
+    @AppStorage("cacheUpdateBatchSize") private var cacheUpdateBatchSize: Int = 200
+    @AppStorage("cacheUpdateSessionLimit") private var cacheUpdateSessionLimit: Int = 5
+    @AppStorage("searchLimit") private var searchLimit: Int = 20
+    
     var body: some View {
         Form {
+            TextField("Cache Update Prefetch Size", value: $cacheUpdatePrefetchSize, format: .number)
+                .disableAutocorrection(true)
+                .textFieldStyle(.roundedBorder)
+            
+            TextField("Cache Update Batch Size", value: $cacheUpdateBatchSize, format: .number)
+                .disableAutocorrection(true)
+                .textFieldStyle(.roundedBorder)
+            
+            TextField("Cache Update Max Sessions", value: $cacheUpdateSessionLimit, format: .number)
+                .disableAutocorrection(true)
+                .textFieldStyle(.roundedBorder)
+            
+            TextField("Search Limit", value: $searchLimit, format: .number)
+                .disableAutocorrection(true)
+                .textFieldStyle(.roundedBorder)
+            
             Toggle("Include system objects", isOn: $includeSystemObjects)
-                .disabled(true)
+
         }
         .padding(20)
         .frame(width: 600, height: 200)

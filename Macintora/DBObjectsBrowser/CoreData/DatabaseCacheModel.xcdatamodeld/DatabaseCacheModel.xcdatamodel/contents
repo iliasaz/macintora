@@ -63,7 +63,10 @@
         <attribute name="owner_" optional="YES" attributeType="String"/>
         <attribute name="textBody" optional="YES" attributeType="String"/>
         <attribute name="textSpec" optional="YES" attributeType="String"/>
-        <attribute name="type_" optional="YES" attributeType="String"/>
+        <fetchIndex name="byName">
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="name_" type="Binary" order="ascending"/>
+        </fetchIndex>
     </entity>
     <entity name="DBCacheTable" representedClassName="DBCacheTable" syncable="YES">
         <attribute name="isEditioning" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
@@ -113,7 +116,7 @@
         <element name="DBCacheIndex" positionX="-243" positionY="162" width="128" height="314"/>
         <element name="DBCacheIndexColumn" positionX="-234" positionY="171" width="128" height="119"/>
         <element name="DBCacheObject" positionX="204.351318359375" positionY="24.83657836914062" width="128" height="103"/>
-        <element name="DBCacheSource" positionX="152.1181640625" positionY="205.1347045898438" width="128" height="104"/>
+        <element name="DBCacheSource" positionX="152.1181640625" positionY="205.1347045898438" width="128" height="89"/>
         <element name="DBCacheTable" positionX="-450.23291015625" positionY="375.5834350585938" width="128" height="164"/>
         <element name="DBCacheTableColumn" positionX="-97.259765625" positionY="294.3717651367188" width="128" height="314"/>
         <element name="Item" positionX="-243" positionY="162" width="128" height="44"/>

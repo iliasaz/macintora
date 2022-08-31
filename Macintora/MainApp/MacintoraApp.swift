@@ -38,7 +38,7 @@ struct MacOraApp: App {
         .commands {
             SidebarCommands()
             ToolbarCommands()
-            MainDocumentMenuCommands()
+            MainDocumentMenuCommands(appSettings: appSettings)
             TextEditingCommands()
             CommandGroup(after: .newItem) {
                 Button(action: {
@@ -61,7 +61,8 @@ struct MacOraApp: App {
 //            let cacheConnectionDetails = CacheConnectionDetails(from: ConnectionDetails())
             let cacheConnectionDetails = ConnectionDetails()
             DBCacheBrowserMainView(connDetails: cacheConnectionDetails)
-//                .environment(\.managedObjectContext, cache.persistentController.container.viewContext)
+                .preferredColorScheme(appSettings.currentTheme.colorScheme)
+                .environmentObject(appSettings)
         }
         .handlesExternalEvents(matching: ["dbBrowser"])
         .commands {
@@ -93,9 +94,14 @@ struct MacOraApp: App {
 
 struct MainDocumentMenuCommands: Commands {
     @FocusedBinding(\.cacheConnectionDetails) var cacheConnectionDetails: ConnectionDetails?
+    @ObservedObject var appSettings: AppSettings
+
     var body: some Commands {
-        CommandMenu("Connection") {
-            NavigationLink("DB Browser", destination: DBCacheBrowserMainView(connDetails: cacheConnectionDetails ?? ConnectionDetails()))
+        CommandMenu("Database") {
+            NavigationLink("Browser", destination: DBCacheBrowserMainView(connDetails: cacheConnectionDetails ?? ConnectionDetails())
+                .preferredColorScheme(appSettings.currentTheme.colorScheme)
+                .environmentObject(appSettings)
+            )
                 .disabled(cacheConnectionDetails == nil)
                 .presentedWindowStyle(TitleBarWindowStyle())
                 .keyboardShortcut("d", modifiers: .command)

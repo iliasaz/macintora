@@ -16,14 +16,13 @@ struct Constants {
     static let minColumnWidth: CGFloat = 50.0
     static let nullValue: String = "(null)"
     static let minConnections = 3
-    static let maxConnections = 10
+    static let maxConnections = 5
     static let connectionTimeout = 180
     static let docViewMinHeight: CGFloat = 100.0
     static let initialDocViewHeight: CGFloat = 200.0
     static let queryResultViewMinHeight: CGFloat = 100.0
     static let defaultDBName: String = "preview"
     static let minDate: Date = Date(timeIntervalSince1970: 0)
-    static let rowsToFetch = 100
 }
 
 private let itemFormatter: DateFormatter = {
@@ -98,3 +97,43 @@ func ~=<T: Equatable>(pattern: [T], value: T) -> Bool {
 }
 
 
+// support for Codable in @Appstorage
+extension Array: RawRepresentable where Element: Codable {
+    public init?(rawValue: String) {
+        guard let data = rawValue.data(using: .utf8),
+            let result = try? JSONDecoder().decode([Element].self, from: data)
+        else {
+            return nil
+        }
+        self = result
+    }
+
+    public var rawValue: String {
+        guard let data = try? JSONEncoder().encode(self),
+            let result = String(data: data, encoding: .utf8)
+        else {
+            return "[]"
+        }
+        return result
+    }
+}
+
+extension Dictionary: RawRepresentable where Key: Codable, Value: Codable {
+    public init?(rawValue: String) {
+        guard let data = rawValue.data(using: .utf8),
+              let result = try? JSONDecoder().decode([Key: Value].self, from: data)
+        else {
+            return nil
+        }
+        self = result
+    }
+
+    public var rawValue: String {
+        guard let data = try? JSONEncoder().encode(self),
+            let result = String(data: data, encoding: .utf8)
+        else {
+            return "[:]"
+        }
+        return result
+    }
+}

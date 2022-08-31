@@ -22,9 +22,11 @@ struct DBCacheBrowserMainView: View {
     @State var connDetails: ConnectionDetails
     @ObservedObject var cache: DBCacheVM
     @State private var reportDisplayed = false
+    @EnvironmentObject var appSettings: AppSettings
+    @AppStorage("searchLimit") private var searchLimit: Int = 20
     
     init(connDetails: ConnectionDetails) {
-        self.connDetails = connDetails
+        _connDetails = State(initialValue: connDetails)
         self.cache = DBCacheVM(connDetails: connDetails)
     }
     
@@ -38,15 +40,12 @@ struct DBCacheBrowserMainView: View {
             VStack(alignment: .leading, spacing: 0) {
                 headerView
                 
-                CacheList(searchCriteria: cache.searchCriteria)
+                CacheList(searchCriteria: cache.searchCriteria,
+                          request: SectionedFetchRequest(fetchRequest: DBCacheObject.fetchRequest(limit: searchLimit), sectionIdentifier: \DBCacheObject.owner_, animation: .default))
                     .environment(\.managedObjectContext, cache.persistenceController.container.viewContext)
                     .toolbar {
-                        ToolbarItem {
-                            Button { cache.clearCache() } label: {
-                                Label("Clear", systemImage: "trash")
-                            }
-                        }
-                        ToolbarItem {
+                        
+                        ToolbarItemGroup(placement: .principal) {
                             Button {
                                 cache.updateCache()
                             } label: {
@@ -55,8 +54,8 @@ struct DBCacheBrowserMainView: View {
                                     .animation(.linear(duration: 1.0).repeat(while: cache.isReloading, autoreverses: false), value: cache.isReloading)
                             }
                             .disabled(cache.isReloading)
-                        }
-                        ToolbarItem {
+                            .help("Refresh Cache")
+                            
                             Button { reportDisplayed.toggle() } label: {
                                 Label("Counts", systemImage: "sum")
                             }
@@ -71,6 +70,14 @@ struct DBCacheBrowserMainView: View {
                                     .padding()
                                 }.padding()
                             }
+                            .help("Show Cache counts")
+                        }
+                        
+                        ToolbarItemGroup(placement: .confirmationAction) {
+                            Button { cache.clearCache() } label: {
+                                Label("Clear", systemImage: "trash")
+                            }
+                            .help("Clear Cache")
                         }
                 }
                 Spacer()
@@ -107,10 +114,12 @@ public enum CacheFocusedView: Hashable {
 struct CacheList: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject var searchCriteria: DBCacheSearchCriteria
-    @SectionedFetchRequest(fetchRequest: DBCacheObject.fetchRequest(limit: 100), sectionIdentifier: \DBCacheObject.owner_, animation: .default) private var items
-    
-    init( searchCriteria: DBCacheSearchCriteria) {
+//    @SectionedFetchRequest(fetchRequest: DBCacheObject.fetchRequest(limit: 100), sectionIdentifier: \DBCacheObject.owner_, animation: .default) private var items
+    @SectionedFetchRequest var items: SectionedFetchResults<String?, DBCacheObject>
+
+    init( searchCriteria: DBCacheSearchCriteria, request: SectionedFetchRequest<String?, DBCacheObject>) {
         _searchCriteria = StateObject(wrappedValue: searchCriteria)
+        _items = request
     }
     
     var filters: Binding<DBCacheSearchCriteria> {

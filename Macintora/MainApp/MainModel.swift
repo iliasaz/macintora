@@ -18,12 +18,13 @@ struct MainModel: Identifiable, Codable, CustomStringConvertible {
     var connectionDetails: ConnectionDetails
     
     var preferences = [String:String]()
-    var quickFilterPrefs: DBCacheSearchState
+//    var quickFilterPrefs: DBCacheSearchState
     var autoConnect:Bool? = false
 
-    init(text: String, quickFilterPrefs: DBCacheSearchState = DBCacheSearchState()) {
+//    init(text: String, quickFilterPrefs: DBCacheSearchState = DBCacheSearchState()) {
+    init(text: String) {
         self.text = text
-        self.quickFilterPrefs = quickFilterPrefs
+//        self.quickFilterPrefs = quickFilterPrefs
         self.connectionDetails = ConnectionDetails()
     }
     

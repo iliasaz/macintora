@@ -11,8 +11,8 @@ import SwiftUI
 
 class DBCacheSearchCriteria: ObservableObject {
     @Published var searchText = ""
-    @AppStorage("prefixString") var prefixString = ""
-    @AppStorage("ownerString") var ownerString = ""
+    @AppStorage("prefixList") var prefixList = ["preview": ""] // tns = key: value
+    @AppStorage("ownerList") var ownerList = ["preview": ""] // tns = key: value
     @AppStorage("showTables") var showTables = true
     @AppStorage("showViews") var showViews = true
     @AppStorage("showIndexes") var showIndexes = true
@@ -20,6 +20,11 @@ class DBCacheSearchCriteria: ObservableObject {
     @AppStorage("showTypes") var showTypes = true
     @Published var showProcedures = false
     @Published var showFunctions = false
+    
+    private let tns: String
+    
+    var ownerString: String { get { ownerList[tns] ?? "" } set { ownerList[tns] = newValue} }
+    var prefixString: String { get { prefixList[tns] ?? "" } set { prefixList[tns] = newValue} }
     
     var ownerInclusionList: [String] {
         ownerString.uppercased().components(separatedBy: ",").compactMap { let trimmed = $0.trimmingCharacters(in: .whitespaces); return trimmed.isEmpty ? nil : trimmed }
@@ -29,9 +34,9 @@ class DBCacheSearchCriteria: ObservableObject {
         prefixString.components(separatedBy: ",").compactMap { let trimmed = $0.uppercased().trimmingCharacters(in: .whitespaces); return trimmed.isEmpty ? nil : trimmed }
     }
     
-//    init() {
-//        ownerString = "APPS,CDR,APPS_NE,ADMIN,BINANCE"
-//    }
+    init(for tns: String) {
+        self.tns = tns
+    }
     
     var predicate: NSPredicate {
         var predicates = [NSPredicate]()

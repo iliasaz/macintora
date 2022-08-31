@@ -13,11 +13,10 @@ struct DBSourceDetailView: View {
     @Environment(\.managedObjectContext) var context
     @FetchRequest private var tables: FetchedResults<DBCacheSource>
     private var dbObject: DBCacheObject
-    @State private var displayPopupMessage: Bool = false
     
     init(dbObject: DBCacheObject) {
         self.dbObject = dbObject
-        _tables = FetchRequest<DBCacheSource>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@ and type_ = %@", dbObject.name, dbObject.owner, dbObject.type))
+        _tables = FetchRequest<DBCacheSource>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@ ", dbObject.name, dbObject.owner))
     }
     
     var tableHeader: some View {
@@ -35,9 +34,9 @@ struct DBSourceDetailView: View {
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
-                if tables.first?.type == OracleObjectType.type.rawValue {
+                if dbObject.type == OracleObjectType.type.rawValue {
                     Image(systemName: "t.square").foregroundColor(Color.blue)
-                } else if tables.first?.type == OracleObjectType.package.rawValue {
+                } else if dbObject.type == OracleObjectType.package.rawValue {
                     Image(systemName: "curlybraces.square").foregroundColor(Color.blue)
                 } else {
                     Image(systemName: "questionmark.square").foregroundColor(Color.blue)
@@ -50,49 +49,43 @@ struct DBSourceDetailView: View {
             
             tableHeader
             
-            HStack {
-                Text("Specification")
-                    .font(.title2)
-                    .frame(alignment:.leading)
-                Spacer()
-                Button {
-                    let formatter = Formatter()
-                    var formattedSource = "...formatting, please wait..."
-                    Task(priority: .background) { formattedSource = await formatter.formatSource(name: dbObject.name, text: tables.first?.textSpec) }
-                    SwiftUIWindow.open {window in
-                        let _ = (window.title = dbObject.name)
-                        FormattedView(formattedSource: Binding(get: {formattedSource }, set: {_ in }) )
-                    }
-                    .clickable(true)
-                    .mouseMovesWindow(true)
-                } label: { Text("Format Source") }
-            }
-            CodeEditor(source: .constant(tables.first?.textSpec ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            HStack {
-                Text("Body")
-                    .font(.title2)
-                    .frame(alignment:.leading)
-                Spacer()
-                Button {
-                    let formatter = Formatter()
-                    var formattedSource = "...formatting, please wait..."
-                    Task.init(priority: .background) {formattedSource = await formatter.formatSource(name: dbObject.name, text: tables.first?.textBody) }
-                    SwiftUIWindow.open {window in
-                        let _ = (window.title = dbObject.name)
-                        FormattedView(formattedSource: Binding(get: {formattedSource }, set: {_ in }) )
-                    }
-                    .clickable(true)
-                    .mouseMovesWindow(true)
-                } label: { Text("Format Source") }
-            }
-            CodeEditor(source: .constant(tables.first?.textBody ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: true)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            SourceView(objName: dbObject.name, text: tables.first?.textSpec, title: "Specification")
+            SourceView(objName: dbObject.name, text: tables.first?.textBody, title: "Body")
+
         }
         .frame(minWidth: 200, idealWidth: 1000, maxWidth: .infinity)
         .padding()
     }
 }
 
-
+struct SourceView: View {
+    @State var objName: String
+    @State var text: String?
+    @State var title: String
+    
+    var body: some View {
+        VStack {
+            HStack {
+                Text(title)
+                    .font(.title2)
+                    .frame(alignment:.leading)
+                Spacer()
+                Button {
+                    let formatter = Formatter()
+                    var formattedSource = "...formatting, please wait..."
+                    Task.init(priority: .background) { formattedSource = await formatter.formatSource(name: objName, text: text) }
+                    SwiftUIWindow.open {window in
+                        let _ = (window.title = objName)
+                        FormattedView(formattedSource: Binding(get: {formattedSource }, set: {_ in }) )
+                    }
+                    .clickable(true)
+                    .mouseMovesWindow(true)
+                }
+            label: { Text("Format Source") }
+            }
+            CodeEditor(source: .constant(text ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+    
+}

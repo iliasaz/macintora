@@ -302,7 +302,7 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
         var newModel = MainModel(text: text)
         newModel.connectionDetails = self.model.connectionDetails
         newModel.preferences = self.model.preferences
-        newModel.quickFilterPrefs = self.model.quickFilterPrefs
+//        newModel.quickFilterPrefs = self.model.quickFilterPrefs
         // connect automatically?
         if isConnected == .connected {
             newModel.autoConnect = true

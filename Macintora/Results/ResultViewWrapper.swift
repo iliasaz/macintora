@@ -79,7 +79,7 @@ struct ResultViewWrapper: View {
                 .padding(.horizontal)
             
             Form {
-                TextField(value: $queryResults.rowsToFetch, formatter: NumberFormatter()) {
+                TextField(value: $queryResults.rowFetchLimit, formatter: NumberFormatter()) {
                     Text("Max Rows")
                 }
                 .textFieldStyle(.roundedBorder)

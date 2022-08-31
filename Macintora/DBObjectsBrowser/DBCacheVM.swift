@@ -63,6 +63,7 @@ actor ObjectQueue {
 
 actor CacheState {
     private(set) var isCacheEnqueueing = false
+    private(set) var activeSessions = 0
     
     func startEnqueuing() {
         isCacheEnqueueing = true
@@ -70,6 +71,14 @@ actor CacheState {
     
     func stopEnqueuing() {
         isCacheEnqueueing = false
+    }
+    
+    func startSession() {
+        activeSessions += 1
+    }
+    
+    func completeSession() {
+        activeSessions -= 1
     }
 }
 
@@ -81,13 +90,18 @@ class DBCacheVM: ObservableObject {
     @Published var persistenceController: PersistenceController
     @Published var isReloading = false
     
+    @AppStorage("cacheUpdatePrefetchSize") private var cacheUpdatePrefetchSize: Int = 10000
+    @AppStorage("cacheUpdateBatchSize") private var cacheUpdateBatchSize: Int = 200
+    @AppStorage("includeSystemObjects") private var includeSystemObjects = false
+    @AppStorage("cacheUpdateSessionLimit") private var cacheUpdateSessionLimit: Int = 5
+    
     let connDetails: ConnectionDetails
     private(set) var pool: ConnectionPool? // service connections
     private var objectQueues = [OracleObjectType: ObjectQueue]()
     var dbVersionMajor: Int?
     let dateFormatter: DateFormatter = DateFormatter()
     var cacheState = CacheState()
-    var searchCriteria = DBCacheSearchCriteria()
+    var searchCriteria: DBCacheSearchCriteria
     
     var lastUpdatedStr: String {
         guard let lst = lastUpdate else { return "(never)" }
@@ -98,6 +112,7 @@ class DBCacheVM: ObservableObject {
     
     init(connDetails: ConnectionDetails) {
         self.connDetails = connDetails
+        self.searchCriteria = DBCacheSearchCriteria(for: connDetails.tns)
         persistenceController = PersistenceController(name: connDetails.tns)
         setConnDetailsFromCache()
         // create queues
@@ -105,7 +120,8 @@ class DBCacheVM: ObservableObject {
     }
     
     init(preview: Bool = true) {
-        self.connDetails = ConnectionDetails(username: "user", password: "password", tns: "dmwoac", connectionRole: .regular)
+        self.connDetails = ConnectionDetails(username: "user", password: "password", tns: "preview", connectionRole: .regular)
+        self.searchCriteria = DBCacheSearchCriteria(for: connDetails.tns)
         persistenceController = PersistenceController(name: connDetails.tns)
     }
     
@@ -139,6 +155,7 @@ class DBCacheVM: ObservableObject {
                 log.cache.error("\(error.localizedDescription, privacy: .public)")
             }
             setLastUpdate(nil)
+            await MainActor.run { self.persistenceController.container.viewContext.refreshAllObjects() }
         }
     }
     
@@ -183,6 +200,10 @@ from dba_objects o
             sql += searchCriteria.ownerInclusionList.map { "'\($0)'" }.joined(separator: ",")
             sql += ")"
         }
+        // include/exclude system objects
+        if !includeSystemObjects {
+            sql += " and owner NOT in (select username from dba_users where oracle_maintained = 'Y')"
+        }
         // check to see if name prefix filter is applied
         if !searchCriteria.namePrefixInclusionList.isEmpty {
             sql += " and ( "
@@ -214,9 +235,11 @@ from dba_objects o
         if isConnected != .connected { log.cache.error("Not connected to Oracle database"); return }
 //        await cacheState.startEnqueuing() <<< this has been moved to the caller updateCache to make sure it is invoked before processObjectQueues
         let sql = buildObjectQuerySQL()
-        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else { log.cache.error("Could not get a connection from the cache pool"); return }
+        await cacheState.startSession()
+        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); return }
+        defer { pool?.returnConnection(conn: conn) }
         let cur = try? conn.cursor()
-        try? cur?.execute(sql, prefetchSize: 10000)
+        try? cur?.execute(sql, prefetchSize: cacheUpdatePrefetchSize)
         log.cache.debug("finished executing select statement in \(#function, privacy: .public)")
         while let row = cur?.nextSwifty() {
             let obj = OracleObject(owner: row["OWNER"]!.string!, name: row["OBJECT_NAME"]!.string!, type: OracleObjectType(rawValue: row["OBJECT_TYPE"]!.string!) ?? .unknown, lastDDL: row["LAST_DDL_TIME"]!.date!)
@@ -224,6 +247,7 @@ from dba_objects o
             await objectQueues[obj.type]?.enqueue(obj)
         }
         await cacheState.stopEnqueuing()
+        await cacheState.completeSession()
         log.cache.debug("stopped enqueueing")
         // get the sum of all queue lengths
         let qlen = await objectQueues.asyncMap( { await $0.value.length } ).reduce(0, { $0 + $1 })
@@ -256,9 +280,22 @@ from dba_objects o
             while let obj = await q.dequeue() {
                 objs.append(obj)
                 iter += 1
-                if iter%1000 == 0 {
+                if iter%cacheUpdateBatchSize == 0 {
+                    while true {
+                        if await cacheState.activeSessions >= cacheUpdateSessionLimit {
+                            log.cache.debug("No connections available; suspending task for \(objectType.rawValue, privacy: .public)")
+                            await Task.yield()
+                            try? await Task.sleep(nanoseconds: 3_000_000_000)
+                        } else { break }
+                    }
                     let objstemp = objs
-                    await self.processChunkOfObjects(objstemp, objectType: objectType)
+                    await cacheState.startSession()
+                    if objectType == .package || objectType == .type {
+                        await self.processSource_NEW(objs)
+                    } else {
+                        await self.processChunkOfObjects(objstemp, objectType: objectType)
+                    }
+                    await cacheState.completeSession()
                     objs.removeAll()
                     log.cache.debug("processed \(iter, privacy: .public) objects from queue \(objectType, privacy: .public)")
                 }
@@ -266,9 +303,22 @@ from dba_objects o
             log.cache.debug("queue \(objectType, privacy: .public) is empty")
             // the remainder
             if objs.count > 0 {
+                while true {
+                    if await cacheState.activeSessions >= cacheUpdateSessionLimit {
+                        log.cache.debug("No connections available; suspending task for \(objectType.rawValue, privacy: .public)")
+                        await Task.yield()
+                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    } else { break }
+                }
                 log.cache.debug("remaining items in queue \(objectType, privacy: .public)")
                 let objstemp = objs
-                await self.processChunkOfObjects(objstemp, objectType: objectType)
+                await cacheState.startSession()
+                if objectType == .package || objectType == .type {
+                    await self.processSource_NEW(objs)
+                } else {
+                    await self.processChunkOfObjects(objstemp, objectType: objectType)
+                }
+                await cacheState.completeSession()
                 objs.removeAll()
             }
             // exit if not currently enqueueing, otherwise wait and repeat
@@ -385,9 +435,10 @@ from dba_objects o
         }
         sql += bindvars.joined(separator: ",")
         sql += ")"
-        let conn = pool?.getConnection(tag: "cache", autoCommit: false)
+        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); return }
+        defer { pool?.returnConnection(conn: conn) }
 //        log.cache.debug("in \(#function, privacy: .public), executing SQL: \(sql, privacy: .public) with objects: \(objs, privacy: .public)")
-        let cur = try? conn?.cursor()
+        let cur = try? conn.cursor()
         do {
             try cur?.execute(sql, params: params, prefetchSize: 1000)
         } catch { log.cache.error("\(error.localizedDescription, privacy: .public)") }
@@ -416,7 +467,7 @@ from dba_objects o
                 obj.sqltext = sqltext
                 // now drop columns, they will be re-populated
                 try? deleteTableColumns(for: obj, in: context)
-                populateTableColumns(for: obj, in: context, using: conn!)
+                populateTableColumns(for: obj, in: context, using: conn)
             } else {
 //                log.cache.debug("creating a new cache instance for table \(tableOwner, privacy: .public).\(tableName, privacy: .public)")
                 let obj = DBCacheTable(context: context)
@@ -430,7 +481,7 @@ from dba_objects o
                 obj.isEditioning = isEditioning
                 obj.isReadOnly = isReadOnly
                 obj.sqltext = sqltext
-                populateTableColumns(for: obj, in: context, using: conn!)
+                populateTableColumns(for: obj, in: context, using: conn)
             }
         }
 //        log.cache.debug("exiting from \(#function, privacy: .public)")
@@ -481,9 +532,10 @@ from dba_objects o
         }
         sql += bindvars.joined(separator: ",")
         sql += ")"
-        let conn = pool?.getConnection(tag: "cache", autoCommit: false)
+        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); return }
+        defer { pool?.returnConnection(conn: conn) }
 //        log.cache.debug("in \(#function, privacy: .public), executing SQL: \(sql, privacy: .public) with objects: \(objs, privacy: .public)")
-        let cur = try? conn?.cursor()
+        let cur = try? conn.cursor()
         do {
             try cur?.execute(sql, params: params, prefetchSize: 1000)
         } catch { log.cache.error("\(error.localizedDescription)") }
@@ -532,7 +584,7 @@ from dba_objects o
                 obj.isVisible = isVisible
                 // now drop columns, they will be re-populated
                 try? deleteIndexColumns(for: obj, in: context)
-                populateIndexColumns(for: obj, in: context, using: conn!)
+                populateIndexColumns(for: obj, in: context, using: conn)
             } else {
 //                log.cache.debug("creating a new cache instance for index \(indexOwner, privacy: .public).\(indexName, privacy: .public)")
                 let obj = DBCacheIndex(context: context)
@@ -555,7 +607,7 @@ from dba_objects o
                 obj.degree_ = degree
                 obj.isPartitioned = isPartitioned
                 obj.isVisible = isVisible
-                populateIndexColumns(for: obj, in: context, using: conn!)
+                populateIndexColumns(for: obj, in: context, using: conn)
             }
         }
 //        log.cache.debug("exiting from \(#function, privacy: .public)")
@@ -616,9 +668,9 @@ from dba_objects o
 //        log.cache.debug("exiting from \(#function, privacy: .public); deletion of index columns for \(table.owner, privacy: .public).\(table.name, privacy: .public) finished")
     }
     
-    func executeAsync(_ sql: String, params: [String: BindVar], prefetchSize: Int, conn: PooledConnection?) -> String {
+    func executeSQL(_ sql: String, params: [String: BindVar], prefetchSize: Int, conn: PooledConnection) -> String {
         var text = ""
-        let cur = try? conn?.cursor()
+        let cur = try? conn.cursor()
         do {
             try cur?.execute(sql, params: params, prefetchSize: prefetchSize) }
         catch { log.cache.error("\(error.localizedDescription)") }
@@ -628,21 +680,166 @@ from dba_objects o
         return text
     }
     
+    func executeSQL(_ sql: String, params: [String: BindVar], prefetchSize: Int, conn: PooledConnection) async -> String {
+        var text = ""
+        let cur = try? conn.cursor()
+        do {
+            try cur?.execute(sql, params: params, prefetchSize: prefetchSize) }
+        catch { log.cache.error("\(error.localizedDescription)") }
+        while let row = cur?.nextSwifty() {
+            if let t = row["TEXT"]!.string { text.append(t) }
+        }
+        return text
+    }
+    
+    private struct TempObj: Hashable {
+        let owner: String, name: String
+    }
+    
+    private struct TempSource {
+        var textSpec: String?, textBody: String?
+    }
+    
+    func processSource_NEW(_ objs: [OracleObject]) async {
+//        log.cache.debug("in \(#function, privacy: .public)")
+        guard objs.count > 0 else { return }
+        guard objs.count < 1000 else { log.cache.error("Unexpected obj count: \(objs.count, privacy: .public)"); fatalError("Unexpected obj count: \(objs.count)") }
+        var sql = "select type, owner, name, text from dba_source where owner in ($OWNERS$) and name in ($NAMES$) and type in (:ts, :tb) order by type, owner, name, line"
+        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); return }
+        defer { pool?.returnConnection(conn: conn) }
+        let owners = objs.map { $0.owner }.unique()
+        let names = objs.map { $0.name }.unique()
+        // build bind var placeholders
+        // list of owners
+        var paramOwners: [String: BindVar] = [:]
+        paramOwners.reserveCapacity(owners.count)
+        paramOwners = owners.enumerated().reduce([String: BindVar]()) { (dict, elem) in
+            var dict = dict
+            dict[":o\(elem.offset)"] = BindVar(elem.element)
+            return dict
+        }
+        // list of names
+        var paramNames: [String: BindVar] = [:]
+        paramNames.reserveCapacity(names.count)
+        paramNames = names.enumerated().reduce([String: BindVar]()) { (dict, elem) in
+            var dict = dict
+            dict[":n\(elem.offset)"] = BindVar(elem.element)
+            return dict
+        }
+        // list of types
+        let paramTypes = [":ts": BindVar(objs[0].type.rawValue), ":tb": BindVar(objs[0].type.rawValue + " BODY")]
+        // put it all together
+        let params = paramOwners.merging(paramNames) { (current, _) in current }.merging(paramTypes) { (current, _) in current }
+        let ownerString = paramOwners.keys.joined(separator: ",")
+        let nameString = paramNames.keys.joined(separator: ",")
+        sql = sql.replacingOccurrences(of: "$OWNERS$", with: ownerString)
+        sql = sql.replacingOccurrences(of: "$NAMES$", with: nameString)
+        // execute SQL
+        let cur = try? conn.cursor()
+        do { try cur?.execute(sql, params: params, prefetchSize: 50000) }
+        catch { log.cache.error("\(error.localizedDescription)") }
+        // now scroll through the results and pull all hte details into a temp set
+        var text = ""
+        var key = ("","","")
+        var tempObjs = [TempObj : TempSource]()
+        tempObjs.reserveCapacity(objs.count)
+        // first row
+        guard let row = cur?.nextSwifty() else { log.cache.debug("source not found"); return }
+        key = (row["TYPE"]!.string!, row["OWNER"]!.string!, row["NAME"]!.string!)
+        text.append(contentsOf: row["TEXT"]!.string ?? "")
+        // process all rows
+        while let row = cur?.nextSwifty() {
+            let newKey = (row["TYPE"]!.string!, row["OWNER"]!.string!, row["NAME"]!.string!)
+            if newKey == key { // keep accumulating the source text
+                text.append(contentsOf: row["TEXT"]!.string ?? "")
+            } else { // done accumulating and switched to the next object
+                text = "create or replace ".appending(text)
+                let to = TempObj(owner: key.1, name: key.2)
+                if tempObjs.keys.contains(to) { // existing obj
+                    if key.0.contains("BODY") {
+                        tempObjs[to]!.textBody = text
+                    } else {
+                        tempObjs[to]!.textSpec = text
+                    }
+                } else { // new obj
+                    if key.0.contains("BODY") {
+                        tempObjs[to] = TempSource(textSpec: nil, textBody: text)
+                    } else {
+                        tempObjs[to] = TempSource(textSpec: text, textBody: nil)
+                    }
+                }
+                text.removeAll()
+                text.append(contentsOf: row["TEXT"]!.string ?? "")
+                key = newKey
+            }
+        }
+        // last row
+        text = "create or replace ".appending(text)
+        let to = TempObj(owner: key.1, name: key.2)
+        if tempObjs.keys.contains(to) { // existing obj
+            if key.0.contains("BODY") {
+                tempObjs[to]!.textBody = text
+            } else {
+                tempObjs[to]!.textSpec = text
+            }
+        } else { // new obj
+            if key.0.contains("BODY") {
+                tempObjs[to] = TempSource(textSpec: nil, textBody: text)
+            } else {
+                tempObjs[to] = TempSource(textSpec: text, textBody: nil)
+            }
+        }
+        log.cache.debug("temp objects: \(tempObjs.count)")
+        // now that we have all the objects, let's update the cache
+        await updateSourceCache(tempObjs: tempObjs, objs: objs)
+    }
+    
+    private func updateSourceCache(tempObjs: [TempObj : TempSource], objs: [OracleObject]) async {
+        await self.persistenceController.container.performBackgroundTask { (context) in
+            let request = DBCacheSource.fetchRequest()
+            // see if the object is already in cache
+            for obj in tempObjs {
+                request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@", obj.key.name , obj.key.owner)
+                let results = (try? context.fetch(request)) ?? []
+                if let cachedObj = results.first {
+    //                log.cache.debug("Source found in cache: \(cachedObj.owner, privacy: .public).\(cachedObj.name, privacy: .public)")
+                    cachedObj.textSpec = obj.value.textSpec
+                    cachedObj.textBody = obj.value.textBody
+                } else {
+    //                log.cache.debug("creating a new cache instance for source \(obj.type, privacy: .public) - \(obj.owner, privacy: .public).\(obj.name, privacy: .public)")
+                    let cachedObj = DBCacheSource(context: context)
+                    cachedObj.name = obj.key.name
+                    cachedObj.owner = obj.key.owner
+                    cachedObj.textSpec = obj.value.textSpec
+                    cachedObj.textBody = obj.value.textBody
+                }
+            }
+            // let's not forget to update DBCacheObjects
+            log.cache.debug("calling processObjects for a chunk of source")
+            self.processObjects(objs, context: context)
+            log.cache.debug("saving context for a chunk of source")
+            do { try context.save() }
+            catch { log.cache.error("failed to save context for a chunk of source"); fatalError("Failure to save context: \(error)") }
+        }
+    }
+    
+    
     func processSource(_ objs: [OracleObject], context: NSManagedObjectContext) {
 //        log.cache.debug("in \(#function, privacy: .public)")
         guard objs.count > 0 else { return }
         let sql = "select text from dba_source where owner = :owner and name = :name and type = :type order by line"
-        let conn = pool?.getConnection(tag: "cache", autoCommit: false)
+        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); return }
+        defer { pool?.returnConnection(conn: conn) }
         var textSpec = "", textBody = ""
         var i = 0
         for obj in objs {
             i += 1
             // pulling object spec text
             textSpec.removeAll()
-            textSpec = executeAsync(sql, params: [":owner": BindVar(obj.owner), ":name": BindVar(obj.name), ":type": BindVar(obj.type.rawValue)], prefetchSize: 500, conn: conn)
+            textSpec = executeSQL(sql, params: [":owner": BindVar(obj.owner), ":name": BindVar(obj.name), ":type": BindVar(obj.type.rawValue)], prefetchSize: 500, conn: conn)
             // pulling object body text
             textBody.removeAll()
-            textBody = executeAsync(sql, params: [":owner": BindVar(obj.owner), ":name": BindVar(obj.name), ":type": BindVar(obj.type.rawValue + " BODY")], prefetchSize: 5000, conn: conn)
+            textBody = executeSQL(sql, params: [":owner": BindVar(obj.owner), ":name": BindVar(obj.name), ":type": BindVar(obj.type.rawValue + " BODY")], prefetchSize: 5000, conn: conn)
             // fix up the syntax
             if !textSpec.isEmpty { textSpec = "create or replace ".appending(textSpec) }
             if !textBody.isEmpty { textBody = "create or replace ".appending(textBody) }
@@ -660,7 +857,7 @@ from dba_objects o
                 let cachedObj = DBCacheSource(context: context)
                 cachedObj.name = obj.name
                 cachedObj.owner = obj.owner
-                cachedObj.type = obj.type.rawValue
+//                cachedObj.type = obj.type.rawValue
                 cachedObj.textSpec = textSpec
                 cachedObj.textBody = textBody
             }
@@ -677,8 +874,8 @@ from dba_objects o
         log.cache.debug("Attempting to create a service connection pool")
         if self.isConnected == .connected  { return }
         let oracleService = OracleService(from_string: connDetails.tns)
-        pool = try ConnectionPool(service: oracleService, user: connDetails.username, pwd: connDetails.password, minConn: Constants.minConnections, maxConn: Constants.maxConnections, poolType: .Session, isSysDBA: connDetails.connectionRole == .sysDBA)
-        pool!.timeout = 180
+        pool = try ConnectionPool(service: oracleService, user: connDetails.username, pwd: connDetails.password, minConn: 0, maxConn: cacheUpdateSessionLimit, poolType: .Session, isSysDBA: connDetails.connectionRole == .sysDBA)
+        pool?.timeout = 5
         log.cache.debug("Connection pool created")
     }
     
@@ -745,7 +942,8 @@ from dba_objects o
         var dbid: Int = 0
         let sql = "select dbid, cdb from v$database"
         let sql2 = "select dbid from v$pdbs where name = SYS_CONTEXT('USERENV', 'DB_NAME')"
-        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else { throw DatabaseErrors.NotConnected }
+        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); throw DatabaseErrors.NotConnected}
+        defer { pool?.returnConnection(conn: conn) }
         let cur = try? conn.cursor()
         try? cur?.execute(sql)
         if let row = cur?.fetchOneSwifty() {
@@ -769,7 +967,8 @@ from dba_objects o
         var versionFull: String = ""
         var versionMajor: Int = 0
         let sql = "select version_full from product_component_version"
-        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else { throw DatabaseErrors.NotConnected }
+        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); throw DatabaseErrors.NotConnected}
+        defer { pool?.returnConnection(conn: conn) }
         let cur = try? conn.cursor()
         try? cur?.execute(sql)
         if let row = cur?.fetchOneSwifty() {

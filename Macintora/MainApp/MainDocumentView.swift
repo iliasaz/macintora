@@ -122,16 +122,6 @@ struct MainDocumentView: View {
                 .keyboardShortcut("e", modifiers: .command)
                 .help("Explain plan of current statement")
                 
-                // Show DB Browser
-                Button {
-                    if let url = URL(string: "Macintora://dbBrowser") {
-                        NSWorkspace.shared.open(url)
-                    }
-                } label: {
-                    Image(systemName: "list.bullet.below.rectangle")
-                }
-                .help("Database Browser")
-                
                 // open a new window
                 Button {
                     Task {

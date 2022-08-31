@@ -21,19 +21,19 @@ struct RunningLogEntry {
 }
 
 actor ResultData {
-    func queryData(for sql:String, using conn:Connection, maxRows: Int, showDbmsOutput: Bool = false, binds: [String: BindVar] = [:]) async -> Result<([String], [SwiftyRow], String, String), Error> {
+    func queryData(for sql:String, using conn:Connection, maxRows: Int, showDbmsOutput: Bool = false, binds: [String: BindVar] = [:], prefetchSize: Int = 200) async -> Result<([String], [SwiftyRow], String, String), Error> {
         let result: Result<([String], [SwiftyRow], String, String), Error>
         var rows = [SwiftyRow]()
         var columnLabels = [String]()
         do {
             let cursor = try conn.cursor()
-            try cursor.execute(sql, params: binds, prefetchSize: 500, enableDbmsOutput: showDbmsOutput)
+            try cursor.execute(sql, params: binds, prefetchSize: prefetchSize, enableDbmsOutput: showDbmsOutput)
             let sqlId = cursor.sqlId
             let dbmsOuput = cursor.dbmsOutputContent
             columnLabels = cursor.getColumnLabels()
             rows = [SwiftyRow]()
             var rowCnt = 0
-            while let row = cursor.nextSwifty(withStringRepresentation: true), rowCnt < maxRows {
+            while let row = cursor.nextSwifty(withStringRepresentation: true), rowCnt < (maxRows == -1 ? 10000 : maxRows) {
                 rows.append(row)
                 rowCnt += 1
             }
@@ -52,6 +52,9 @@ actor ResultData {
 }
 
 public class ResultViewModel: ObservableObject {
+    @AppStorage("rowFetchLimit") var rowFetchLimit: Int = 200
+    @AppStorage("queryPrefetchSize") private var queryPrefetchSize: Int = 200
+
     var rows = [SwiftyRow]()
     var columnLabels = [String]()
     var isFailed = false
@@ -85,7 +88,6 @@ public class ResultViewModel: ObservableObject {
         } set { }
     }
     
-    var rowsToFetch: Int = Constants.rowsToFetch
     var currentSql: String = ""
     var sqlId: String = ""
     var data = ResultData()
@@ -117,7 +119,7 @@ public class ResultViewModel: ObservableObject {
         rows.removeAll()
         resultsController.isExecuting = true
         Task.detached(priority: .background) { [self] in
-            let result = await data.queryData(for: currentSql, using: conn, maxRows: rowsToFetch, showDbmsOutput: enabledDbmsOutput, binds: getBinds())
+            let result = await data.queryData(for: currentSql, using: conn, maxRows: rowFetchLimit, showDbmsOutput: enabledDbmsOutput, binds: getBinds(), prefetchSize: queryPrefetchSize)
             await MainActor.run {
                 updateViews(with: result)
             }
@@ -193,13 +195,13 @@ public class ResultViewModel: ObservableObject {
         rows.removeAll()
         resultsController.isExecuting = true
         Task.detached(priority: .background) { [self] in
-            let explainStatus = await data.queryData(for: currentSql, using: conn, maxRows: rowsToFetch)
+            let explainStatus = await data.queryData(for: currentSql, using: conn, maxRows: -1)
             await MainActor.run {
                 updateViews(with: explainStatus)
             }
             switch explainStatus {
                 case .success( _):
-                    let explainResult = await data.queryData(for: "select * from dbms_xplan.display(format => 'ALL')", using: conn, maxRows: rowsToFetch)
+                    let explainResult = await data.queryData(for: "select * from dbms_xplan.display(format => 'ALL')", using: conn, maxRows: -1, prefetchSize: 1000)
                     await MainActor.run {
                         updateViews(with: explainResult)
                     }
@@ -214,7 +216,7 @@ public class ResultViewModel: ObservableObject {
         rows.removeAll()
         resultsController.isExecuting = true
         Task.detached(priority: .background) { [self] in
-            let compilationStatus = await data.queryData(for: currentSql, using: conn, maxRows: rowsToFetch)
+            let compilationStatus = await data.queryData(for: currentSql, using: conn, maxRows: -1)
             await MainActor.run {
                 updateViews(with: compilationStatus)
             }
@@ -224,7 +226,7 @@ public class ResultViewModel: ObservableObject {
                     binds[":owner"] = BindVar(rsql.storedProc?.owner ?? "")
                     binds[":name"] = BindVar(rsql.storedProc?.name ?? "")
                     binds[":type"] = BindVar(rsql.storedProc?.type ?? "")
-                    let compilationResult = await data.queryData(for: "select line, position, text from all_errors where owner = nvl(:owner, user) and name = :name and type = :type", using: conn, maxRows: rowsToFetch, binds: binds)
+                    let compilationResult = await data.queryData(for: "select line, position, text from all_errors where owner = nvl(:owner, user) and name = :name and type = :type", using: conn, maxRows: -1, binds: binds, prefetchSize: 1000)
                     await MainActor.run {
                         updateViews(with: compilationResult)
                     }

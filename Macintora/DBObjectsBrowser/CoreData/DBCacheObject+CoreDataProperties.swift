@@ -10,7 +10,6 @@
 import Foundation
 import CoreData
 
-
 extension DBCacheObject {
 
     @nonobjc public class func fetchRequest() -> NSFetchRequest<DBCacheObject> {
@@ -50,5 +49,4 @@ extension DBCacheObject {
         request.fetchLimit = limit
         return request
     }
-    
 }

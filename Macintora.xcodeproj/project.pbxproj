@@ -41,7 +41,6 @@
 		498288EC28B7DCB000A28B04 /* SwiftUIWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D328B7DCB000A28B04 /* SwiftUIWindow.swift */; };
 		498288F028B7DCB000A28B04 /* DBCacheBrowserMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D728B7DCB000A28B04 /* DBCacheBrowserMainView.swift */; };
 		498288F228B7DCB000A28B04 /* DBCacheSearchCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */; };
-		498288F328B7DCB000A28B04 /* DBCacheSearchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DA28B7DCB000A28B04 /* DBCacheSearchState.swift */; };
 		498288F428B7DCB000A28B04 /* FormField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DB28B7DCB000A28B04 /* FormField.swift */; };
 		498288F528B7DCB000A28B04 /* DBCacheListEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */; };
 		498288F628B7DCB000A28B04 /* DetailGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DD28B7DCB000A28B04 /* DetailGridView.swift */; };
@@ -124,7 +123,6 @@
 		498288D428B7DCB000A28B04 /* DBObjectsBrowserApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBObjectsBrowserApp.swift; sourceTree = "<group>"; };
 		498288D728B7DCB000A28B04 /* DBCacheBrowserMainView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheBrowserMainView.swift; sourceTree = "<group>"; };
 		498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheSearchCriteria.swift; sourceTree = "<group>"; };
-		498288DA28B7DCB000A28B04 /* DBCacheSearchState.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheSearchState.swift; sourceTree = "<group>"; };
 		498288DB28B7DCB000A28B04 /* FormField.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FormField.swift; sourceTree = "<group>"; };
 		498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheListEntryView.swift; sourceTree = "<group>"; };
 		498288DD28B7DCB000A28B04 /* DetailGridView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DetailGridView.swift; sourceTree = "<group>"; };
@@ -194,7 +192,6 @@
 				498288D728B7DCB000A28B04 /* DBCacheBrowserMainView.swift */,
 				498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */,
 				498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */,
-				498288DA28B7DCB000A28B04 /* DBCacheSearchState.swift */,
 				498288E028B7DCB000A28B04 /* DBCacheVM.swift */,
 				498288DE28B7DCB000A28B04 /* DBIndexDetailView.swift */,
 				498288E328B7DCB000A28B04 /* DBSourceDetailView.swift */,
@@ -510,7 +507,6 @@
 				498288C628B7DC5700A28B04 /* ConnDatabase+CoreDataProperties.swift in Sources */,
 				49B55F32270ADD8B00CFB3C7 /* MacintoraApp.swift in Sources */,
 				498288EA28B7DCB000A28B04 /* HorizontalLabelStyle.swift in Sources */,
-				498288F328B7DCB000A28B04 /* DBCacheSearchState.swift in Sources */,
 				498288C228B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataClass.swift in Sources */,
 				498288C828B7DC5700A28B04 /* DBCacheTableColumn+CoreDataClass.swift in Sources */,
 				498288FB28B7DCB000A28B04 /* FormattedView.swift in Sources */,

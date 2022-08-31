@@ -21,7 +21,7 @@ extension DBCacheSource {
     @NSManaged public var owner_: String?
     @NSManaged public var textSpec: String?
     @NSManaged public var textBody: String?
-    @NSManaged public var type_: String?
+//    @NSManaged public var type_: String?
 
 }
 
@@ -40,8 +40,8 @@ extension DBCacheSource {
         set { self.owner_ = newValue }
     }
     
-    var type: String {
-        get { self.type_ ?? "(null)"  }
-        set { self.type_ = newValue }
-    }
+//    var type: String {
+//        get { self.type_ ?? "(null)"  }
+//        set { self.type_ = newValue }
+//    }
 }
