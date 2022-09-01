@@ -67,6 +67,9 @@
 		49C62C1C27DD7BAF00DE69E4 /* MainDocumentVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */; };
 		49C62C2427E010AE00DE69E4 /* ConnectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */; };
 		49CE5FF027279F3A009C2A94 /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CE5FEF27279F3A009C2A94 /* ResultView.swift */; };
+		49EAEF9F28C04858008F0B80 /* DBCacheListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEF9E28C04858008F0B80 /* DBCacheListView.swift */; };
+		49EAEFA128C048B8008F0B80 /* QuickFilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA028C048B8008F0B80 /* QuickFilterView.swift */; };
+		49EAEFA328C0493F008F0B80 /* DBDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA228C0493F008F0B80 /* DBDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -164,6 +167,9 @@
 		49CD08FB2817B0C2006657ED /* TableColumnsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TableColumnsView.swift; sourceTree = "<group>"; };
 		49CE5FEF27279F3A009C2A94 /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
 		49E8E66A2752EC5600A99C05 /* Persistence.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
+		49EAEF9E28C04858008F0B80 /* DBCacheListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheListView.swift; sourceTree = "<group>"; };
+		49EAEFA028C048B8008F0B80 /* QuickFilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickFilterView.swift; sourceTree = "<group>"; };
+		49EAEFA228C0493F008F0B80 /* DBDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -190,6 +196,9 @@
 			isa = PBXGroup;
 			children = (
 				498288D728B7DCB000A28B04 /* DBCacheBrowserMainView.swift */,
+				49EAEFA028C048B8008F0B80 /* QuickFilterView.swift */,
+				49EAEF9E28C04858008F0B80 /* DBCacheListView.swift */,
+				49EAEFA228C0493F008F0B80 /* DBDetailView.swift */,
 				498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */,
 				498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */,
 				498288E028B7DCB000A28B04 /* DBCacheVM.swift */,
@@ -483,6 +492,7 @@
 				498288EB28B7DCB000A28B04 /* DBTableDetailView.swift in Sources */,
 				498288F428B7DCB000A28B04 /* FormField.swift in Sources */,
 				498288C328B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataProperties.swift in Sources */,
+				49EAEFA328C0493F008F0B80 /* DBDetailView.swift in Sources */,
 				498288F728B7DCB000A28B04 /* DBIndexDetailView.swift in Sources */,
 				498288C928B7DC5700A28B04 /* DBCacheIndex+CoreDataProperties.swift in Sources */,
 				498288CC28B7DC5700A28B04 /* DBCacheObject+CoreDataClass.swift in Sources */,
@@ -505,11 +515,13 @@
 				49438678273753A000D7D464 /* ResultViewModel.swift in Sources */,
 				498288FD28B7DCB000A28B04 /* TableIndexListView.swift in Sources */,
 				498288C628B7DC5700A28B04 /* ConnDatabase+CoreDataProperties.swift in Sources */,
+				49EAEF9F28C04858008F0B80 /* DBCacheListView.swift in Sources */,
 				49B55F32270ADD8B00CFB3C7 /* MacintoraApp.swift in Sources */,
 				498288EA28B7DCB000A28B04 /* HorizontalLabelStyle.swift in Sources */,
 				498288C228B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataClass.swift in Sources */,
 				498288C828B7DC5700A28B04 /* DBCacheTableColumn+CoreDataClass.swift in Sources */,
 				498288FB28B7DCB000A28B04 /* FormattedView.swift in Sources */,
+				49EAEFA128C048B8008F0B80 /* QuickFilterView.swift in Sources */,
 				498288C728B7DC5700A28B04 /* DBCacheTableColumn+CoreDataProperties.swift in Sources */,
 				4947FEA8286FA3E200AEBE60 /* ResultsController.swift in Sources */,
 				498288BF28B7DC5700A28B04 /* DBCacheTableColumn+CoreData.swift in Sources */,

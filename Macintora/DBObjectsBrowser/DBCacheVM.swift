@@ -375,8 +375,8 @@ from dba_objects o
             switch objectType {
                 case .table, .view:
                     self.processTables(objs, context: context, isView: objectType == .view)
-                case .type, .package:
-                    self.processSource(objs, context: context)
+//                case .type, .package:
+//                    self.processSource(objs, context: context)
                 case .index:
                     self.processIndexes(objs, context: context)
                 case .unknown:
@@ -464,7 +464,9 @@ from dba_objects o
                 // view specific fields
                 obj.isEditioning = isEditioning
                 obj.isReadOnly = isReadOnly
-                obj.sqltext = sqltext
+                if isView {
+                    obj.sqltext = "create or replace\(isEditioning ? " editioning" : "") view \(tableOwner).\(tableName) as ".appending(sqltext ?? "")
+                }
                 // now drop columns, they will be re-populated
                 try? deleteTableColumns(for: obj, in: context)
                 populateTableColumns(for: obj, in: context, using: conn)
@@ -480,7 +482,9 @@ from dba_objects o
                 // view specific fields
                 obj.isEditioning = isEditioning
                 obj.isReadOnly = isReadOnly
-                obj.sqltext = sqltext
+                if isView {
+                    obj.sqltext = "create or replace\(isEditioning ? " editioning" : "") view \(tableOwner).\(tableName) as ".appending(sqltext ?? "")
+                }
                 populateTableColumns(for: obj, in: context, using: conn)
             }
         }
@@ -668,29 +672,29 @@ from dba_objects o
 //        log.cache.debug("exiting from \(#function, privacy: .public); deletion of index columns for \(table.owner, privacy: .public).\(table.name, privacy: .public) finished")
     }
     
-    func executeSQL(_ sql: String, params: [String: BindVar], prefetchSize: Int, conn: PooledConnection) -> String {
-        var text = ""
-        let cur = try? conn.cursor()
-        do {
-            try cur?.execute(sql, params: params, prefetchSize: prefetchSize) }
-        catch { log.cache.error("\(error.localizedDescription)") }
-        while let row = cur?.nextSwifty() {
-            if let t = row["TEXT"]!.string { text.append(t) }
-        }
-        return text
-    }
-    
-    func executeSQL(_ sql: String, params: [String: BindVar], prefetchSize: Int, conn: PooledConnection) async -> String {
-        var text = ""
-        let cur = try? conn.cursor()
-        do {
-            try cur?.execute(sql, params: params, prefetchSize: prefetchSize) }
-        catch { log.cache.error("\(error.localizedDescription)") }
-        while let row = cur?.nextSwifty() {
-            if let t = row["TEXT"]!.string { text.append(t) }
-        }
-        return text
-    }
+//    func executeSQL(_ sql: String, params: [String: BindVar], prefetchSize: Int, conn: PooledConnection) -> String {
+//        var text = ""
+//        let cur = try? conn.cursor()
+//        do {
+//            try cur?.execute(sql, params: params, prefetchSize: prefetchSize) }
+//        catch { log.cache.error("\(error.localizedDescription)") }
+//        while let row = cur?.nextSwifty() {
+//            if let t = row["TEXT"]!.string { text.append(t) }
+//        }
+//        return text
+//    }
+//
+//    func executeSQL(_ sql: String, params: [String: BindVar], prefetchSize: Int, conn: PooledConnection) async -> String {
+//        var text = ""
+//        let cur = try? conn.cursor()
+//        do {
+//            try cur?.execute(sql, params: params, prefetchSize: prefetchSize) }
+//        catch { log.cache.error("\(error.localizedDescription)") }
+//        while let row = cur?.nextSwifty() {
+//            if let t = row["TEXT"]!.string { text.append(t) }
+//        }
+//        return text
+//    }
     
     private struct TempObj: Hashable {
         let owner: String, name: String
@@ -823,53 +827,70 @@ from dba_objects o
         }
     }
     
-    
-    func processSource(_ objs: [OracleObject], context: NSManagedObjectContext) {
-//        log.cache.debug("in \(#function, privacy: .public)")
-        guard objs.count > 0 else { return }
-        let sql = "select text from dba_source where owner = :owner and name = :name and type = :type order by line"
-        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); return }
-        defer { pool?.returnConnection(conn: conn) }
-        var textSpec = "", textBody = ""
-        var i = 0
-        for obj in objs {
-            i += 1
-            // pulling object spec text
-            textSpec.removeAll()
-            textSpec = executeSQL(sql, params: [":owner": BindVar(obj.owner), ":name": BindVar(obj.name), ":type": BindVar(obj.type.rawValue)], prefetchSize: 500, conn: conn)
-            // pulling object body text
-            textBody.removeAll()
-            textBody = executeSQL(sql, params: [":owner": BindVar(obj.owner), ":name": BindVar(obj.name), ":type": BindVar(obj.type.rawValue + " BODY")], prefetchSize: 5000, conn: conn)
-            // fix up the syntax
-            if !textSpec.isEmpty { textSpec = "create or replace ".appending(textSpec) }
-            if !textBody.isEmpty { textBody = "create or replace ".appending(textBody) }
-            // update cache
-            let request = DBCacheSource.fetchRequest()
-            // see if the object is already in cache
-            request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@ and type_ = %@", obj.name, obj.owner, obj.type.rawValue )
-            let results = (try? context.fetch(request)) ?? []
-            if let cachedObj = results.first {
-//                log.cache.debug("Source found in cache: \(cachedObj.owner, privacy: .public).\(cachedObj.name, privacy: .public)")
-                cachedObj.textSpec = textSpec
-                cachedObj.textBody = textBody
-            } else {
-//                log.cache.debug("creating a new cache instance for source \(obj.type, privacy: .public) - \(obj.owner, privacy: .public).\(obj.name, privacy: .public)")
-                let cachedObj = DBCacheSource(context: context)
-                cachedObj.name = obj.name
-                cachedObj.owner = obj.owner
-//                cachedObj.type = obj.type.rawValue
-                cachedObj.textSpec = textSpec
-                cachedObj.textBody = textBody
-            }
-            if i%100 == 0 {
-                log.cache.debug("processed \(i) objects in thread \(Thread.current, privacy: .public)")
-            }
-//            log.cache.debug("updated source spec for obj: \(obj.owner, privacy: .public).\(obj.name, privacy: .public)")
-//            log.cache.debug("updated source body for obj: \(obj.owner, privacy: .public).\(obj.name, privacy: .public) --- \(textBod, privacy: .publicy)")
+    func refreshObject(obj: OracleObject) async {
+        if obj.type == .package || obj.type == .type {
+            await self.processSource_NEW([obj])
+        } else {
+            await self.processChunkOfObjects([obj], objectType: obj.type)
         }
-//        log.cache.debug("exiting from \(#function, privacy: .public)")
     }
-
+    
+    func getSource(dbObject: DBCacheObject) async -> String {
+        var text = ""
+//        try? await Task.sleep(nanoseconds: 3_000_000_000)
+        switch OracleObjectType(rawValue: dbObject.type) ?? .unknown {
+            case .package, .type:
+                await self.persistenceController.container.performBackgroundTask { (context) in
+                    let request = DBCacheSource.fetchRequest()
+                    request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner)
+                    let results = (try? context.fetch(request)) ?? []
+                    if let obj = results.first {
+                        text = (obj.textSpec ?? "") + "\n\n\n" + (obj.textBody ?? "")
+                    }
+                }
+            case .view:
+                await self.persistenceController.container.performBackgroundTask { (context) in
+                    let request = DBCacheTable.fetchRequest()
+                    request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner)
+                    let results = (try? context.fetch(request)) ?? []
+                    if let obj = results.first {
+                        text = obj.sqltext ?? ""
+                    }
+                }
+            default:
+                text = "to be developed"
+        }
+        return text
+    }
+    
+    func editSource(dbObject: DBCacheObject) async -> URL? {
+        let text = await getSource(dbObject: dbObject)
+        // create a new document, copy properties from the current one
+        var newModel = MainModel(text: text)
+        newModel.connectionDetails = self.connDetails
+        // connect automatically?
+//        newModel.autoConnect = true
+        // save a temp file
+        let temporaryDirectoryURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        let temporaryFilename = "\(UUID().uuidString).macintora"
+        let temporaryFileURL = temporaryDirectoryURL.appendingPathComponent(temporaryFilename)
+        log.debug("temp file path: \(temporaryFileURL.path, privacy: .public)")
+        
+        do {
+            let data = try JSONEncoder().encode(newModel)
+            if (FileManager.default.createFile(atPath: temporaryFileURL.path, contents: data, attributes: nil)) {
+                log.debug("File created successfully.")
+            } else {
+                log.error("File not created - \(temporaryFileURL.path, privacy: .public)")
+                return nil
+            }
+        } catch {
+            log.error("File write failed: \(error.localizedDescription, privacy: .public), \(temporaryFileURL.path, privacy: .public)")
+            return nil
+        }
+        return temporaryFileURL
+    }
+    
     func connectSvc() throws {
         log.cache.debug("Attempting to create a service connection pool")
         if self.isConnected == .connected  { return }

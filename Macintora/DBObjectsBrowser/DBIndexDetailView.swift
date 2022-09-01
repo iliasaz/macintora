@@ -53,18 +53,9 @@ struct DBIndexDetailView: View {
     
     var body: some View {
         VStack {
-            HStack {
-                Image(systemName: "decrease.indent").foregroundColor(Color.blue)
-                Text("\(dbObject.name ?? Constants.nullValue)")
-                    .textSelection(.enabled)
-                Spacer()
-            }
-            .font(.title)
-            
             tableHeader
             
             TabView(selection: $selectedTab) {
-//                TableColumnsView(columns: Array(columns))
                 DetailGridView(columns: Array(columns), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, columnSortFn: columnSortFn)
                     .tabItem {
                         Text("Columns")

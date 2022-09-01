@@ -76,22 +76,9 @@ struct DBTableDetailView: View {
     
     var body: some View {
         VStack {
-            HStack {
-                if tables.first?.isView ?? false {
-                    Image(systemName: "tablecells.badge.ellipsis").foregroundColor(Color.blue)
-                } else {
-                    Image(systemName: "tablecells").foregroundColor(Color.blue)
-                }
-                Text("\(tables.first?.name ?? Constants.nullValue)")
-                    .textSelection(.enabled)
-                Spacer()
-            }
-            .font(.title)
-            
             if tables.first?.isView ?? false { viewHeader } else { tableHeader }
             
             TabView(selection: $selectedTab) {
-//                TableColumnsView(columns: Array(columns))
                 DetailGridView(columns: Array(columns), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, columnSortFn: columnSortFn)
                     .tabItem {
                         Text("Columns")

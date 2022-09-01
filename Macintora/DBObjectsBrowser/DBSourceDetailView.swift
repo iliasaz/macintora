@@ -33,20 +33,6 @@ struct DBSourceDetailView: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            HStack {
-                if dbObject.type == OracleObjectType.type.rawValue {
-                    Image(systemName: "t.square").foregroundColor(Color.blue)
-                } else if dbObject.type == OracleObjectType.package.rawValue {
-                    Image(systemName: "curlybraces.square").foregroundColor(Color.blue)
-                } else {
-                    Image(systemName: "questionmark.square").foregroundColor(Color.blue)
-                }
-                Text("\(tables.first?.name ?? Constants.nullValue)")
-                    .textSelection(.enabled)
-                Spacer()
-            }
-            .font(.title)
-            
             tableHeader
             
             SourceView(objName: dbObject.name, text: tables.first?.textSpec, title: "Specification")
