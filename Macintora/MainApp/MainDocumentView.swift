@@ -47,7 +47,7 @@ struct MainDocumentView: View {
                                    theme: .atelierDuneLight,
                                    autoPairs: [ "{": "}", "(": ")" ],
                                    inset: CGSize(width: 8, height: 8),
-                                   autoscroll: true)
+                                   autoscroll: false)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .focused($focusedView, equals: .codeEditor)
                         

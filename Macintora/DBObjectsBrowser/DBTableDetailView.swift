@@ -112,11 +112,10 @@ struct DBTableDetailView: View {
                                 let _ = (window.title = dbObject.name)
                                 FormattedView(formattedSource: Binding(get: {formattedSource }, set: {_ in }) )
                             }
-                             .clickable(true)
-                            .mouseMovesWindow(true)
+                            .closeOnEscape(true)
                         } label: { Text("Format Source") }
                         
-                        CodeEditor(source: .constant(tables.first?.sqltext ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: true)
+                        CodeEditor(source: .constant(tables.first?.sqltext ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     .tabItem {

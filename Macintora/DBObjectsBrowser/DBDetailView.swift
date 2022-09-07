@@ -44,6 +44,7 @@ struct DBDetailViewHeader: View {
             
             // edit object source
             Button {
+                guard !isLoadingSource else { return }
                 Task(priority: .background) {
                     isLoadingSource = true
                     if let url = await cache.editSource(dbObject: dbObject) {
@@ -57,7 +58,6 @@ struct DBDetailViewHeader: View {
                     .animation(.linear(duration: 2.0).repeat(while: isLoadingSource, autoreverses: false), value: isLoadingSource)
             }
                 .buttonStyle(.borderless)
-                .disabled(isLoadingSource)
                 .help("Edit")
             
             // refresh

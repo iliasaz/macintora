@@ -62,10 +62,9 @@ struct SourceView: View {
                     Task.init(priority: .background) { formattedSource = await formatter.formatSource(name: objName, text: text) }
                     SwiftUIWindow.open {window in
                         let _ = (window.title = objName)
-                        FormattedView(formattedSource: Binding(get: {formattedSource }, set: {_ in }) )
+                        FormattedView(formattedSource: Binding(get: { formattedSource }, set: {_ in }) )
                     }
-                    .clickable(true)
-                    .mouseMovesWindow(true)
+                    .closeOnEscape(true)
                 }
             label: { Text("Format Source") }
             }

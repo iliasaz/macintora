@@ -43,13 +43,13 @@ struct DBCacheBrowserMainView: View {
                         
                         ToolbarItemGroup(placement: .principal) {
                             Button {
+                                guard !cache.isReloading else { return }
                                 cache.updateCache()
                             } label: {
                                 Image(systemName: "arrow.triangle.2.circlepath")
                                     .rotationEffect(Angle.degrees(cache.isReloading ? 360 : 0))
                                     .animation(.linear(duration: 2.0).repeat(while: cache.isReloading, autoreverses: false), value: cache.isReloading)
                             }
-                            .disabled(cache.isReloading)
                             .help("Refresh Cache")
 
                             Button { reportDisplayed.toggle() } label: {
