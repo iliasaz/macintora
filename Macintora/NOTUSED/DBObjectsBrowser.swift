@@ -95,7 +95,6 @@ struct DBObjectsBrowser: View {
             }
             SearchContent(queryString: quickFilters.searchText)
         }
-        
         .padding()
         .frame(minWidth: 200, idealWidth: 500, maxWidth: .infinity, idealHeight: 500, maxHeight: .infinity)
         .environment(\.managedObjectContext, cache.persistentController.container.viewContext)

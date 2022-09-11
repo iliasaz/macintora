@@ -95,11 +95,17 @@ struct DetailGridView: NSViewRepresentable {
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = true
         scrollView.documentView = tableView
-        
         return scrollView
     }
     
-    
+//    private func computeIntrisicSize(_ view: LegalMentionView) {
+//        let targetSize = CGSize(width: desiredWidth, height: UIView.layoutFittingCompressedSize.height)
+//        let fittingSize = view.systemLayoutSizeFitting(targetSize,
+//                                                       withHorizontalFittingPriority: .defaultHigh,
+//                                                       verticalFittingPriority: .fittingSizeLevel)
+//        computedHeight = fittingSize.height
+//    }
+
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         //        log.viewcycle.debug("in updateNSView")
         let tableView = (nsView.documentView as! TableViewWithPasteboard)

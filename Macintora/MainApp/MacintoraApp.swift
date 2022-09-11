@@ -25,7 +25,6 @@ let log = Logger().default
 struct MacOraApp: App {
     @StateObject var appStateContainer = AppStateContainer()
     @ObservedObject var appSettings = AppSettings.shared
-//    @FocusedBinding(\.dbCache) var dbCache
 
     var body: some Scene {
 
@@ -58,7 +57,6 @@ struct MacOraApp: App {
         }
 
         WindowGroup {
-//            let cacheConnectionDetails = CacheConnectionDetails(from: ConnectionDetails())
             let cacheConnectionDetails = ConnectionDetails()
             DBCacheBrowserMainView(connDetails: cacheConnectionDetails)
                 .preferredColorScheme(appSettings.currentTheme.colorScheme)
@@ -93,12 +91,13 @@ struct MacOraApp: App {
 }
 
 struct MainDocumentMenuCommands: Commands {
-    @FocusedBinding(\.cacheConnectionDetails) var cacheConnectionDetails: ConnectionDetails?
+    @FocusedValue(\.cacheConnectionDetails) var cacheConnectionDetails: ConnectionDetails?
+    @FocusedValue(\.selectedObjectName) var selectedObjectName: String?
     @ObservedObject var appSettings: AppSettings
 
     var body: some Commands {
         CommandMenu("Database") {
-            NavigationLink("Browser", destination: DBCacheBrowserMainView(connDetails: cacheConnectionDetails ?? ConnectionDetails())
+            NavigationLink("Browser", destination: DBCacheBrowserMainView(connDetails: cacheConnectionDetails ?? ConnectionDetails(), selectedObjectName: selectedObjectName)
                 .preferredColorScheme(appSettings.currentTheme.colorScheme)
                 .environmentObject(appSettings)
             )
@@ -111,11 +110,16 @@ struct MainDocumentMenuCommands: Commands {
 
 
 struct DocumentFocusedKey: FocusedValueKey {
-    typealias Value = Binding<ConnectionDetails>
+    typealias Value = ConnectionDetails
 }
 
+struct SelectedObjectNameKey: FocusedValueKey {
+    typealias Value = String
+}
+
+
 extension FocusedValues {
-    var cacheConnectionDetails: Binding<ConnectionDetails>? {
+    var cacheConnectionDetails: ConnectionDetails? {
         get {
             self[DocumentFocusedKey.self]
         }
@@ -123,7 +127,19 @@ extension FocusedValues {
             self[DocumentFocusedKey.self] = newValue
         }
     }
+    
+    var selectedObjectName: SelectedObjectNameKey.Value? {
+        get {
+            self[SelectedObjectNameKey.self]
+        }
+        set {
+            self[SelectedObjectNameKey.self] = newValue
+        }
+    }
+
 }
+
+
 
 class AppSettings: ObservableObject {
     static let shared = AppSettings()

@@ -20,7 +20,11 @@ extension DBCacheObject {
     @NSManaged public var name_: String?
     @NSManaged public var owner_: String?
     @NSManaged public var type_: String?
-
+    @NSManaged public var createDate: Date?
+    @NSManaged public var editionName: String?
+    @NSManaged public var isEditionable: Bool
+    @NSManaged public var isValid: Bool
+    @NSManaged public var objectId: Int
 }
 
 extension DBCacheObject : Identifiable {
@@ -43,10 +47,24 @@ extension DBCacheObject {
         set { self.owner_ = newValue }
     }
     
-    public class func fetchRequest(limit: Int) -> NSFetchRequest<DBCacheObject> {
+    public class func fetchRequest(limit: Int, predicate: NSPredicate? = nil) -> NSFetchRequest<DBCacheObject> {
         let request = DBCacheObject.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(key: "owner_", ascending: true), NSSortDescriptor(key: "type_", ascending: true), NSSortDescriptor(key: "name_", ascending: true)]
         request.fetchLimit = limit
+        if let predicate = predicate {
+            request.predicate = predicate
+        }
         return request
+    }
+}
+
+extension DBCacheObject {
+    static var exampleTrigger: DBCacheObject {
+        let context = PersistenceController.preview.container.viewContext
+        let request = DBCacheObject.fetchRequest()
+        request.fetchLimit = 1
+        request.predicate = NSPredicate(format: "type_ = %@", "TRIGGER")
+        let results = try? context.fetch(request)
+        return (results?.first!)!
     }
 }

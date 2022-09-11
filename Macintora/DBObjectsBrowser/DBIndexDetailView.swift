@@ -39,9 +39,6 @@ struct DBIndexDetailView: View {
             }
             Spacer()
             VStack(alignment: .centreLine, spacing: 3) {
-                FormField(label: "Last DDL") {
-                    Text(dbObject.lastDDLDate?.ISO8601Format() ?? Constants.nullValue)
-                }
                 FormField(label: "Last Analyzed") {
                     Text(indexes.first?.lastAnalyzed?.ISO8601Format() ?? Constants.nullValue)
                 }
@@ -57,6 +54,7 @@ struct DBIndexDetailView: View {
             
             TabView(selection: $selectedTab) {
                 DetailGridView(columns: Array(columns), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, columnSortFn: columnSortFn)
+                    .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                     .tabItem {
                         Text("Columns")
                     }.tag("columns")

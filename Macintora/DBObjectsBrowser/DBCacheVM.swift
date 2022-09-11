@@ -25,7 +25,9 @@ public enum OracleObjectType: String, CaseIterable, CustomStringConvertible {
     case type = "TYPE"
     case package = "PACKAGE"
     case index = "INDEX"
+    case trigger = "TRIGGER"
 //    case procedure = "PROCEDURE"
+//    case procedure = "FUNCTION"
     case unknown = "UNKNOWN"
 }
 
@@ -39,8 +41,13 @@ struct OracleObject: CustomStringConvertible {
     let name: String
     let type: OracleObjectType
     let lastDDL: Date
+    let createDate: Date
+    let editionName: String?
+    let isEditionable: Bool
+    let isValid: Bool
+    let objectId: Int
     
-    var description: String {"owner: \(owner), name: \(name), type: \(type), lasdtDDL: \(lastDDL.ISO8601Format())"}
+    var description: String {"owner: \(owner), name: \(name), type: \(type), createDate: \(createDate.ISO8601Format()), lasdtDDL: \(lastDDL.ISO8601Format()), objectID: \(objectId), isValid: \(isValid), isEditionable: \(isEditionable), editionName: \(editionName ?? "")"}
 }
 
 actor ObjectQueue {
@@ -110,19 +117,24 @@ class DBCacheVM: ObservableObject {
         return dateFormatter.string(from: lst)
     }
     
-    init(connDetails: ConnectionDetails) {
+    init(connDetails: ConnectionDetails, selectedObjectName: String? = nil) {
         self.connDetails = connDetails
         self.searchCriteria = DBCacheSearchCriteria(for: connDetails.tns)
         persistenceController = PersistenceController(name: connDetails.tns)
         setConnDetailsFromCache()
         // create queues
         OracleObjectType.allCases.forEach { objectQueues[$0] = ObjectQueue() }
+        if let selected = selectedObjectName {
+            searchCriteria.searchText = selected
+        }
     }
     
     init(preview: Bool = true) {
         self.connDetails = ConnectionDetails(username: "user", password: "password", tns: "preview", connectionRole: .regular)
         self.searchCriteria = DBCacheSearchCriteria(for: connDetails.tns)
-        persistenceController = PersistenceController(name: connDetails.tns)
+        persistenceController = PersistenceController.preview
+        // create queues
+        OracleObjectType.allCases.forEach { objectQueues[$0] = ObjectQueue() }
     }
     
     func setConnDetailsFromCache() {
@@ -145,12 +157,13 @@ class DBCacheVM: ObservableObject {
         log.cache.debug("in \(#function, privacy: .public)")
         Task.init(priority: .background) {
             do {
-                try deleteAll(from: "DBCacheTableColumn")
-                try deleteAll(from: "DBCacheTable")
-                try deleteAll(from: "DBCacheIndexColumn")
-                try deleteAll(from: "DBCacheIndex")
-                try deleteAll(from: "DBCacheSource")
-                try deleteAll(from: "DBCacheObject")
+                try await deleteAll(from: "DBCacheTableColumn")
+                try await deleteAll(from: "DBCacheTable")
+                try await deleteAll(from: "DBCacheIndexColumn")
+                try await deleteAll(from: "DBCacheIndex")
+                try await deleteAll(from: "DBCacheSource")
+                try await deleteAll(from: "DBCacheObject")
+                try await deleteAll(from: "DBCacheTrigger")
             } catch {
                 log.cache.error("\(error.localizedDescription, privacy: .public)")
             }
@@ -159,19 +172,33 @@ class DBCacheVM: ObservableObject {
         }
     }
     
-    func updateCache() {
+    func updateCache(ignoreLastUpdate: Bool = false) {
         log.cache.debug("in \(#function, privacy: .public)")
         isReloading = true
         Task.init(priority: .background) {
             if isConnected == .disconnected {
-                await MainActor.run { isConnected = .changing }
-                try connectSvc()
-                await MainActor.run { isConnected = .connected }
-                await updateConnDatabase()
+//                await MainActor.run { isConnected = .changing }
+                do {
+                    try connectSvc()
+                    await MainActor.run { isConnected = .connected }
+                    await updateConnDatabase()
+                } catch {
+                    log.cache.error("could not connect to the database: \(error.localizedDescription, privacy: .public)")
+                    await MainActor.run { isConnected = .disconnected }
+                    return
+                }
             }
+            // make sure we actuall can connect
+            guard let connCheck = pool?.getConnection() else {
+                log.cache.error("could not get a connection from the pool")
+                pool = nil
+                await MainActor.run { isConnected = .disconnected }
+                return
+            }
+            pool?.returnConnection(conn: connCheck)
             await withTaskGroup(of: Void.self) { taskGroup in
                 await cacheState.startEnqueuing()
-                taskGroup.addTask { await self.populateObjectQueues() }
+                taskGroup.addTask { await self.populateObjectQueues(ignoreLastUpdate: ignoreLastUpdate) }
                 taskGroup.addTask { await self.processObjectQueues() }
             }
             log.cache.debug("finished taskGroup in \(#function, privacy: .public)")
@@ -182,12 +209,11 @@ class DBCacheVM: ObservableObject {
         log.cache.debug("exiting from \(#function, privacy: .public)")
     }
     
-    func buildObjectQuerySQL() -> String {
+    func buildObjectQuerySQL(ignoreLastUpdate: Bool = false) -> String {
         var sql = """
-select /*+ rule */ owner, object_name, object_type
-, greatest(last_ddl_time, nvl((
-    select last_ddl_time from dba_objects o1 where o1.owner = o.owner and o1.object_name = o.object_name and o1.object_type = o.object_type || ' BODY'
-    ), o.last_ddl_time)) as last_ddl_time
+select /*+ rule */ owner, object_name, object_type, object_id, created, editionable, edition_name, status
+, greatest(last_ddl_time
+, nvl(( select last_ddl_time from dba_objects o1 where o1.owner = o.owner and o1.object_name = o.object_name and o1.object_type = o.object_type || ' BODY'), o.last_ddl_time)) as last_ddl_time
 from dba_objects o
 """
         sql += " where object_type in ("
@@ -213,7 +239,7 @@ from dba_objects o
         // exclude system objects - LOB indexes and etc.
         sql += " and object_name not like 'SYS_IL%'"
         // check to see if lastUpdate filter should be applied
-        if let lstDate = self.lastUpdate {
+        if let lstDate = self.lastUpdate, !ignoreLastUpdate {
             dateFormatter.calendar = Calendar(identifier: .iso8601)
             dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
             let lstString = dateFormatter.string(from: lstDate)
@@ -230,11 +256,11 @@ from dba_objects o
         return sql
     }
     
-    func populateObjectQueues() async {
+    func populateObjectQueues(ignoreLastUpdate: Bool = false) async {
         log.cache.debug("in \(#function, privacy: .public)")
         if isConnected != .connected { log.cache.error("Not connected to Oracle database"); return }
 //        await cacheState.startEnqueuing() <<< this has been moved to the caller updateCache to make sure it is invoked before processObjectQueues
-        let sql = buildObjectQuerySQL()
+        let sql = buildObjectQuerySQL(ignoreLastUpdate: ignoreLastUpdate)
         await cacheState.startSession()
         guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); return }
         defer { pool?.returnConnection(conn: conn) }
@@ -242,7 +268,16 @@ from dba_objects o
         try? cur?.execute(sql, prefetchSize: cacheUpdatePrefetchSize)
         log.cache.debug("finished executing select statement in \(#function, privacy: .public)")
         while let row = cur?.nextSwifty() {
-            let obj = OracleObject(owner: row["OWNER"]!.string!, name: row["OBJECT_NAME"]!.string!, type: OracleObjectType(rawValue: row["OBJECT_TYPE"]!.string!) ?? .unknown, lastDDL: row["LAST_DDL_TIME"]!.date!)
+            let obj = OracleObject(owner: row["OWNER"]!.string!,
+                                   name: row["OBJECT_NAME"]!.string!,
+                                   type: OracleObjectType(rawValue: row["OBJECT_TYPE"]!.string!) ?? .unknown,
+                                   lastDDL: row["LAST_DDL_TIME"]!.date!,
+                                   createDate: row["CREATED"]!.date!,
+                                   editionName: row["EDITION_NAME"]!.string,
+                                   isEditionable: row["EDITIONABLE"]!.string == "Y",
+                                   isValid: row["STATUS"]!.string == "VALID",
+                                   objectId: row["OBJECT_ID"]!.int!
+            )
 //            log.cache.debug("adding \(obj, privacy: .public) to queue \(obj.type, privacy: .public)")
             await objectQueues[obj.type]?.enqueue(obj)
         }
@@ -379,6 +414,8 @@ from dba_objects o
 //                    self.processSource(objs, context: context)
                 case .index:
                     self.processIndexes(objs, context: context)
+                case .trigger:
+                    self.processTriggers(objs, context: context)
                 case .unknown:
                     log.cache.error("Unsupported Oracle object type for objects \(objs, privacy: .public)")
                 default:
@@ -403,6 +440,11 @@ from dba_objects o
             if let objCache = results.first {
 //                log.cache.debug("updating existing db object \(obj.owner, privacy: .public).\(obj.name, privacy: .public) of type \(obj.type.rawValue, privacy: .public)")
                 objCache.lastDDLDate = obj.lastDDL
+                objCache.createDate = obj.createDate
+                objCache.editionName = obj.editionName
+                objCache.isEditionable = obj.isEditionable
+                objCache.isValid = obj.isValid
+                objCache.objectId = obj.objectId
             } else {
 //                log.cache.debug("creating a new db object \(obj.owner, privacy: .public).\(obj.name, privacy: .public) of type \(obj.type.rawValue, privacy: .public)")
                 let objCache = DBCacheObject(context: context)
@@ -410,6 +452,11 @@ from dba_objects o
                 objCache.name = obj.name
                 objCache.type = obj.type.rawValue
                 objCache.lastDDLDate = obj.lastDDL
+                objCache.createDate = obj.createDate
+                objCache.editionName = obj.editionName
+                objCache.isEditionable = obj.isEditionable
+                objCache.isValid = obj.isValid
+                objCache.objectId = obj.objectId
             }
         }
 //        log.cache.debug("exiting from \(#function, privacy: .public)")
@@ -672,30 +719,6 @@ from dba_objects o
 //        log.cache.debug("exiting from \(#function, privacy: .public); deletion of index columns for \(table.owner, privacy: .public).\(table.name, privacy: .public) finished")
     }
     
-//    func executeSQL(_ sql: String, params: [String: BindVar], prefetchSize: Int, conn: PooledConnection) -> String {
-//        var text = ""
-//        let cur = try? conn.cursor()
-//        do {
-//            try cur?.execute(sql, params: params, prefetchSize: prefetchSize) }
-//        catch { log.cache.error("\(error.localizedDescription)") }
-//        while let row = cur?.nextSwifty() {
-//            if let t = row["TEXT"]!.string { text.append(t) }
-//        }
-//        return text
-//    }
-//
-//    func executeSQL(_ sql: String, params: [String: BindVar], prefetchSize: Int, conn: PooledConnection) async -> String {
-//        var text = ""
-//        let cur = try? conn.cursor()
-//        do {
-//            try cur?.execute(sql, params: params, prefetchSize: prefetchSize) }
-//        catch { log.cache.error("\(error.localizedDescription)") }
-//        while let row = cur?.nextSwifty() {
-//            if let t = row["TEXT"]!.string { text.append(t) }
-//        }
-//        return text
-//    }
-    
     private struct TempObj: Hashable {
         let owner: String, name: String
     }
@@ -833,6 +856,120 @@ from dba_objects o
         } else {
             await self.processChunkOfObjects([obj], objectType: obj.type)
         }
+    }
+    
+    func processTriggers(_ objs: [OracleObject], context: NSManagedObjectContext) {
+        log.cache.debug("in \(#function, privacy: .public)")
+        guard objs.count > 0 else { return }
+        guard objs.count < 1000 else { log.cache.error("Unexpected obj count: \(objs.count, privacy: .public)"); fatalError("Unexpected obj count: \(objs.count)") }
+        var sql = "select owner, trigger_name, trigger_type, triggering_event, table_owner, base_object_type, table_name, column_name, referencing_names, when_clause, status, description, action_type, trigger_body, crossedition, before_statement, before_row, after_row, after_statement, instead_of_row, fire_once from dba_triggers where owner in ($OWNERS$) and trigger_name in ($NAMES$)"
+        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); return }
+        defer { pool?.returnConnection(conn: conn) }
+        let owners = objs.map { $0.owner }.unique()
+        let names = objs.map { $0.name }.unique()
+        // build bind var placeholders
+        // list of owners
+        var paramOwners: [String: BindVar] = [:]
+        paramOwners.reserveCapacity(owners.count)
+        paramOwners = owners.enumerated().reduce([String: BindVar]()) { (dict, elem) in
+            var dict = dict
+            dict[":o\(elem.offset)"] = BindVar(elem.element)
+            return dict
+        }
+        // list of names
+        var paramNames: [String: BindVar] = [:]
+        paramNames.reserveCapacity(names.count)
+        paramNames = names.enumerated().reduce([String: BindVar]()) { (dict, elem) in
+            var dict = dict
+            dict[":n\(elem.offset)"] = BindVar(elem.element)
+            return dict
+        }
+        // put it all together
+        let params = paramOwners.merging(paramNames) { (current, _) in current }
+        let ownerString = paramOwners.keys.joined(separator: ",")
+        let nameString = paramNames.keys.joined(separator: ",")
+        sql = sql.replacingOccurrences(of: "$OWNERS$", with: ownerString)
+        sql = sql.replacingOccurrences(of: "$NAMES$", with: nameString)
+        // execute SQL
+        log.cache.debug("in \(#function, privacy: .public), executing SQL: \(sql, privacy: .public) with binds: \(params, privacy: .public)")
+        let cur = try? conn.cursor()
+        do { try cur?.execute(sql, params: params, prefetchSize: 50000) }
+        catch { log.cache.error("\(error.localizedDescription)") }
+        // scroll through results and update local cache
+        let request = DBCacheTrigger.fetchRequest()
+        while let row = cur?.nextSwifty() {
+            let owner = (row["OWNER"]!.string)!
+            let name = (row["TRIGGER_NAME"]!.string)!
+            let type = (row["TRIGGER_TYPE"]!.string)!
+            let event = (row["TRIGGERING_EVENT"]!.string)!
+            let objectOwner = row["TABLE_OWNER"]!.string
+            let objectType = (row["BASE_OBJECT_TYPE"]!.string)!
+            let objectName = row["TABLE_NAME"]!.string
+            let columnName = row["COLUMN_NAME"]!.string
+            let referencingNames = (row["REFERENCING_NAMES"]!.string)!
+            let whenClause = row["WHEN_CLAUSE"]!.string
+            let isEnabled = row["STATUS"]!.string == "ENABLED"
+            let description = row["DESCRIPTION"]!.string
+            let actionType = (row["ACTION_TYPE"]!.string)!
+            let body = row["TRIGGER_BODY"]!.string
+            let isCrossEdition = row["CROSSEDITION"]!.string == "YES"
+            let isBeforeStatement = row["BEFORE_STATEMENT"]!.string == "YES"
+            let isBeforeRow = row["BEFORE_ROW"]!.string == "YES"
+            let isAfterStatement = row["AFTER_STATEMENT"]!.string == "YES"
+            let isAfterRow = row["AFTER_ROW"]!.string == "YES"
+            let isInsteadOfRow = row["INSTEAD_OF_ROW"]!.string == "YES"
+            let isFireOnce = row["FIRE_ONCE"]!.string == "YES"
+            // see if the object is already in cache
+            request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@", name, owner)
+            let results = (try? context.fetch(request)) ?? []
+            if let obj = results.first {
+                log.cache.debug("trigger found in cache: \(owner, privacy: .public).\(name, privacy: .public)")
+                obj.type = type
+                obj.event = event
+                obj.objectOwner = objectOwner
+                obj.objectType = objectType
+                obj.objectName = objectName
+                obj.columnName = columnName
+                obj.referencingNames = referencingNames
+                obj.whenClause = whenClause
+                obj.isEnabled = isEnabled
+                obj.descr = description
+                obj.actionType = actionType
+                obj.body = body
+                obj.isCrossEdition = isCrossEdition
+                obj.isBeforeStatement = isBeforeStatement
+                obj.isBeforeRow = isBeforeRow
+                obj.isAfterStatement = isAfterStatement
+                obj.isAfterRow = isAfterRow
+                obj.isInsteadOfRow = isInsteadOfRow
+                obj.isFireOnce = isFireOnce
+            } else {
+                log.cache.debug("creating a new cache instance for trigger \(owner, privacy: .public).\(name, privacy: .public)")
+                let obj = DBCacheTrigger(context: context)
+                obj.owner = owner
+                obj.name = name
+                obj.type = type
+                obj.event = event
+                obj.objectOwner = objectOwner
+                obj.objectType = objectType
+                obj.objectName = objectName
+                obj.columnName = columnName
+                obj.referencingNames = referencingNames
+                obj.whenClause = whenClause
+                obj.isEnabled = isEnabled
+                obj.descr = description
+                obj.actionType = actionType
+                obj.body = body
+                obj.isCrossEdition = isCrossEdition
+                obj.isBeforeStatement = isBeforeStatement
+                obj.isBeforeRow = isBeforeRow
+                obj.isAfterStatement = isAfterStatement
+                obj.isAfterRow = isAfterRow
+                obj.isInsteadOfRow = isInsteadOfRow
+                obj.isFireOnce = isFireOnce
+            }
+        }
+        log.cache.debug("exiting from \(#function, privacy: .public)")
     }
     
     func getSource(dbObject: DBCacheObject) async -> String {
@@ -1001,19 +1138,21 @@ from dba_objects o
         return (versionFull, versionMajor)
     }
     
-    func deleteAll(from entityName: String) throws {
+    func deleteAll(from entityName: String) async throws {
         log.cache.debug("Deleting all from \(entityName, privacy: .public)")
         let fetchRequest: NSFetchRequest<NSFetchRequestResult>
         fetchRequest = NSFetchRequest(entityName: entityName)
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
         deleteRequest.resultType = .resultTypeObjectIDs
-        let context = persistenceController.container.newBackgroundContext()
-        let batchDelete = try context.execute(deleteRequest) as? NSBatchDeleteResult
-        guard let deleteResult = batchDelete?.result else { return }
-        // sync up with in-memory state
-        let changes: [AnyHashable: Any] = [ NSDeletedObjectsKey: deleteResult as! [NSManagedObjectID] ]
-        NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
-        try? context.save()
+        try await self.persistenceController.container.performBackgroundTask { (context) in
+            context.automaticallyMergesChangesFromParent = true
+            let batchDelete = try context.execute(deleteRequest) as? NSBatchDeleteResult
+            guard let deleteResult = batchDelete?.result else { return }
+            // sync up with in-memory state
+            let changes: [AnyHashable: Any] = [ NSDeletedObjectsKey: deleteResult as! [NSManagedObjectID] ]
+            NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
+            try? context.save()
+        }
         log.cache.debug("Deletion from \(entityName, privacy: .public) finished")
     }
     

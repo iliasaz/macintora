@@ -37,18 +37,14 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
 
     private(set) var resultsController: ResultsController?
     var model: MainModel
-    var editorSelectionRange: Range<String.Index>// = "".startIndex..<"".endIndex
+//    var editorSelectionRange: Range<String.Index>// = "".startIndex..<"".endIndex
     private(set) var conn: Connection? // main connection
     @Published var connDetails: ConnectionDetails
-//    var cacheConnDetails: CacheConnectionDetails { get { CacheConnectionDetails(from: connDetails) } set { }}
     
     @Published var isConnected = ConnectionStatus.disconnected
     @Published var connectionHealth = ConnectionHealthStatus.notConnected
-//    @Published var isExecuting = false
     @Published var dbName: String
     var pingTimer: Timer?
-//    private(set) var pool: ConnectionPool? // service connections
-
     
     func snapshot(contentType: UTType) throws -> MainModel {
         model.connectionDetails = connDetails
@@ -66,7 +62,7 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
         model = localModel
         dbName = Constants.defaultDBName
         connDetails = localModel.connectionDetails
-        editorSelectionRange = "".startIndex..<"".endIndex
+//        editorSelectionRange = "".startIndex..<"".endIndex
         resultsController = ResultsController(document: self)
     }
 
@@ -81,7 +77,7 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
         log.debug("model loaded: \(localModel, privacy: .public)")
         dbName = localModel.connectionDetails.tns ?? ""
         connDetails = localModel.connectionDetails
-        editorSelectionRange = "".startIndex..<"".endIndex
+//        editorSelectionRange = "".startIndex..<"".endIndex
         resultsController = ResultsController(document: self)
         if model.autoConnect ?? false {
             connect()
@@ -160,7 +156,7 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
     }
     
     /// Here we determine the SQL under the current cursor position
-    var currentSql: String? {
+    func getCurrentSql(for editorSelectionRange: Range<String.Index>) -> String? {
         let regexOptions: NSRegularExpression.Options = [.anchorsMatchLines]
         var ret: String = ""
         if editorSelectionRange.lowerBound != editorSelectionRange.upperBound { // user selected something, we should honor that
@@ -227,8 +223,8 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
         return ret.isEmpty ? nil : ret
     }
     
-    func runCurrentSQL() {
-        guard let sql = currentSql else { resultsController?.isExecuting = false; return }
+    func runCurrentSQL(for editorSelectionRange: Range<String.Index>) {
+        guard let sql = getCurrentSql(for: editorSelectionRange) else { resultsController?.isExecuting = false; return }
         resultsController?.runSQL(RunnableSQL(sql: sql))
     }
     
@@ -253,7 +249,7 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
         }
     }
     
-    func explainPlan() {
+    func explainPlan(for editorSelectionRange: Range<String.Index>) {
         resultsController?.isExecuting = true
         guard let conn = conn, conn.connected else {
             log.error("connection doesn't exist")
@@ -261,7 +257,8 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
             resultsController?.isExecuting = false
             return
         }
-        guard let sql = currentSql else { resultsController?.isExecuting = false; return }
+    
+        guard let sql = getCurrentSql(for: editorSelectionRange) else { resultsController?.isExecuting = false; return }
         resultsController?.explainPlan(for: sql)
         resultsController?.isExecuting = false
     }
@@ -289,13 +286,13 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
         }
     }
     
-    func newDocument() -> URL? {
+    func newDocument(from editorSelectionRange: Range<String.Index>) -> URL? {
         var text = ""
         // grab selected text or current SQL
         if editorSelectionRange.lowerBound != editorSelectionRange.upperBound { // user selected something, we should honor that
             text = String(model.text[editorSelectionRange])
         } else {
-            text = (currentSql ?? "") + "\n"
+            text = (getCurrentSql(for: editorSelectionRange) ?? "") + "\n"
         }
         
         // create a new document, copy properties from the current one
@@ -329,12 +326,13 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
     }
     
     // format selected SQL or current SQL
-    func format() {
+    func format(of editorSelectionRange: Range<String.Index>) {
+        var editorSelectionRange = editorSelectionRange
         var text = ""
         if editorSelectionRange.lowerBound != editorSelectionRange.upperBound { // user selected something, we'll format that
             text = String(model.text[editorSelectionRange])
         } else {
-            text = currentSql ?? ""
+            text = getCurrentSql(for: editorSelectionRange) ?? ""
         }
         guard !text.isEmpty else { return }
         let formatter = Formatter()
@@ -343,7 +341,7 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
             await MainActor.run {
                 objectWillChange.send()
                 model.text = model.text.replacingOccurrences(of: text, with: formattedText)
-                editorSelectionRange = editorSelectionRange.lowerBound..<editorSelectionRange.lowerBound
+//                editorSelectionRange = editorSelectionRange.lowerBound..<editorSelectionRange.lowerBound
             }
         }
     }

@@ -13,7 +13,6 @@ struct TableIndexListView: View {
     @Environment(\.managedObjectContext) var context
     @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
 //    @FetchRequest private var indexColumns: FetchedResults<DBCacheIndexColumn>
-//    @FetchRequest private var columns: FetchedResults<DBCacheIndexColumn>
     private var dbObject: DBCacheObject
     @State private var selectedIndexRow: DBCacheIndex.ID?
     
@@ -21,7 +20,7 @@ struct TableIndexListView: View {
     init(dbObject: DBCacheObject) {
         self.dbObject = dbObject
         _indexes = FetchRequest<DBCacheIndex>(sortDescriptors: [], predicate: NSPredicate.init(format: "tableName_ = %@ and tableOwner_ = %@", dbObject.name, dbObject.owner))
-//        _indexColumns = FetchRequest<DBCacheIndexColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "", selectedRow as! CVarArg))
+//        _indexColumns = FetchRequest<DBCacheIndexColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "indexName_ = %@", context.object(with: selectedIndexRow)))
     }
     
     var body: some View {
@@ -51,6 +50,7 @@ struct TableIndexListView: View {
         }
         .font(Font(NSFont(name: "Source Code Pro", size: NSFont.systemFontSize)!))
     }
+    
 }
 
 //struct TableIndexListView_Previews: PreviewProvider {

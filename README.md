@@ -28,7 +28,7 @@ Macintora binary is built for MacOS 12.3+, x86 platform. The binary needs the fo
 git clone https://github.com/vrogier/ocilib.git  
 cd ocilib
 chmod +x configure
-arch -x86 ./configure --with-oracle-import=runtime --with-oracle-headers-path=$ORACLE_HOME/sdk/include --with-oracle-lib-path=$ORACLE_HOME --disable-dependency-tracking
+arch -x86_64 ./configure --with-oracle-import=runtime --with-oracle-headers-path=$ORACLE_HOME/sdk/include --with-oracle-lib-path=$ORACLE_HOME --disable-dependency-tracking
 arch -x86_64 make
 arch -x86_64 sudo make install
 ls -la /usr/local/lib

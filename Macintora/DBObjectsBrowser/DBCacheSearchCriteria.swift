@@ -18,6 +18,7 @@ class DBCacheSearchCriteria: ObservableObject {
     @AppStorage("showIndexes") var showIndexes = true
     @AppStorage("showPackages") var showPackages = true
     @AppStorage("showTypes") var showTypes = true
+    @AppStorage("showTriggers") var showTriggers = true
     @Published var showProcedures = false
     @Published var showFunctions = false
     
@@ -53,6 +54,7 @@ class DBCacheSearchCriteria: ObservableObject {
         if showViews { typeInclusionList.append("VIEW") }
         if showIndexes { typeInclusionList.append("INDEX") }
         if showPackages { typeInclusionList.append("PACKAGE") }
+        if showTriggers { typeInclusionList.append("TRIGGER") }
         
         if !ownerInclusionList.isEmpty {
             predicates.append(NSPredicate.init(format: "owner_ IN %@", ownerInclusionList))

@@ -20,6 +20,9 @@ struct DBCacheListEntryView: View {
                     case "TYPE": Image(systemName: "t.square").foregroundColor(Color.blue)
                     case "PACKAGE": Image(systemName: "ellipsis.curlybraces").foregroundColor(Color.blue)
                     case "INDEX": Image(systemName: "decrease.indent").foregroundColor(Color.blue)
+                    case "TRIGGER": Image(systemName: "bolt").foregroundColor(Color.blue)
+                    case "PROCEDURE": Image(systemName: "curlybraces").foregroundColor(Color.blue)
+                    case "FUNCTION": Image(systemName: "curlybraces").foregroundColor(Color.blue)
                     default: Image(systemName: "questionmark.square").foregroundColor(Color.blue)
                 }
                 Text(dbObject.name)

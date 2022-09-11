@@ -70,6 +70,11 @@
 		49EAEF9F28C04858008F0B80 /* DBCacheListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEF9E28C04858008F0B80 /* DBCacheListView.swift */; };
 		49EAEFA128C048B8008F0B80 /* QuickFilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA028C048B8008F0B80 /* QuickFilterView.swift */; };
 		49EAEFA328C0493F008F0B80 /* DBDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA228C0493F008F0B80 /* DBDetailView.swift */; };
+		49EAEFA528C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA428C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift */; };
+		49EAEFA728C83685008F0B80 /* DBCacheTrigger+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA628C83685008F0B80 /* DBCacheTrigger+CoreDataProperties.swift */; };
+		49EAEFA928C93263008F0B80 /* DBTriggerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA828C93263008F0B80 /* DBTriggerDetailView.swift */; };
+		49EAEFAB28C9331C008F0B80 /* SourceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFAA28C9331C008F0B80 /* SourceView.swift */; };
+		49EAEFC728CD5822008F0B80 /* TableTriggerListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -170,6 +175,11 @@
 		49EAEF9E28C04858008F0B80 /* DBCacheListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheListView.swift; sourceTree = "<group>"; };
 		49EAEFA028C048B8008F0B80 /* QuickFilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickFilterView.swift; sourceTree = "<group>"; };
 		49EAEFA228C0493F008F0B80 /* DBDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBDetailView.swift; sourceTree = "<group>"; };
+		49EAEFA428C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheTrigger+CoreDataClass.swift"; sourceTree = "<group>"; };
+		49EAEFA628C83685008F0B80 /* DBCacheTrigger+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheTrigger+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		49EAEFA828C93263008F0B80 /* DBTriggerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBTriggerDetailView.swift; sourceTree = "<group>"; };
+		49EAEFAA28C9331C008F0B80 /* SourceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceView.swift; sourceTree = "<group>"; };
+		49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTriggerListView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -199,11 +209,13 @@
 				49EAEFA028C048B8008F0B80 /* QuickFilterView.swift */,
 				49EAEF9E28C04858008F0B80 /* DBCacheListView.swift */,
 				49EAEFA228C0493F008F0B80 /* DBDetailView.swift */,
+				49EAEFA828C93263008F0B80 /* DBTriggerDetailView.swift */,
 				498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */,
 				498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */,
 				498288E028B7DCB000A28B04 /* DBCacheVM.swift */,
 				498288DE28B7DCB000A28B04 /* DBIndexDetailView.swift */,
 				498288E328B7DCB000A28B04 /* DBSourceDetailView.swift */,
+				49EAEFAA28C9331C008F0B80 /* SourceView.swift */,
 				498288D228B7DCB000A28B04 /* DBTableDetailView.swift */,
 				498288DD28B7DCB000A28B04 /* DetailGridView.swift */,
 				498288E228B7DCB000A28B04 /* FormattedView.swift */,
@@ -216,6 +228,7 @@
 				498288E428B7DCB000A28B04 /* TableIndexListView.swift */,
 				498288D028B7DCB000A28B04 /* WindowModifier.swift */,
 				498288AD28B7DC5700A28B04 /* CoreData */,
+				49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */,
 			);
 			path = DBObjectsBrowser;
 			sourceTree = "<group>";
@@ -284,6 +297,7 @@
 				498288B228B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataProperties.swift */,
 				498288B328B7DC5700A28B04 /* DBCacheSource+CoreDataClass.swift */,
 				498288B428B7DC5700A28B04 /* DBCacheTable+CoreDataProperties.swift */,
+				49EAEFA628C83685008F0B80 /* DBCacheTrigger+CoreDataProperties.swift */,
 				498288B528B7DC5700A28B04 /* ConnDatabase+CoreDataProperties.swift */,
 				498288B628B7DC5700A28B04 /* DBCacheTableColumn+CoreDataProperties.swift */,
 				498288B728B7DC5700A28B04 /* DBCacheTableColumn+CoreDataClass.swift */,
@@ -293,6 +307,7 @@
 				498288BB28B7DC5700A28B04 /* DBCacheObject+CoreDataClass.swift */,
 				498288BC28B7DC5700A28B04 /* Item+CoreDataClass.swift */,
 				498288BD28B7DC5700A28B04 /* DBCacheTable+CoreDataClass.swift */,
+				49EAEFA428C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift */,
 				498288BE28B7DC5700A28B04 /* DBCacheSource+CoreDataProperties.swift */,
 			);
 			path = CoreData;
@@ -496,7 +511,9 @@
 				498288F728B7DCB000A28B04 /* DBIndexDetailView.swift in Sources */,
 				498288C928B7DC5700A28B04 /* DBCacheIndex+CoreDataProperties.swift in Sources */,
 				498288CC28B7DC5700A28B04 /* DBCacheObject+CoreDataClass.swift in Sources */,
+				49EAEFA728C83685008F0B80 /* DBCacheTrigger+CoreDataProperties.swift in Sources */,
 				4982889728B1C41700A28B04 /* Formatter.swift in Sources */,
+				49EAEFC728CD5822008F0B80 /* TableTriggerListView.swift in Sources */,
 				498288F528B7DCB000A28B04 /* DBCacheListEntryView.swift in Sources */,
 				498288E928B7DCB000A28B04 /* WindowModifier.swift in Sources */,
 				4947FEAC2870F8E400AEBE60 /* BindVarInputView.swift in Sources */,
@@ -534,6 +551,8 @@
 				49CE5FF027279F3A009C2A94 /* ResultView.swift in Sources */,
 				4947FEA6286FA39D00AEBE60 /* TableViewWithPasteboard.swift in Sources */,
 				49B55F36270ADD8B00CFB3C7 /* MainDocumentView.swift in Sources */,
+				49EAEFA928C93263008F0B80 /* DBTriggerDetailView.swift in Sources */,
+				49EAEFAB28C9331C008F0B80 /* SourceView.swift in Sources */,
 				49C62C2427E010AE00DE69E4 /* ConnectionListView.swift in Sources */,
 				498288F228B7DCB000A28B04 /* DBCacheSearchCriteria.swift in Sources */,
 				498288C128B7DC5700A28B04 /* DBCacheIndex+CoreDataClass.swift in Sources */,
@@ -547,6 +566,7 @@
 				4982890128B7DCB000A28B04 /* Queue.swift in Sources */,
 				498288CE28B7DC5700A28B04 /* DBCacheTable+CoreDataClass.swift in Sources */,
 				4927FBF72746DFB4007EED5B /* TnsReader.swift in Sources */,
+				49EAEFA528C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

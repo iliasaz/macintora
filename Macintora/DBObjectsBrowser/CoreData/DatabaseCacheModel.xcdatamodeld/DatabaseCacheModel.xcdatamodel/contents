@@ -28,12 +28,12 @@
         <attribute name="tablespaceName_" optional="YES" attributeType="String"/>
         <attribute name="type_" optional="YES" attributeType="String"/>
         <fetchIndex name="byIndex">
-            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
             <fetchIndexElement property="name_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
         </fetchIndex>
         <fetchIndex name="byTable">
-            <fetchIndexElement property="tableOwner_" type="Binary" order="ascending"/>
             <fetchIndexElement property="tableName_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="tableOwner_" type="Binary" order="ascending"/>
         </fetchIndex>
     </entity>
     <entity name="DBCacheIndexColumn" representedClassName="DBCacheIndexColumn" syncable="YES">
@@ -44,17 +44,21 @@
         <attribute name="owner_" optional="YES" attributeType="String"/>
         <attribute name="position" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <fetchIndex name="byIndex">
-            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
             <fetchIndexElement property="indexName_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
         </fetchIndex>
     </entity>
     <entity name="DBCacheObject" representedClassName="DBCacheObject" syncable="YES">
+        <attribute name="createDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="editionName" optional="YES" attributeType="String"/>
+        <attribute name="isEditionable" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isValid" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="lastDDLDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name_" optional="YES" attributeType="String"/>
+        <attribute name="objectId" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="owner_" optional="YES" attributeType="String"/>
         <attribute name="type_" optional="YES" attributeType="String" versionHashModifier="Added Index"/>
-        <fetchIndex name="byType">
-            <fetchIndexElement property="type_" type="Binary" order="ascending"/>
+        <fetchIndex name="byName">
             <fetchIndexElement property="name_" type="Binary" order="ascending"/>
         </fetchIndex>
     </entity>
@@ -64,8 +68,8 @@
         <attribute name="textBody" optional="YES" attributeType="String"/>
         <attribute name="textSpec" optional="YES" attributeType="String"/>
         <fetchIndex name="byName">
-            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
             <fetchIndexElement property="name_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
         </fetchIndex>
     </entity>
     <entity name="DBCacheTable" representedClassName="DBCacheTable" syncable="YES">
@@ -79,8 +83,8 @@
         <attribute name="owner_" optional="YES" attributeType="String"/>
         <attribute name="sqltext" optional="YES" attributeType="String"/>
         <fetchIndex name="byTable">
-            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
             <fetchIndexElement property="name_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
         </fetchIndex>
     </entity>
     <entity name="DBCacheTableColumn" representedClassName="DBCacheTableColumn" syncable="YES">
@@ -104,8 +108,39 @@
         <attribute name="scale" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="tableName_" optional="YES" attributeType="String"/>
         <fetchIndex name="byTable">
-            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
             <fetchIndexElement property="tableName_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="DBCacheTrigger" representedClassName="DBCacheTrigger" syncable="YES">
+        <attribute name="actionType_" optional="YES" attributeType="String"/>
+        <attribute name="body" optional="YES" attributeType="String"/>
+        <attribute name="columnName" optional="YES" attributeType="String"/>
+        <attribute name="descr" optional="YES" attributeType="String"/>
+        <attribute name="event_" optional="YES" attributeType="String"/>
+        <attribute name="isAfterRow" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isAfterStatement" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isBeforeRow" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isBeforeStatement" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isCrossEdition" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isEnabled" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isFireOnce" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isInsteadOfRow" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="name_" optional="YES" attributeType="String"/>
+        <attribute name="objectName" optional="YES" attributeType="String"/>
+        <attribute name="objectOwner" optional="YES" attributeType="String"/>
+        <attribute name="objectType_" optional="YES" attributeType="String"/>
+        <attribute name="owner_" optional="YES" attributeType="String"/>
+        <attribute name="referencingNames" optional="YES" attributeType="String"/>
+        <attribute name="type_" optional="YES" attributeType="String"/>
+        <attribute name="whenClause" optional="YES" attributeType="String"/>
+        <fetchIndex name="byTrigger">
+            <fetchIndexElement property="name_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="byBaseObject">
+            <fetchIndexElement property="objectName" type="Binary" order="ascending"/>
+            <fetchIndexElement property="objectOwner" type="Binary" order="ascending"/>
         </fetchIndex>
     </entity>
     <entity name="Item" representedClassName="Item" syncable="YES">
@@ -115,10 +150,11 @@
         <element name="ConnDatabase" positionX="-45" positionY="0" width="128" height="104"/>
         <element name="DBCacheIndex" positionX="-243" positionY="162" width="128" height="314"/>
         <element name="DBCacheIndexColumn" positionX="-234" positionY="171" width="128" height="119"/>
-        <element name="DBCacheObject" positionX="204.351318359375" positionY="24.83657836914062" width="128" height="103"/>
+        <element name="DBCacheObject" positionX="204.351318359375" positionY="24.83657836914062" width="128" height="164"/>
         <element name="DBCacheSource" positionX="152.1181640625" positionY="205.1347045898438" width="128" height="89"/>
         <element name="DBCacheTable" positionX="-450.23291015625" positionY="375.5834350585938" width="128" height="164"/>
         <element name="DBCacheTableColumn" positionX="-97.259765625" positionY="294.3717651367188" width="128" height="314"/>
+        <element name="DBCacheTrigger" positionX="-243" positionY="162" width="128" height="344"/>
         <element name="Item" positionX="-243" positionY="162" width="128" height="44"/>
     </elements>
 </model>

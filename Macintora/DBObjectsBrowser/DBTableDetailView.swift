@@ -40,16 +40,17 @@ struct DBTableDetailView: View {
             }
             Spacer()
             VStack(alignment: .centreLine, spacing: 3) {
-                FormField(label: "Last DDL") {
-                    Text(dbObject.lastDDLDate?.ISO8601Format() ?? Constants.nullValue)
-                }
                 FormField(label: "Last Analyzed") {
                     Text(tables.first?.lastAnalyzed?.ISO8601Format() ?? Constants.nullValue)
                 }
             }
             Spacer()
         }
-            .padding()
+        .padding()
+        .overlay(
+            RoundedRectangle(cornerRadius: 25)
+                .stroke(.quaternary, lineWidth: 2)
+        )
     }
     
     var viewHeader: some View {
@@ -59,19 +60,17 @@ struct DBTableDetailView: View {
                     Toggle("", isOn: .constant(tables.first?.isEditioning ?? false))
                 }
                 FormField(label: "Read Only?") {
-                    Toggle("", isOn: .constant(tables.first?.isEditioning ?? false))
+                    Toggle("", isOn: .constant(tables.first?.isReadOnly ?? false))
                 }
                 
             }
             Spacer()
-            VStack(alignment: .centreLine, spacing: 3) {
-                FormField(label: "Last DDL") {
-                    Text(dbObject.lastDDLDate?.ISO8601Format() ?? Constants.nullValue)
-                }
-            }
-            Spacer()
         }
         .padding()
+        .overlay(
+            RoundedRectangle(cornerRadius: 25)
+                .stroke(.quaternary, lineWidth: 2)
+        )
     }
     
     var body: some View {
@@ -80,25 +79,28 @@ struct DBTableDetailView: View {
             
             TabView(selection: $selectedTab) {
                 DetailGridView(columns: Array(columns), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, columnSortFn: columnSortFn)
+                    .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                     .tabItem {
                         Text("Columns")
                     }.tag("columns")
                 
                 if !(tables.first?.isView ?? false) {
                     TableIndexListView(dbObject: dbObject)
+                        .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                         .tabItem {
                             Text("Indexes")
                         }.tag("indexes")
                     
-                    Text("Table Constraints")
+                    TableTriggerListView(dbObject: dbObject)
+                        .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                         .tabItem {
-                            Text("Constraints")
-                        }.tag("constrains")
+                            Text("Triggers")
+                        }.tag("triggers")
 
-                    Text("Table DDL")
-                        .tabItem {
-                            Text("SQL")
-                        }.tag("sql")
+//                    Text("Table DDL")
+//                        .tabItem {
+//                            Text("SQL")
+//                        }.tag("sql")
 
                 }
                 
@@ -116,7 +118,7 @@ struct DBTableDetailView: View {
                         } label: { Text("Format Source") }
                         
                         CodeEditor(source: .constant(tables.first?.sqltext ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                     }
                     .tabItem {
                         Text("SQL")
@@ -125,7 +127,7 @@ struct DBTableDetailView: View {
             }
             .font(.headline)
         }
-        .frame(minWidth: 200, idealWidth: 400, maxWidth: .infinity)
+//        .frame(minWidth: 200, idealWidth: 400, maxWidth: .infinity, minHeight: 300, maxHeight: .infinity)
         .padding()
     }
 }

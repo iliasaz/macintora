@@ -18,7 +18,14 @@ struct MainDocumentView: View {
     @EnvironmentObject var appSettings: AppSettings
     @State private var selectedTab: String = "queryResults"
     @FocusState private var focusedView: FocusedView?
+
     @StateObject private var resultsController: ResultsController
+    @State private var editorSelection: Range<String.Index> = "".startIndex..<"".endIndex
+    
+    var selectedText: String {
+        if editorSelection.isEmpty { return "" }
+        return String(document.model.text[editorSelection])
+    }
     
     init(document: MainDocumentVM) {
         self.document = document
@@ -31,7 +38,7 @@ struct MainDocumentView: View {
                 connectionSatus: $document.isConnected,
                 username: $document.connDetails.username,
                 password: $document.connDetails.password,
-                selectedTns: Binding<String> ( get: { document.connDetails.tns ?? ""}, set: {document.connDetails.tns = $0} ),
+                selectedTns: Binding<String> ( get: { document.connDetails.tns }, set: {document.connDetails.tns = $0} ),
                 connectionRole: $document.connDetails.connectionRole,
                 connect: document.connect,
                 disconnect: document.disconnect
@@ -39,10 +46,8 @@ struct MainDocumentView: View {
             VStack {
                 GeometryReader { geo in
                     VSplitView {
-//                        let _ = log.viewCycle.debug("Redrawing split view, \($document.editorSelectionRange.wrappedValue)")
-//                        let _ = Self._printChanges()
                         CodeEditor(source: $document.model.text,
-                                   selection: $document.editorSelectionRange,
+                                   selection: $editorSelection,
                                    language: .pgsql,
                                    theme: .atelierDuneLight,
                                    autoPairs: [ "{": "}", "(": ")" ],
@@ -58,7 +63,14 @@ struct MainDocumentView: View {
                 }
             }
         }
-        .focusedSceneValue(\.cacheConnectionDetails, $document.connDetails )
+        .focusedSceneValue(\.cacheConnectionDetails, document.connDetails )
+        .focusedSceneValue(\.selectedObjectName, selectedText )
+        .onAppear {
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+              self.focusedView = .codeEditor
+          }
+        }
+        
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
                 Button(action: toggleSidebar, label: {
@@ -93,7 +105,7 @@ struct MainDocumentView: View {
                     if document.resultsController?.isExecuting ?? false {
                         document.stopRunningSQL()
                     } else {
-                        document.runCurrentSQL()
+                        document.runCurrentSQL(for: editorSelection)
                     }
                     focusedView = .codeEditor
                 } label: {
@@ -112,7 +124,7 @@ struct MainDocumentView: View {
                 // explain plan
                 Button {
                     if !(document.resultsController?.isExecuting ?? false) {
-                        document.explainPlan()
+                        document.explainPlan(for: editorSelection)
                     }
                     focusedView = .codeEditor
                 } label: {
@@ -125,7 +137,7 @@ struct MainDocumentView: View {
                 // open a new window
                 Button {
                     Task {
-                        if let url = document.newDocument() {
+                        if let url = document.newDocument(from: editorSelection) {
                             NSWorkspace.shared.open(url)
                         }
                     }
@@ -135,7 +147,8 @@ struct MainDocumentView: View {
                 
                 // format sql
                 Button {
-                    document.format()
+                    document.format(of: editorSelection)
+                    editorSelection = editorSelection.lowerBound..<editorSelection.lowerBound
                     focusedView = .codeEditor
                 } label: { Image(systemName: "wand.and.stars") }
                     .keyboardShortcut("f", modifiers: [.control])

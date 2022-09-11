@@ -10,8 +10,9 @@ import SwiftUI
 struct DBCacheListView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject var searchCriteria: DBCacheSearchCriteria
-//    @SectionedFetchRequest(fetchRequest: DBCacheObject.fetchRequest(limit: 100), sectionIdentifier: \DBCacheObject.owner_, animation: .default) private var items
     @SectionedFetchRequest var items: SectionedFetchResults<String?, DBCacheObject>
+    @State private var isItemSeleceted: Bool = false
+    @State private var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
 
     init( searchCriteria: DBCacheSearchCriteria, request: SectionedFetchRequest<String?, DBCacheObject>) {
         _searchCriteria = StateObject(wrappedValue: searchCriteria)
@@ -30,11 +31,11 @@ struct DBCacheListView: View {
         VStack {
             QuickFilterView(quickFilters: filters)
             
-            List {
+            List(selection: $listSelection) {
                 ForEach(items) { section in
                     Section(header: Text(section.id ?? "(unknown)")) {
                         ForEach(section) { item in
-                            NavigationLink {
+                            NavigationLink (tag: item, selection: $listSelection) {
                                 DBDetailView(dbObject: item)
                                     .frame(minWidth: 400, idealWidth: 600, maxWidth: .infinity, maxHeight: .infinity)
                             } label: {
@@ -43,6 +44,11 @@ struct DBCacheListView: View {
                                     .contentShape(Rectangle())
                             }
                         }
+                    }
+                }
+                .onReceive(items.publisher) { items in
+                    if items.count == 1 {
+                        listSelection = items[0]
                     }
                 }
             }
@@ -54,6 +60,7 @@ struct DBCacheListView: View {
 
 //struct DBCacheListView_Previews: PreviewProvider {
 //    static var previews: some View {
-//        DBCacheListView()
+//        DBCacheListView(searchCriteria: DBCacheSearchCriteria(), request: <#SectionedFetchRequest<String?, DBCacheObject>#>)
+//            .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 //    }
 //}
