@@ -7,13 +7,14 @@ Macintora depends on a few other projects, some of which are required, and some 
 ### Dependencies
 - Oracle [Instant Client](https://www.oracle.com/database/technologies/instant-client/macos-intel-x86-downloads.html). Only x86 version is available for MacOS at the time of writing. Hence, we're limited with Rosetta version of Macintora.
 - [OCILIB](https://github.com/vrogier/ocilib). More on how to build the library below.  
-- [SwiftOracle](https://github.com/iliasaz/SwiftOracle). No building necessary, just link the package.  
-- [CodeEditor](https://github.com/iliasaz/CodeEditor). No building necessary, just link the package.  
+- [SwiftOracle](https://github.com/iliasaz/SwiftOracle).   
+- [CodeEditor](https://github.com/iliasaz/CodeEditor).   
 - [SourceCode Pro Font](https://github.com/adobe-fonts/source-code-pro.git)  
 - If you would like to have formatter capability, consider building a Graal executable as described in [Trivadis PL/SQL & SQL Formatter Settings](https://github.com/Trivadis/plsql-formatter-settings#plsql--sql-formatter-settings). 
 
 ## Installing the binary
 Macintora binary is built for MacOS 12.3+, x86 platform. The binary needs the following libraries to be installed on the target machine.
+
 ### Dependencies
 - Oracle [Instant Client](https://www.oracle.com/database/technologies/instant-client/macos-intel-x86-downloads.html). Only x86 version is available for MacOS at the time of writing. Hence, we're limited with Rosetta version of Macintora.
 - [OCILIB](https://github.com/vrogier/ocilib). More on how to build the library below.
@@ -33,4 +34,14 @@ arch -x86_64 make
 arch -x86_64 sudo make install
 ls -la /usr/local/lib
 ```
-- The last output above should display "liboci" library.
+- The last output above should display "liboci" library.  
+
+## Other projects used - directly or as an inspiration 
+- [SwiftOracle](https://github.com/goloveychuk/SwiftOracle)  
+- [OCILIB](https://github.com/vrogier/ocilib)  
+- [CodeEditor](https://github.com/iliasaz/CodeEditor)  
+- [Line Number Gutter Text View](https://github.com/raphaelhanneken/line-number-text-view)  
+- [SwiftUIWindow](https://github.com/mortenjust/SwiftUIWindow)  
+- [SourceCode Pro Font](https://github.com/adobe-fonts/source-code-pro.git)
+- [Trivadis PL/SQL & SQL Formatter Settings](https://github.com/Trivadis/plsql-formatter-settings#plsql--sql-formatter-settings)
+
