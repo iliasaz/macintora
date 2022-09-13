@@ -202,11 +202,14 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         
         var cell: NSTableCellView
-        guard let cellIdentifier = tableColumn?.identifier else { return nil }
+//        guard let cellIdentifier = tableColumn?.identifier else { return nil }
+        let cellIdentifier = NSUserInterfaceItemIdentifier("cell")
         // find a cell object in cache
-        if let existingCell = tableView.makeView(withIdentifier: cellIdentifier, owner: self) {
+        if let existingCell = tableView.makeView(withIdentifier: cellIdentifier, owner: nil) {
+//            log.viewCycle.debug("reusing an existing cell for \(cellIdentifier.rawValue)")
             cell = existingCell as! NSTableCellView
         } else {
+//            log.viewCycle.debug("making a new cell for \(cellIdentifier.rawValue)")
             cell = makeTableCellView(identifier: cellIdentifier)
         }
         // set the value; this can be commented out if using bindings
