@@ -78,7 +78,7 @@ struct DBTableDetailView: View {
             if tables.first?.isView ?? false { viewHeader } else { tableHeader }
             
             TabView(selection: $selectedTab) {
-                DetailGridView(columns: Array(columns), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, columnSortFn: columnSortFn)
+                DetailGridView(rows: Array(columns), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
                     .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                     .tabItem {
                         Text("Columns")

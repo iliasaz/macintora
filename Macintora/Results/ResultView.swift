@@ -34,6 +34,7 @@ struct ResultView: NSViewRepresentable {
         tableView.intercellSpacing = NSSize(width: 5, height: 0)
         tableView.allowsMultipleSelection = true
         tableView.usesAlternatingRowBackgroundColors = true
+        
 //        tableView.gridStyleMask = [.solidVerticalGridLineMask, .solidHorizontalGridLineMask]
 //        tableView.gridColor = NSColor.blue
         tableView.style = .inset
@@ -237,7 +238,7 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
     
     func getRowCSV(rowNumber: Int) -> String {
         // quotes around fields
-        return (parent.model.rows[rowNumber].fields.map { "\"\($0.toString)\"" }).joined(separator: ",")
+        return (parent.model.rows[rowNumber].fields.map { "\"\($0.valueString)\"" }).joined(separator: ",")
     }
     
     func getSelectedRowsCSV() -> String {
@@ -246,7 +247,7 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
     
     func getRowTSV(rowNumber: Int) -> String {
         // no quotes around fields
-        return (parent.model.rows[rowNumber].fields.map { "\($0.toString)" }).joined(separator: "\t")
+        return (parent.model.rows[rowNumber].fields.map { "\($0.valueString)" }).joined(separator: "\t")
     }
     
     func getSelectedRowsTSV() -> String {

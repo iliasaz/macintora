@@ -17,8 +17,8 @@ struct DetailGridView: NSViewRepresentable {
     var booleanColumnLabels: [String]
     var autoColWidth = true
     
-    init(columns: [NSManagedObject], columnLabels: [String], booleanColumnLabels: [String] = [], columnSortFn: (NSManagedObject, NSManagedObject) -> Bool) {
-        _rows = State(initialValue: columns.sorted(by: columnSortFn) )
+    init(rows: [NSManagedObject], columnLabels: [String], booleanColumnLabels: [String] = [], rowSortFn: (NSManagedObject, NSManagedObject) -> Bool) {
+        _rows = State(initialValue: rows.sorted(by: rowSortFn) )
         self.columnLabels = columnLabels
         self.booleanColumnLabels = booleanColumnLabels
     }
@@ -76,6 +76,7 @@ struct DetailGridView: NSViewRepresentable {
         tableView.delegate = context.coordinator
         tableView.dataSource = context.coordinator
         tableView.target = context.coordinator
+        tableView.copyFormatter = context.coordinator.getSelectedRowsTSV
         context.coordinator.tableView = tableView
         
         // set columns
@@ -280,6 +281,14 @@ class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataS
         return parent.rows[row].value(forKey: tableColumn!.identifier.rawValue)
     }
     
+    func getRowTSV(rowNumber: Int) -> String {
+        // no quotes around fields
+        return parent.columnLabels.map { "\(parent.rows[rowNumber].value(forKey: $0) ?? "(null)")" }.joined(separator: "\t")
+    }
+    
+    func getSelectedRowsTSV() -> String {
+        return tableView!.selectedRowIndexes.compactMap { getRowTSV(rowNumber: $0) }.joined(separator: "\n")
+    }
 }
 
 
