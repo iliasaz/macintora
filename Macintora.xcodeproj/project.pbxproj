@@ -7,9 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4904C5BB28D6B145009F65BD /* Highlightr in Sources */ = {isa = PBXBuildFile; fileRef = 492ED2CF28D2B9A900FDF3A1 /* Highlightr */; };
+		4904C5BD28D6B15A009F65BD /* Highlightr in Frameworks */ = {isa = PBXBuildFile; productRef = 4904C5BC28D6B15A009F65BD /* Highlightr */; };
 		4919589D273757AD00423B95 /* SwiftOracle in Sources */ = {isa = PBXBuildFile; fileRef = 493A199A2718E19200803AC9 /* SwiftOracle */; };
 		4927FBF72746DFB4007EED5B /* TnsReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4927FBF62746DFB4007EED5B /* TnsReader.swift */; };
 		49438678273753A000D7D464 /* ResultViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49438677273753A000D7D464 /* ResultViewModel.swift */; };
+		4944594C28D51D31007AB2BF /* SBMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594B28D51D31007AB2BF /* SBMainView.swift */; };
+		4944594E28D539D2007AB2BF /* SBVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594D28D539D2007AB2BF /* SBVM.swift */; };
+		4944595028D68EFE007AB2BF /* SessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594F28D68EFE007AB2BF /* SessionView.swift */; };
 		4947FEA6286FA39D00AEBE60 /* TableViewWithPasteboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEA5286FA39D00AEBE60 /* TableViewWithPasteboard.swift */; };
 		4947FEA8286FA3E200AEBE60 /* ResultsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEA7286FA3E200AEBE60 /* ResultsController.swift */; };
 		4947FEAA286FA73B00AEBE60 /* RunnableSQL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEA9286FA73B00AEBE60 /* RunnableSQL.swift */; };
@@ -89,10 +94,14 @@
 
 /* Begin PBXFileReference section */
 		4927FBF62746DFB4007EED5B /* TnsReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsReader.swift; sourceTree = "<group>"; };
+		492ED2CF28D2B9A900FDF3A1 /* Highlightr */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Highlightr; path = ../Highlightr; sourceTree = "<group>"; };
 		49330ED2275416EC004EAA48 /* DBObjectsBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectsBrowser.swift; sourceTree = "<group>"; };
 		49330ED827570649004EAA48 /* FilteredList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilteredList.swift; sourceTree = "<group>"; };
 		493A199A2718E19200803AC9 /* SwiftOracle */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SwiftOracle; path = ../SwiftOracle; sourceTree = "<group>"; };
 		49438677273753A000D7D464 /* ResultViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResultViewModel.swift; sourceTree = "<group>"; };
+		4944594B28D51D31007AB2BF /* SBMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBMainView.swift; sourceTree = "<group>"; };
+		4944594D28D539D2007AB2BF /* SBVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBVM.swift; sourceTree = "<group>"; };
+		4944594F28D68EFE007AB2BF /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
 		4947FEA5286FA39D00AEBE60 /* TableViewWithPasteboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TableViewWithPasteboard.swift; path = Macintora/Results/TableViewWithPasteboard.swift; sourceTree = SOURCE_ROOT; };
 		4947FEA7286FA3E200AEBE60 /* ResultsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsController.swift; sourceTree = "<group>"; };
 		4947FEA9286FA73B00AEBE60 /* RunnableSQL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnableSQL.swift; sourceTree = "<group>"; };
@@ -195,6 +204,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				49B6D1312733450800D9D788 /* CodeEditor in Frameworks */,
+				4904C5BD28D6B15A009F65BD /* Highlightr in Frameworks */,
 				49C5A1DD2718F5E40044CF0F /* SwiftOracle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -202,6 +212,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4944594A28D51CE5007AB2BF /* SessionBrowser */ = {
+			isa = PBXGroup;
+			children = (
+				4944594B28D51D31007AB2BF /* SBMainView.swift */,
+				4944594F28D68EFE007AB2BF /* SessionView.swift */,
+				4944594D28D539D2007AB2BF /* SBVM.swift */,
+			);
+			path = SessionBrowser;
+			sourceTree = "<group>";
+		};
 		496FC8F7276AA5F900B689F4 /* DBObjectsBrowser */ = {
 			isa = PBXGroup;
 			children = (
@@ -339,6 +359,7 @@
 				498288A828B7DB8400A28B04 /* MainApp */,
 				496FC8F7276AA5F900B689F4 /* DBObjectsBrowser */,
 				49CE5FEE27279F09009C2A94 /* Results */,
+				4944594A28D51CE5007AB2BF /* SessionBrowser */,
 				49B6D13227335FF400D9D788 /* Utils.swift */,
 				49B55F37270ADD8D00CFB3C7 /* Assets.xcassets */,
 				49B55F3C270ADD8D00CFB3C7 /* Info.plist */,
@@ -362,6 +383,7 @@
 			children = (
 				493A199A2718E19200803AC9 /* SwiftOracle */,
 				49B6D12B2733439900D9D788 /* CodeEditor */,
+				492ED2CF28D2B9A900FDF3A1 /* Highlightr */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -420,6 +442,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				492ED2D228D2D93C00FDF3A1 /* PBXTargetDependency */,
 				4919589F273757F100423B95 /* PBXTargetDependency */,
 				49B6D12D2733443E00D9D788 /* PBXTargetDependency */,
 			);
@@ -427,6 +450,7 @@
 			packageProductDependencies = (
 				49C5A1DC2718F5E40044CF0F /* SwiftOracle */,
 				49B6D1302733450800D9D788 /* CodeEditor */,
+				4904C5BC28D6B15A009F65BD /* Highlightr */,
 			);
 			productName = MacOra;
 			productReference = 49B55F2E270ADD8B00CFB3C7 /* Macintora.app */;
@@ -504,6 +528,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4904C5BB28D6B145009F65BD /* Highlightr in Sources */,
 				498288EB28B7DCB000A28B04 /* DBTableDetailView.swift in Sources */,
 				498288F428B7DCB000A28B04 /* FormField.swift in Sources */,
 				498288C328B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataProperties.swift in Sources */,
@@ -526,6 +551,7 @@
 				4999469427E1777700C62AB7 /* LogView.swift in Sources */,
 				498288F628B7DCB000A28B04 /* DetailGridView.swift in Sources */,
 				4982890D28B95BC100A28B04 /* SettingsView.swift in Sources */,
+				4944594E28D539D2007AB2BF /* SBVM.swift in Sources */,
 				49B55F60270ADFE300CFB3C7 /* MainModel.swift in Sources */,
 				498288EC28B7DCB000A28B04 /* SwiftUIWindow.swift in Sources */,
 				498288AC28B7DBE500A28B04 /* DatabaseCacheModel.xcdatamodeld in Sources */,
@@ -536,6 +562,7 @@
 				49B55F32270ADD8B00CFB3C7 /* MacintoraApp.swift in Sources */,
 				498288EA28B7DCB000A28B04 /* HorizontalLabelStyle.swift in Sources */,
 				498288C228B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataClass.swift in Sources */,
+				4944594C28D51D31007AB2BF /* SBMainView.swift in Sources */,
 				498288C828B7DC5700A28B04 /* DBCacheTableColumn+CoreDataClass.swift in Sources */,
 				498288FB28B7DCB000A28B04 /* FormattedView.swift in Sources */,
 				49EAEFA128C048B8008F0B80 /* QuickFilterView.swift in Sources */,
@@ -557,6 +584,7 @@
 				498288F228B7DCB000A28B04 /* DBCacheSearchCriteria.swift in Sources */,
 				498288C128B7DC5700A28B04 /* DBCacheIndex+CoreDataClass.swift in Sources */,
 				496FF1A12775259900CC0AD2 /* ResultViewWrapper.swift in Sources */,
+				4944595028D68EFE007AB2BF /* SessionView.swift in Sources */,
 				498288C528B7DC5700A28B04 /* DBCacheTable+CoreDataProperties.swift in Sources */,
 				498288FE28B7DCB000A28B04 /* Persistence.swift in Sources */,
 				498288CA28B7DC5700A28B04 /* Item+CoreDataProperties.swift in Sources */,
@@ -576,6 +604,10 @@
 		4919589F273757F100423B95 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			productRef = 4919589E273757F100423B95 /* SwiftOracle */;
+		};
+		492ED2D228D2D93C00FDF3A1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 492ED2D128D2D93C00FDF3A1 /* Highlightr */;
 		};
 		498288A128B41F3A00A28B04 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -848,9 +880,17 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		4904C5BC28D6B15A009F65BD /* Highlightr */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Highlightr;
+		};
 		4919589E273757F100423B95 /* SwiftOracle */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SwiftOracle;
+		};
+		492ED2D128D2D93C00FDF3A1 /* Highlightr */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Highlightr;
 		};
 		49B6D12C2733443E00D9D788 /* CodeEditor */ = {
 			isa = XCSwiftPackageProductDependency;

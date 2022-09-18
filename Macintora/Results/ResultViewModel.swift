@@ -20,36 +20,36 @@ struct RunningLogEntry {
     let timestamp = Date()
 }
 
-actor ResultData {
-    func queryData(for sql:String, using conn:Connection, maxRows: Int, showDbmsOutput: Bool = false, binds: [String: BindVar] = [:], prefetchSize: Int = 200) async -> Result<([String], [SwiftyRow], String, String), Error> {
-        let result: Result<([String], [SwiftyRow], String, String), Error>
-        var rows = [SwiftyRow]()
-        var columnLabels = [String]()
-        do {
-            let cursor = try conn.cursor()
-            try cursor.execute(sql, params: binds, prefetchSize: prefetchSize, enableDbmsOutput: showDbmsOutput)
-            let sqlId = cursor.sqlId
-            let dbmsOuput = cursor.dbmsOutputContent
-            columnLabels = cursor.getColumnLabels()
-            rows = [SwiftyRow]()
-            var rowCnt = 0
-            while let row = cursor.nextSwifty(withStringRepresentation: true), rowCnt < (maxRows == -1 ? 10000 : maxRows) {
-                rows.append(row)
-                rowCnt += 1
-            }
-            columnLabels.insert("#", at: 0)
-            result = .success((columnLabels, rows, sqlId, dbmsOuput))
-            log.debug("data loaded, rows.count: \(rows.count)")
-        } catch DatabaseErrors.SQLError (let error) {
-            log.error("\(error.description, privacy: .public)")
-            result = .failure(error)
-        } catch {
-            log.error("\(error.localizedDescription, privacy: .public)")
-            result = .failure(error)
-        }
-        return result
-    }
-}
+//actor ResultData {
+//    func queryData(for sql:String, using conn:Connection, maxRows: Int, showDbmsOutput: Bool = false, binds: [String: BindVar] = [:], prefetchSize: Int = 200) async -> Result<([String], [SwiftyRow], String, String), Error> {
+//        let result: Result<([String], [SwiftyRow], String, String), Error>
+//        var rows = [SwiftyRow]()
+//        var columnLabels = [String]()
+//        do {
+//            let cursor = try conn.cursor()
+//            try cursor.execute(sql, params: binds, prefetchSize: prefetchSize, enableDbmsOutput: showDbmsOutput)
+//            let sqlId = cursor.sqlId
+//            let dbmsOuput = cursor.dbmsOutputContent
+//            columnLabels = cursor.getColumnLabels()
+//            rows = [SwiftyRow]()
+//            var rowCnt = 0
+//            while let row = cursor.nextSwifty(withStringRepresentation: true), rowCnt < (maxRows == -1 ? 10000 : maxRows) {
+//                rows.append(row)
+//                rowCnt += 1
+//            }
+//            columnLabels.insert("#", at: 0)
+//            result = .success((columnLabels, rows, sqlId, dbmsOuput))
+//            log.debug("data loaded, rows.count: \(rows.count)")
+//        } catch DatabaseErrors.SQLError (let error) {
+//            log.error("\(error.description, privacy: .public)")
+//            result = .failure(error)
+//        } catch {
+//            log.error("\(error.localizedDescription, privacy: .public)")
+//            result = .failure(error)
+//        }
+//        return result
+//    }
+//}
 
 public class ResultViewModel: ObservableObject {
     @AppStorage("rowFetchLimit") var rowFetchLimit: Int = 200
@@ -181,7 +181,6 @@ public class ResultViewModel: ObservableObject {
     func sort(by colName: String?, ascending: Bool) {
         guard let colName = colName else { return }
         guard let colIndex = columnLabels.firstIndex(of: colName) else { return }
-//        objectWillChange.send()
         if ascending {
             rows.sort(by: {SwiftyRow.less(colIndex: colIndex-1, lhs: $0, rhs: $1)} ) // account for row number!
         } else {

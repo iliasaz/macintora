@@ -65,6 +65,7 @@ struct MainDocumentView: View {
         }
         .focusedSceneValue(\.cacheConnectionDetails, document.connDetails )
         .focusedSceneValue(\.selectedObjectName, selectedText )
+        .focusedSceneValue(\.sbConnDetails, document.sbConnDetails )
         .onAppear {
           DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
               self.focusedView = .codeEditor

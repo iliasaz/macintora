@@ -39,12 +39,18 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
     var model: MainModel
 //    var editorSelectionRange: Range<String.Index>// = "".startIndex..<"".endIndex
     private(set) var conn: Connection? // main connection
+    private(set) var oraSession: OracleSession?
+    
     @Published var connDetails: ConnectionDetails
     
     @Published var isConnected = ConnectionStatus.disconnected
     @Published var connectionHealth = ConnectionHealthStatus.notConnected
     @Published var dbName: String
     var pingTimer: Timer?
+    
+    var sbConnDetails: SBConnDetails {
+        SBConnDetails(mainConnDetails: connDetails, mainSession: oraSession)
+    }
     
     func snapshot(contentType: UTType) throws -> MainModel {
         model.connectionDetails = connDetails
@@ -92,7 +98,7 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
             
             // we need a main stateful connection, and a pool of stateless sessions for navigation around the database
 //            if conn == nil {
-            let oracleService = OracleService(from_string: connDetails.tns ?? "")
+            let oracleService = OracleService(from_string: connDetails.tns)
             conn = Connection(service: oracleService, user: connDetails.username, pwd: connDetails.password, sysDBA: connDetails.connectionRole == .sysDBA)
 //            }
             guard let conn = conn else {
@@ -103,12 +109,13 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
             do {
                 log.debug("Attempting to connect to \(self.connDetails.username, privacy: .public) @ \(self.connDetails.tns ?? Constants.nullValue, privacy: .public) as \(self.connDetails.connectionRole == .sysDBA ? "SysDBA" : "regular user", privacy: .public)")
                 try conn.open()
-                log.debug("connected to \(self.connDetails.tns ?? "", privacy: .public)")
+                log.debug("connected to \(self.connDetails.tns, privacy: .public)")
                 do { try conn.setFormat(fmtType: .date, fmtString: "YYYY-MM-DD HH24:MI:SS") }
                 catch {
                     log.debug("setFormat failed: \(error.localizedDescription, privacy: .public)")
                     await resultsController?.displayError(error)
                 }
+                oraSession = MainDocumentVM.getOracleSession(for: conn)
             } catch DatabaseErrors.SQLError(let error) {
                 log.error("connection failure: \(error.description, privacy: .public)")
                 await resultsController?.displayError(error)
@@ -144,15 +151,35 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
                 return
             }
             conn.close()
+            oraSession = nil
             self.pingTimer?.invalidate() // stop scheduled pings
             await MainActor.run {
                 if !conn.connected {
                     isConnected = .disconnected
                     connectionHealth = .notConnected
-                    log.debug("disconnected from \(self.connDetails.tns ?? "", privacy: .public)")
+                    log.debug("disconnected from \(self.connDetails.tns, privacy: .public)")
                 }
             }
         }
+    }
+    
+    static func getOracleSession(for conn: Connection?) -> OracleSession? {
+        guard let conn = conn else {
+            log.error("connection doesn't exist")
+            return nil
+        }
+        var oraSession: OracleSession?
+        do {
+            let cursor = try conn.cursor()
+            let sql = "select sid, serial#, to_number(sys_context('userenv','instance')) instance from v$session where sid = sys_context('userenv','sid')"
+            try cursor.execute(sql, enableDbmsOutput: false)
+            guard let row = cursor.fetchOneSwifty() else {return nil}
+            oraSession = OracleSession(sid: row["SID"]!.int!, serial: row["SERIAL#"]!.int!, instance: row["INSTANCE"]!.int!)
+            log.debug("received Oracle session details")
+        } catch {
+            log.error("\(error.localizedDescription, privacy: .public)")
+        }
+        return oraSession
     }
     
     /// Here we determine the SQL under the current cursor position

@@ -21,6 +21,7 @@ extension Logger {
 let log = Logger().default
 
 
+
 @main
 struct MacOraApp: App {
     @StateObject var appStateContainer = AppStateContainer()
@@ -56,33 +57,32 @@ struct MacOraApp: App {
             }
         }
 
-        WindowGroup {
-            let cacheConnectionDetails = ConnectionDetails()
-            DBCacheBrowserMainView(connDetails: cacheConnectionDetails)
-                .preferredColorScheme(appSettings.currentTheme.colorScheme)
-                .environmentObject(appSettings)
-        }
-        .handlesExternalEvents(matching: ["dbBrowser"])
-        .commands {
-            SidebarCommands()
-            ToolbarCommands()
-            TextEditingCommands()
-            CommandGroup(after: .newItem) {
-                Button(action: {
-                    if let currentWindow = NSApp.keyWindow,
-                       let windowController = currentWindow.windowController {
-                        windowController.newWindowForTab(nil)
-                        if let newWindow = NSApp.keyWindow,
-                           currentWindow != newWindow {
-                            currentWindow.addTabbedWindow(newWindow, ordered: .above)
-                        }
-                    }
-                }) {
-                    Text("New Tab")
-                }
-                .keyboardShortcut("t", modifiers: [.command])
-            }
-        }
+//        WindowGroup {
+//            let cacheConnectionDetails = ConnectionDetails()
+//            DBCacheBrowserMainView(connDetails: cacheConnectionDetails)
+//                .preferredColorScheme(appSettings.currentTheme.colorScheme)
+//                .environmentObject(appSettings)
+//        }
+//        .commands {
+//            SidebarCommands()
+//            ToolbarCommands()
+//            TextEditingCommands()
+//            CommandGroup(after: .newItem) {
+//                Button(action: {
+//                    if let currentWindow = NSApp.keyWindow,
+//                       let windowController = currentWindow.windowController {
+//                        windowController.newWindowForTab(nil)
+//                        if let newWindow = NSApp.keyWindow,
+//                           currentWindow != newWindow {
+//                            currentWindow.addTabbedWindow(newWindow, ordered: .above)
+//                        }
+//                    }
+//                }) {
+//                    Text("New Tab")
+//                }
+//                .keyboardShortcut("t", modifiers: [.command])
+//            }
+//        }
         
         Settings {
             SettingsView()
@@ -93,6 +93,7 @@ struct MacOraApp: App {
 struct MainDocumentMenuCommands: Commands {
     @FocusedValue(\.cacheConnectionDetails) var cacheConnectionDetails: ConnectionDetails?
     @FocusedValue(\.selectedObjectName) var selectedObjectName: String?
+    @FocusedValue(\.sbConnDetails) var sbConnDetails: SBConnDetails?
     @ObservedObject var appSettings: AppSettings
 
     var body: some Commands {
@@ -103,7 +104,15 @@ struct MainDocumentMenuCommands: Commands {
             )
                 .disabled(cacheConnectionDetails == nil)
                 .presentedWindowStyle(TitleBarWindowStyle())
-                .keyboardShortcut("d", modifiers: .command)
+                .keyboardShortcut("d", modifiers: [.command])
+            
+            NavigationLink("Session", destination: SBMainView(connDetails: sbConnDetails ?? .preview())
+                .preferredColorScheme(appSettings.currentTheme.colorScheme)
+                .environmentObject(appSettings)
+            )
+                .disabled(cacheConnectionDetails == nil)
+                .presentedWindowStyle(TitleBarWindowStyle())
+                .keyboardShortcut("s", modifiers: [.command, .control, .shift])
         }
     }
 }
@@ -115,6 +124,10 @@ struct DocumentFocusedKey: FocusedValueKey {
 
 struct SelectedObjectNameKey: FocusedValueKey {
     typealias Value = String
+}
+
+struct SBConnDetailsKey: FocusedValueKey {
+    typealias Value = SBConnDetails
 }
 
 
@@ -134,6 +147,15 @@ extension FocusedValues {
         }
         set {
             self[SelectedObjectNameKey.self] = newValue
+        }
+    }
+    
+    var sbConnDetails: SBConnDetails? {
+        get {
+            self[SBConnDetailsKey.self]
+        }
+        set {
+            self[SBConnDetailsKey.self] = newValue
         }
     }
 
@@ -174,7 +196,6 @@ enum Theme: Int {
 class AppStateContainer: ObservableObject {
     public var tnsReader = TnsReader()
 }
-
 
 public func toggleSidebar() {
     NSApp.keyWindow?.firstResponder?.tryToPerform(#selector(NSSplitViewController.toggleSidebar(_:)), with: nil)

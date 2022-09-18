@@ -24,6 +24,10 @@ struct ConnectionDetails: Codable, Hashable {
         self.connectionRole = connectionRole
     }
     
+    static func preview() -> ConnectionDetails {
+        ConnectionDetails(username: "username")
+    }
+    
 //    static func < (lhs: ConnectionDetails, rhs: ConnectionDetails) -> Bool {
 //        let result = lhs.tns < rhs.tns //&& ( lhs.username ?? "" < rhs.username ?? "" )
 //        return result

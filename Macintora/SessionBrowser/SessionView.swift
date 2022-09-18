@@ -1,6 +1,6 @@
 //
-//  DetailGridView.swift
-//  DBObjectsBrowser
+//  SessionView.swift
+//  SessionBrowser
 //
 //  Created by Ilia on 6/20/22.
 //
@@ -10,66 +10,16 @@ import SwiftUI
 import AppKit
 import os
 
-struct DetailGridView: NSViewRepresentable {
+struct SessionView: NSViewRepresentable {
     @Environment(\.colorScheme) var colorScheme
-    @State var rows: [NSManagedObject]
-    var columnLabels: [String]
-    var booleanColumnLabels: [String]
+    @ObservedObject var model: SBVM
     var autoColWidth = true
     
-    init(rows: [NSManagedObject], columnLabels: [String], booleanColumnLabels: [String] = [], rowSortFn: (NSManagedObject, NSManagedObject) -> Bool) {
-        _rows = State(initialValue: rows.sorted(by: rowSortFn) )
-        self.columnLabels = columnLabels
-        self.booleanColumnLabels = booleanColumnLabels
-    }
-    
-    mutating func sort(by colName: String?, ascending: Bool) {
-        guard let colName = colName, rows.count > 0 else { return }
-        let sampleValue = self.rows[0].value(forKey: colName)
-        let sortFn: (NSManagedObject, NSManagedObject) -> Bool
-        switch sampleValue {
-            case is String:
-                sortFn = {
-                    (lhs:NSManagedObject , rhs: NSManagedObject) in
-                    (lhs.value(forKey: colName) as! String) < (rhs.value(forKey: colName) as! String)
-                }
-            case is NSNumber:
-                sortFn = {
-                    (lhs:NSManagedObject , rhs: NSManagedObject) in
-                    (lhs.value(forKey: colName) as! NSNumber).compare(rhs.value(forKey: colName) as! NSNumber) == .orderedAscending
-                }
-            case is Int16:
-                sortFn = {
-                    (lhs:NSManagedObject , rhs: NSManagedObject) in
-                    (lhs.value(forKey: colName) as! Int16) < (rhs.value(forKey: colName) as! Int16)
-                }
-            case is Int32:
-                sortFn = {
-                    (lhs:NSManagedObject , rhs: NSManagedObject) in
-                    (lhs.value(forKey: colName) as! Int32) < (rhs.value(forKey: colName) as! Int32)
-                }
-            case is Int64:
-                sortFn = {
-                    (lhs:NSManagedObject , rhs: NSManagedObject) in
-                    (lhs.value(forKey: colName) as! Int64) < (rhs.value(forKey: colName) as! Int64)
-                }
-            case is Bool:
-                sortFn = {
-                    (lhs:NSManagedObject , rhs: NSManagedObject) in
-                    lhs.value(forKey: colName) as! Bool
-                }
-            default:
-                sortFn = { (_, _) in return false }
-        }
-        if ascending { rows.sort(by: sortFn) } else { rows.sort(by: sortFn); rows.reverse() }
-    }
-    
-    func makeCoordinator() -> DetailGridViewCoordinator {
-        DetailGridViewCoordinator(self)
+    func makeCoordinator() -> SessionViewCoordinator {
+        SessionViewCoordinator(self)
     }
     
     func makeNSView(context: Context) -> NSScrollView {
-        //        log.viewcycle.debug("in makeNSView")
         let tableView = TableViewWithPasteboard()
         
         // attach coordinator
@@ -98,18 +48,10 @@ struct DetailGridView: NSViewRepresentable {
         scrollView.documentView = tableView
         return scrollView
     }
-    
-//    private func computeIntrisicSize(_ view: LegalMentionView) {
-//        let targetSize = CGSize(width: desiredWidth, height: UIView.layoutFittingCompressedSize.height)
-//        let fittingSize = view.systemLayoutSizeFitting(targetSize,
-//                                                       withHorizontalFittingPriority: .defaultHigh,
-//                                                       verticalFittingPriority: .fittingSizeLevel)
-//        computedHeight = fittingSize.height
-//    }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         let tableView = (nsView.documentView as! TableViewWithPasteboard)
-        let coordinator = tableView.delegate as! DetailGridViewCoordinator
+        let coordinator = tableView.delegate as! SessionViewCoordinator
         tableView.beginUpdates()
         tableView.reloadData()
         coordinator.populateColumnHeaders()
@@ -118,12 +60,12 @@ struct DetailGridView: NSViewRepresentable {
 }
 
 
-class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSource {
-    var parent: DetailGridView
+class SessionViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSource {
+    var parent: SessionView
     
     weak var tableView: TableViewWithPasteboard?
     
-    init(_ parent: DetailGridView) {
+    init(_ parent: SessionView) {
         self.parent = parent
     }
     
@@ -131,10 +73,10 @@ class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataS
         guard let tableView = tableView else {
             return false
         }
-        guard tableView.tableColumns.count == parent.columnLabels.count else { return true }
+        guard tableView.tableColumns.count == parent.model.columnLabels.count else { return true }
         
         for (index, tabCol) in tableView.tableColumns.enumerated() {
-            if tabCol.title != parent.columnLabels[index] { return true }
+            if tabCol.title != parent.model.columnLabels[index] { return true }
         }
         return false
     }
@@ -151,7 +93,7 @@ class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataS
                 tableView.removeTableColumn(c)
             }
             tableView.columnWidths.removeAll()
-            for col in parent.columnLabels {
+            for col in parent.model.columnLabels {
                 let tabCol = NSTableColumn(identifier: .init(col))
                 tabCol.title = col
                 tabCol.minWidth = Constants.minColumnWidth
@@ -179,10 +121,9 @@ class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataS
         if let view = tableView.view(atColumn: column, row: 0, makeIfNecessary: true) as? NSTableCellView {
             let colName = tableView.tableColumns[column].identifier.rawValue
             var width = tableView.tableColumns[column].width
-            for row in parent.rows {
-                view.textField?.objectValue = row.value(forKey: colName)
+            for row in parent.model.rows {
+                view.textField?.objectValue = row[colName]?.valueString
                 let size = view.textField?.fittingSize ?? CGSize(width: 0.0, height: 0.0)
-                //                log.viewcycle.debug("col \(column) original width: \(tableView.tableColumns[column].width), new width: \(max(width, size.width))")
                 width = max(width, size.width)
             }
             tableView.tableColumns[column].width = width
@@ -190,8 +131,7 @@ class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataS
     }
     
     func numberOfRows(in tableView: NSTableView) -> Int {
-        //        log.viewcycle.debug("numberOfRows: \(self.parent.rows.count)")
-        return parent.rows.count
+        return parent.model.rows.count
     }
     
     
@@ -236,24 +176,16 @@ class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataS
     
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         
-        var cell: NSView //NSTableCellView
-        guard let cellIdentifier = tableColumn?.identifier else { return nil }
+        var cell: NSTableCellView
+        let cellIdentifier = NSUserInterfaceItemIdentifier("cell")
         // find a cell object in cache
-        if let existingCell = tableView.makeView(withIdentifier: cellIdentifier, owner: self) {
-            cell = existingCell // NSTableCellView
+        if let existingCell = tableView.makeView(withIdentifier: cellIdentifier, owner: nil) {
+            cell = existingCell as! NSTableCellView
         } else {
-            switch cellIdentifier.rawValue {
-                case parent.booleanColumnLabels:
-                    cell = makeTableCellViewBoolean(identifier: cellIdentifier)
-                default:
-                    cell = makeTableCellViewTextField(identifier: cellIdentifier)
-            }
+            cell = makeTableCellViewTextField(identifier: cellIdentifier)
         }
+        // set the value; this can be commented out if using bindings
         return cell
-    }
-    
-    func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
-        20.0
     }
     
     func tableView(_ tableView: NSTableView, sizeToFitWidthOfColumn column: Int) -> CGFloat {
@@ -262,17 +194,34 @@ class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataS
     
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
         guard let sortDescriptor = tableView.sortDescriptors.first else { return }
-        parent.sort(by: sortDescriptor.key, ascending: sortDescriptor.ascending)
+        parent.model.sort(by: sortDescriptor.key, ascending: sortDescriptor.ascending)
         tableView.reloadData()
     }
     
     func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
-        return parent.rows[row].value(forKey: tableColumn!.identifier.rawValue)
+        if tableColumn?.identifier.rawValue == "#" {
+            return row+1
+        } else {
+            return parent.model.rows[row][tableColumn!.identifier.rawValue]?.valueString
+        }
+    }
+    
+    func tableView(_ tableView: NSTableView, didAdd rowView: NSTableRowView, forRow row: Int) {
+        // highlight main session
+        if parent.model.rows[row]["SID"]!.int == parent.model.connDetails.mainSession?.sid &&
+            parent.model.rows[row]["SERIAL#"]!.int == parent.model.connDetails.mainSession?.serial {
+            rowView.backgroundColor = .green
+        }
+        // highlight this session
+        if parent.model.rows[row]["SID"]!.int == parent.model.oraSession?.sid &&
+            parent.model.rows[row]["SERIAL#"]!.int == parent.model.oraSession?.serial {
+            rowView.backgroundColor = .scrubberTexturedBackground
+        }
     }
     
     func getRowTSV(rowNumber: Int) -> String {
         // no quotes around fields
-        return parent.columnLabels.map { "\(parent.rows[rowNumber].value(forKey: $0) ?? "(null)")" }.joined(separator: "\t")
+        return (parent.model.rows[rowNumber].fields.map { "\($0.valueString)" }).joined(separator: "\t")
     }
     
     func getSelectedRowsTSV() -> String {
@@ -281,14 +230,4 @@ class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataS
 }
 
 
-class CheckBox: NSButton {
-    var isUserInteractionEnabled = false
-    @objc public var checked: Bool {
-        get { return state == NSControl.StateValue.on }
-        set { state = newValue ? NSControl.StateValue.on : NSControl.StateValue.off }
-    }
-    
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        return isUserInteractionEnabled ? super.hitTest(point) : nil
-    }
-}
+

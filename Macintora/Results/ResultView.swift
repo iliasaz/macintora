@@ -143,7 +143,6 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
                 view.textField?.objectValue = row[colName]?.valueString
                 // make data width capped at max column width
                 let dataWidth = min((view.textField?.fittingSize ?? CGSize(width: 0.0, height: 0.0)).width, Constants.maxColumnWidth)
-//                log.viewCycle.debug("col \(column) original width: \(tableView.tableColumns[column].width), new width: \(max(width, size.width))")
                 colWidth = max(colWidth, dataWidth)
             }
             tableView.tableColumns[columnIndex].width = colWidth
@@ -154,20 +153,6 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
         log.viewCycle.debug("numberOfRows: \(self.parent.model.rows.count)")
         return parent.model.rows.count
     }
-    
-//    func makeTextView(identifier: NSUserInterfaceItemIdentifier) -> NSTextField {
-//        let text = NSTextField()
-//        text.isEditable = false
-//        text.isSelectable = true
-//        text.drawsBackground = false
-//        text.isBordered = false
-//        text.translatesAutoresizingMaskIntoConstraints = false
-//        text.font = NSFont(name: "Source Code Pro", size: NSFont.systemFontSize)
-//        text.allowsExpansionToolTips = true
-//        text.maximumNumberOfLines = 1
-//        text.identifier = identifier
-//        return text
-//    }
     
     func makeTableCellView(identifier: NSUserInterfaceItemIdentifier) -> NSTableCellView {
         let text = NSTextField()
@@ -203,14 +188,11 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         
         var cell: NSTableCellView
-//        guard let cellIdentifier = tableColumn?.identifier else { return nil }
         let cellIdentifier = NSUserInterfaceItemIdentifier("cell")
         // find a cell object in cache
         if let existingCell = tableView.makeView(withIdentifier: cellIdentifier, owner: nil) {
-//            log.viewCycle.debug("reusing an existing cell for \(cellIdentifier.rawValue)")
             cell = existingCell as! NSTableCellView
         } else {
-//            log.viewCycle.debug("making a new cell for \(cellIdentifier.rawValue)")
             cell = makeTableCellView(identifier: cellIdentifier)
         }
         // set the value; this can be commented out if using bindings
@@ -284,13 +266,3 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
 
 }
 
-
-
-
-
-//struct QueryResultView_Previews: PreviewProvider {
-//    @State static var dummy: Bool = false
-//    static var previews: some View {
-//        QueryResultView(model: QueryResultViewModel(), autoColumnWidth: $dummy )
-//    }
-//}
