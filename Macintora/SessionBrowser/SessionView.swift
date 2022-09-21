@@ -15,6 +15,8 @@ struct SessionView: NSViewRepresentable {
     @ObservedObject var model: SBVM
     var autoColWidth = true
     
+    typealias Coordinator = SessionViewCoordinator
+    
     func makeCoordinator() -> SessionViewCoordinator {
         SessionViewCoordinator(self)
     }
@@ -40,6 +42,35 @@ struct SessionView: NSViewRepresentable {
         tableView.usesStaticContents = false
         tableView.usesAutomaticRowHeights = false
         tableView.columnAutoresizingStyle = .sequentialColumnAutoresizingStyle
+        
+        // context menu
+        let contextMenu = NSMenu(title: "Context")
+        let menuStartTrace = NSMenuItem(title: "Start Tracing", action: #selector(SessionViewCoordinator.startSessionTrace(_:)), keyEquivalent: "")
+        menuStartTrace.target = context.coordinator
+        
+        let menuStopTrace = NSMenuItem(title: "Stop Tracing", action: #selector(SessionViewCoordinator.stopSessionTrace(_:)), keyEquivalent: "")
+        menuStopTrace.target = context.coordinator
+        
+//        let menuStartSqlMonitor = NSMenuItem(title: "Start SQL Monitor", action: #selector(SessionViewCoordinator.startSqlMonitor(_:)), keyEquivalent: "")
+//        menuStartSqlMonitor.target = context.coordinator
+//
+//        let menuStopSqlMonitor = NSMenuItem(title: "Stop SQL Monitor", action: #selector(SessionViewCoordinator.stopSqlMonitor(_:)), keyEquivalent: "")
+//        menuStopSqlMonitor.target = context.coordinator
+        
+        let menuKillSession = NSMenuItem(title: "Kill Session", action: #selector(SessionViewCoordinator.killSession(_:)), keyEquivalent: "")
+        menuKillSession.target = context.coordinator
+        
+        let menuRefresh = NSMenuItem(title: "Refresh", action: #selector(SessionViewCoordinator.refresh(_:)), keyEquivalent: "")
+        menuRefresh.target = context.coordinator
+
+        contextMenu.addItem(menuStartTrace)
+        contextMenu.addItem(menuStopTrace)
+//        contextMenu.addItem(menuStartSqlMonitor)
+//        contextMenu.addItem(menuStopSqlMonitor)
+        contextMenu.addItem(menuKillSession)
+        contextMenu.addItem(menuRefresh)
+        
+        tableView.menu = contextMenu
         
         // attach to a scrollview
         let scrollView = NSScrollView()
@@ -69,6 +100,36 @@ class SessionViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSour
         self.parent = parent
     }
     
+    @objc func startSessionTrace(_ sender: Any) {
+        log.viewCycle.debug("starting session trace for row \(self.tableView?.clickedRow ?? -1)")
+        self.parent.model.startTrace(sid: parent.model.rows[self.tableView!.clickedRow]["SID"]!.int!, serial: parent.model.rows[self.tableView!.clickedRow]["SERIAL#"]!.int!)
+    }
+    
+    @objc func stopSessionTrace(_ sender: Any) {
+        log.viewCycle.debug("stopping session trace for row \(self.tableView?.clickedRow ?? -1)")
+        self.parent.model.stopTrace(sid: parent.model.rows[self.tableView!.clickedRow]["SID"]!.int!, serial: parent.model.rows[self.tableView!.clickedRow]["SERIAL#"]!.int!)
+    }
+    
+//    @objc func startSqlMonitor(_ sender: Any) {
+//        log.viewCycle.debug("starting session trace for row \(self.tableView?.clickedRow ?? -1)")
+//        self.parent.model.startSqlMonitor(sid: parent.model.rows[self.tableView!.clickedRow]["SID"]!.int!, serial: parent.model.rows[self.tableView!.clickedRow]["SERIAL#"]!.int!)
+//    }
+//
+//    @objc func stopSqlMonitor(_ sender: Any) {
+//        log.viewCycle.debug("stopping session trace for row \(self.tableView?.clickedRow ?? -1)")
+//        self.parent.model.stopSqlMonitor(sid: parent.model.rows[self.tableView!.clickedRow]["SID"]!.int!, serial: parent.model.rows[self.tableView!.clickedRow]["SERIAL#"]!.int!)
+//    }
+    
+    @objc func killSession(_ sender: Any) {
+        log.viewCycle.debug("killing session for row \(self.tableView?.clickedRow ?? -1)")
+        self.parent.model.killSession(sid: parent.model.rows[self.tableView!.clickedRow]["SID"]!.int!, serial: parent.model.rows[self.tableView!.clickedRow]["SERIAL#"]!.int!)
+    }
+    
+    @objc func refresh(_ sender: Any) {
+        log.viewCycle.debug("Refreshing sessions")
+        self.parent.model.populateData()
+    }
+
     func didColumnsChange() -> Bool {
         guard let tableView = tableView else {
             return false
@@ -102,7 +163,6 @@ class SessionViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSour
                 tabCol.width += 20
                 tabCol.sortDescriptorPrototype = NSSortDescriptor(key: col, ascending: true)
                 tabCol.headerCell.attributedStringValue = NSAttributedString(string: col, attributes: [NSAttributedString.Key.font: NSFont.boldSystemFont(ofSize: 12), NSAttributedString.Key.foregroundColor: NSColor.systemBlue])
-                
                 tableView.addTableColumn(tabCol)
                 tableView.columnWidths.append(tabCol.width)
             }
@@ -184,6 +244,10 @@ class SessionViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSour
         } else {
             cell = makeTableCellViewTextField(identifier: cellIdentifier)
         }
+        // make the row number not selectable so it's easier to click
+        if tableColumn?.identifier.rawValue == "#" {
+            cell.textField?.isSelectable = false
+        }
         // set the value; this can be commented out if using bindings
         return cell
     }
@@ -210,12 +274,30 @@ class SessionViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSour
         // highlight main session
         if parent.model.rows[row]["SID"]!.int == parent.model.connDetails.mainSession?.sid &&
             parent.model.rows[row]["SERIAL#"]!.int == parent.model.connDetails.mainSession?.serial {
-            rowView.backgroundColor = .green
+            rowView.backgroundColor = .green.withAlphaComponent(0.3)
+            return
         }
         // highlight this session
         if parent.model.rows[row]["SID"]!.int == parent.model.oraSession?.sid &&
             parent.model.rows[row]["SERIAL#"]!.int == parent.model.oraSession?.serial {
             rowView.backgroundColor = .scrubberTexturedBackground
+            return
+        }
+        // highlight active trace
+        if parent.model.rows[row]["SQL_TRACE"]!.string == "ENABLED" {
+            rowView.backgroundColor = .findHighlightColor
+            return
+        }
+        // highlight waiting sessions
+        if parent.model.rows[row]["WAIT_CLASS"]!.string != "Idle" {
+            switch parent.model.rows[row]["STATE"]!.string {
+                case "WAITING": rowView.backgroundColor = .orange.withAlphaComponent(0.3)
+                case "WAITED SHORT TIME": rowView.backgroundColor = .orange.withAlphaComponent(0.1)
+                default: break
+            }
+            if !parent.model.rows[row]["BLOCKING_SESSION"]!.valueString.isEmpty {
+                rowView.backgroundColor = .systemPink.withAlphaComponent(0.5)
+            }
         }
     }
     

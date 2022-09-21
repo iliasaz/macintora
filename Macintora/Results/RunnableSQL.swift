@@ -7,6 +7,11 @@
 
 import Foundation
 import CryptoKit
+import os
+
+extension Logger {
+    var sqlparse: Logger { Logger(subsystem: Logger.subsystem, category: "sqlparse") }
+}
 
 struct StoredProc: Equatable {
     let owner: String?
@@ -39,7 +44,7 @@ struct RunnableSQL: Identifiable {
         let regex = try? NSRegularExpression(pattern: pattern, options: [])
         let qRegex = try? NSRegularExpression(pattern: exclPattern, options: [.anchorsMatchLines, .dotMatchesLineSeparators])
         let nsRange = NSRange(sql.startIndex..<sql.endIndex, in: sql)
-        log.debug("sql: \(sql, privacy: .public)")
+        log.sqlparse.debug("sql: \(sql, privacy: .public)")
         
         // get quoted ranges first
         let _ = qRegex?.enumerateMatches(in: sql, range: nsRange) { match, flags, stop in
@@ -47,23 +52,23 @@ struct RunnableSQL: Identifiable {
             let range = Range(match.range, in: sql)!
             quotedRanges.append(range)
             let val = sql[range]
-            log.debug("quoted range: \(match.range, privacy: .public), val: \(val, privacy: .public)")
+            log.sqlparse.debug("quoted range: \(match.range, privacy: .public), val: \(val, privacy: .public)")
         }
 
         let _ = regex?.enumerateMatches(in: sql, range: nsRange) { match, flags, stop in
             guard let match = match else { print("no match"); return }
-            log.debug("found potential bind in range \(match.range)")
+            log.sqlparse.debug("found potential bind in range \(match.range)")
             let range = Range(match.range, in: sql)!
             let val = sql[range]
             
             if quotedRanges.firstIndex(where: {$0.overlaps(range) }) != nil {
-                log.debug("ignoring quoted colon")
+                log.sqlparse.debug("ignoring quoted colon")
                 return
             }
             ret.insert(String(val))
-            log.debug("scanBindVars: range: \(match.range, privacy: .public), val: \(val, privacy: .public)")
+            log.sqlparse.debug("scanBindVars: range: \(match.range, privacy: .public), val: \(val, privacy: .public)")
         }
-        log.debug("exiting RunnableSQL.scanBindVar, bind variables identified: \(ret)")
+        log.sqlparse.debug("exiting RunnableSQL.scanBindVar, bind variables identified: \(ret)")
         return ret
     }
     
@@ -72,18 +77,20 @@ struct RunnableSQL: Identifiable {
         
         var ret = (false, nil as StoredProc?)
         let createPackagePattern = #"create.*(package|package\s+body)\s+((\"?\w+\"?\.\"?\w+\"?)|(\"?\w+\"?))\s+(as|is)"#
-        let createProcedurePattern = #"create.*(procedure)\s+((\"?\w+\"?\.\"?\w+\"?)|(\"?\w+\"?))\s+(as|is)"#
-        let createFunctionPattern = #"create.*(function)\s+((\"?\w+\"?\.\"?\w+\"?)|(\"?\w+\"?))\s+(as|is)"#
+        let createProcedurePattern = #"create.*(procedure)\s+((\"?\w+\"?\.\"?\w+\"?)|(\"?\w+\"?)).*(\(.*\))*.*(as|is)"#
+        let createFunctionPattern = #"create.*(function)\s+((\"?\w+\"?\.\"?\w+\"?)|(\"?\w+\"?)).*(\(.*\))*.*(as|is)"#
         let pattern = "(\(createPackagePattern))|(\(createProcedurePattern))|(\(createFunctionPattern))"
-        let regex = try! NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
+//        let pattern = createFunctionPattern
+        let regex = try! NSRegularExpression(pattern: pattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
         // don't look for more than 1000 chars
         let nsRange = NSRange(sql.startIndex..<sql.index(sql.startIndex, offsetBy: min(1000, sql.count)), in: sql)
+        log.sqlparse.debug("nsRange: \(nsRange), sql: \(sql)")
         let _ = regex.enumerateMatches(in: sql, range: nsRange) { match, flags, stop in
-            guard let match = match, match.numberOfRanges > 2 else { log.debug("no match or less than 3 groups"); return }
+            guard let match = match, match.numberOfRanges > 2 else { log.sqlparse.debug("no match or less than 3 groups"); return }
             
-            log.debug("=====================================")
+            log.sqlparse.debug("=====================================")
             for i in 0 ..< match.numberOfRanges {
-                log.debug("range \(i), \(match.range(at: i))") //: value: \(sql[Range(match.range(at: i), in: sql)!])")
+                log.sqlparse.debug("range \(i), \(match.range(at: i))") //: value: \(sql[Range(match.range(at: i), in: sql)!])")
             }
             
             // get first two nonzero-based and nonzero-length ranges - should be type and compound name
@@ -105,7 +112,7 @@ struct RunnableSQL: Identifiable {
                 // if doublequotes are in the name we should preserve case, otherwise convert to uppercase
                 $0.contains("\"") ? String($0.replacingOccurrences(of: "\"", with: "")) : String($0.uppercased())
             }
-            guard nameComponents.count < 3 else { log.debug("name components are wrong: \(nameComponents, privacy: .public)"); return }
+            guard nameComponents.count < 3 else { log.sqlparse.debug("name components are wrong: \(nameComponents, privacy: .public)"); return }
             
             // now we have all the details
             if nameComponents.count == 1 {
@@ -115,7 +122,7 @@ struct RunnableSQL: Identifiable {
             }
             stop.pointee = true
         }
-        log.debug("stored proc: \(ret.0, privacy: .public), \(ret.1.debugDescription, privacy: .public)")
+        log.sqlparse.debug("stored proc: \(ret.0, privacy: .public), \(ret.1.debugDescription, privacy: .public)")
         return ret
     }
 }

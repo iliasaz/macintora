@@ -77,10 +77,10 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
         else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        log.debug("loading model: \(String(data: data, encoding: .utf8) ?? "" )")
+//        log.debug("loading model: \(String(data: data, encoding: .utf8) ?? "" )")
         let localModel = try! JSONDecoder().decode(MainModel.self, from: data)
         self.model = localModel
-        log.debug("model loaded: \(localModel, privacy: .public)")
+//        log.debug("model loaded: \(localModel, privacy: .public)")
         dbName = localModel.connectionDetails.tns ?? ""
         connDetails = localModel.connectionDetails
 //        editorSelectionRange = "".startIndex..<"".endIndex
@@ -194,13 +194,13 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
             var currentIndex = editorSelectionRange.lowerBound
             if firstIndex == lastIndex { return "" }
             
-//            log.debug("original current index: \(currentIndex.utf16Offset(in: self.model.text))")
+            log.sqlparse.debug("original current index: \(currentIndex.utf16Offset(in: self.model.text))")
             let semicolonToTheLeftIndex = model.text.firstIndex(of: ";", before: currentIndex) ?? firstIndex
             let NLToTheLeftIndex = model.text.firstIndex(of: "\n", before: currentIndex) ?? firstIndex
             if semicolonToTheLeftIndex > NLToTheLeftIndex {
                 currentIndex = semicolonToTheLeftIndex
                 lastIndex = semicolonToTheLeftIndex
-//                log.debug("new current index \(currentIndex.utf16Offset(in: self.model.text))")
+                log.sqlparse.debug("new current index \(currentIndex.utf16Offset(in: self.model.text))")
             }
             
             let semiColonPattern = #";.*\n"#
@@ -209,16 +209,16 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
             let rangeBefore = regex.matches(in: model.text, range: NSRange(firstIndex..<currentIndex, in: model.text)).last
             let rangeAfter = regex.firstMatch(in: model.text, range: NSRange(currentIndex..<lastIndex, in: model.text))
             
-            log.debug("*************************")
+            log.sqlparse.debug("*************************")
             if let range = rangeBefore {
-//                log.debug("rangeBefore: lowerBound: \(range.range.lowerBound) upperBound: \(range.range.upperBound) length: \(range.range.length)")
+                log.sqlparse.debug("rangeBefore: lowerBound: \(range.range.lowerBound) upperBound: \(range.range.upperBound) length: \(range.range.length)")
                 firstIndex = Range(range.range, in: model.text)!.upperBound
             } else {
-//                log.debug("before not found")
+                log.sqlparse.debug("before not found")
             }
 
             if let range = rangeAfter {
-//                log.debug("rangeAfter: lowerBound: \(range.range.lowerBound) upperBound: \(range.range.upperBound) length: \(range.range.length)")
+                log.sqlparse.debug("rangeAfter: lowerBound: \(range.range.lowerBound) upperBound: \(range.range.upperBound) length: \(range.range.length)")
                 lastIndex = Range(range.range, in: model.text)!.lowerBound
             } else {
                 // the pattern is not found, but there may be a single line with a ; in it
@@ -226,25 +226,33 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
                 if semicolonToTheRightIndex > firstIndex {
                     lastIndex = semicolonToTheRightIndex
                 } else {
-//                    log.debug("after not found")
+                    log.sqlparse.debug("after not found")
                 }
             }
             
-//            log.debug("sql candidate range is: \(firstIndex.utf16Offset(in: self.model.text)), \(lastIndex.utf16Offset(in: self.model.text))")
+            log.sqlparse.debug("sql candidate range is: \(firstIndex.utf16Offset(in: self.model.text)), \(lastIndex.utf16Offset(in: self.model.text))")
             var sqlCandidate = String(model.text[firstIndex ..< lastIndex])
-            // remove empty lines and lines starting with a full line comment
+            // remove empty lines, lines starting with a full line comment, and lines with a single slash
             var sqlCandidateLines = sqlCandidate.split(separator: "\n").compactMap { String($0) }
             var toRemove = IndexSet()
             for (index, l) in sqlCandidateLines.enumerated() {
                 if l.starts(with: "--") {
-//                    log.debug("line at \(index) starts with comment: \(l)")
+                    log.sqlparse.debug("line at \(index) starts with comment: \(l)")
+                    toRemove.insert(index)
+                }
+                if l.replacingOccurrences(of: " ", with: "") == "/" {
+                    log.sqlparse.debug("line at \(index) contains only a slash")
                     toRemove.insert(index)
                 }
             }
-//            log.debug("removing lines at \(toRemove)")
+            log.sqlparse.debug("removing lines at \(toRemove)")
             sqlCandidateLines.remove(atOffsets: toRemove)
+            // replace exec with call in single line commands
+            if sqlCandidateLines.count == 1 && sqlCandidateLines[0].starts(with: "exec ") {
+                sqlCandidateLines[0] = sqlCandidateLines[0].replacingOccurrences(of: "exec ", with: "call ")
+            }
             sqlCandidate = sqlCandidateLines.joined(separator: "\n")
-            log.debug("sql:==\(sqlCandidate)==")
+            log.sqlparse.debug("sql:==\(sqlCandidate)==")
             ret = sqlCandidate
         }
         return ret.isEmpty ? nil : ret

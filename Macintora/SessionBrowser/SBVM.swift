@@ -36,8 +36,12 @@ class SBVM: ObservableObject {
     var rows = [SwiftyRow]()
     var columnLabels = [String]()
     var dataHasChanged = false
-    let currentSql = "select * from v$session order by decode(status,'ACTIVE',0,'KILLED',1,'INACTIVE',2,3), decode(wait_class, 'Idle', 0, 1) desc, seconds_in_wait desc"
+    let mainSql = "select * from v$session order by decode(sid, $SID$, 1, 0) desc, decode(sql_trace,'ENABLED',1,0) desc, decode(status,'ACTIVE',0,'KILLED',1,'INACTIVE',2,3), decode(wait_class, 'Idle', 0, 1) desc, seconds_in_wait desc"
+    
     var oraSession: OracleSession?
+    var mainOrasession: OracleSession? { connDetails.mainSession }
+    var sessionListSql: String { mainSql.replacingOccurrences(of: "$SID$", with: String(mainOrasession?.sid ?? -1)) }
+    var sqlMonOperations = [String: Int]() // a dict of current DBMS_SQL_MONITOR operations in the format of [SESS_<sid><serial> : <dop_eid>]
     
     init(connDetails: SBConnDetails) {
         self.connDetails = connDetails
@@ -89,7 +93,8 @@ class SBVM: ObservableObject {
                 rows.removeAll()
                 isExecuting = true
             }
-            let result = await queryData(for: currentSql, using: conn, maxRows: 10000, showDbmsOutput: false, prefetchSize: 1000)
+            log.debug("populating session browser with sql: \(self.sessionListSql, privacy: .public)")
+            let result = await queryData(for: sessionListSql, using: conn, maxRows: 1000, showDbmsOutput: false, prefetchSize: 1000)
             await MainActor.run {
                 updateViews(with: result)
             }
@@ -144,12 +149,30 @@ class SBVM: ObservableObject {
         return result
     }
     
+    func executeCommand(sql: String, using conn: Connection, binds: [String: BindVar] = [:]) async -> Result<String, Error> {
+        let result: Result<String, Error>
+        do {
+            let cursor = try conn.cursor()
+            try cursor.execute(sql, params: binds, enableDbmsOutput: false)
+            result = .success("")
+            log.debug("command executed")
+        } catch DatabaseErrors.SQLError (let error) {
+            log.error("\(error.description, privacy: .public)")
+            result = .failure(error)
+        } catch {
+            log.error("\(error.localizedDescription, privacy: .public)")
+            result = .failure(error)
+        }
+        return result
+    }
+    
     func populateData() {
         objectWillChange.send()
         rows.removeAll()
         isExecuting = true
+        log.debug("populating session browser with sql: \(self.sessionListSql, privacy: .public)")
         Task.detached(priority: .background) { [self] in
-            let result = await queryData(for: currentSql, using: conn!, maxRows: 10000, showDbmsOutput: false, prefetchSize: 1000)
+            let result = await queryData(for: sessionListSql, using: conn!, maxRows: 10000, showDbmsOutput: false, prefetchSize: 1000)
             await MainActor.run {
                 updateViews(with: result)
             }
@@ -168,6 +191,76 @@ class SBVM: ObservableObject {
         }
         isExecuting = false
         log.debug("end of refreshData")
+    }
+    
+    func startTrace(sid: Int, serial: Int) {
+        isExecuting = true
+        let sql = "begin DBMS_MONITOR.SESSION_TRACE_ENABLE(session_id => :sid, serial_num => :serial, waits => true, binds => true); end;"
+        Task.detached(priority: .background) {
+            let _ = await self.executeCommand(sql: sql, using: self.conn!, binds: [":sid": BindVar(sid), ":serial": BindVar(serial)])
+            await MainActor.run {
+                self.populateData()
+            }
+        }
+    }
+    
+    func stopTrace(sid: Int, serial: Int) {
+        isExecuting = true
+        let sql = "begin DBMS_MONITOR.SESSION_TRACE_DISABLE(session_id => :sid, serial_num => :serial); end;"
+        Task.detached(priority: .background) {
+            let _ = await self.executeCommand(sql: sql, using: self.conn!, binds: [":sid": BindVar(sid), ":serial": BindVar(serial)])
+            await MainActor.run {
+                self.populateData()
+            }
+        }
+    }
+    
+    func startSqlMonitor(sid: Int, serial: Int) {
+        isExecuting = true
+        // we need the execution ID assigned by DBMS_SQL_MONITOR package so that we can stop monitoring
+        let sql = "declare eid number := 0; c sys_refcursor; begin eid := DBMS_SQL_MONITOR.BEGIN_OPERATION(dbop_name => :name, forced_tracking => 'Y', session_id => :sid, session_serial => :serial); open c for select eid as value from dual; dbms_sql.return_result(c); end;"
+        let name = "SESS_\(sid),\(serial)"
+        let binds = [":name": BindVar(name), ":sid": BindVar(sid), ":serial": BindVar(serial)]
+        Task.detached(priority: .background) {[self] in
+            log.debug("Attempting to execute DBMS_SQL_MONITOR.BEGIN_OPERATION")
+            let result = await queryData(for: sql, using: conn!, maxRows: 10, showDbmsOutput: false, binds: binds, prefetchSize: 10)
+            switch result {
+                case .success(let (_, resultRows, _, _)):
+                    guard let opId = resultRows[0]["VALUE"]!.int else { log.error("DBMS_SQL_MONITOR did not return dbop_eid"); return }
+                    // saving operation execution ID
+                    sqlMonOperations[name] = opId
+                    log.debug("Added DBMS_SQL_MONITOR composite operation for \(name) with eid = \(opId)")
+                case .failure(let error):
+                    log.error("DBMS_SQL_MONITOR.BEGIN_OPERATION failed with \(error.localizedDescription, privacy: .public)")
+            }
+            await MainActor.run {
+                isExecuting = false
+            }
+        }
+    }
+    
+    func stopSqlMonitor(sid: Int, serial: Int) {
+        isExecuting = true
+        let sql = "begin DBMS_SQL_MONITOR.END_OPERATION(dbop_name => :name, dop_eid => :dop_eid); end;"
+        let name = "SESS_\(sid),\(serial)"
+        guard let dopEid = sqlMonOperations[name] else { log.error("no active DBMS_SQL_MON operation for session \(name)"); return }
+        Task.detached(priority: .background) {
+            let _ = await self.executeCommand(sql: sql, using: self.conn!, binds: [":name": BindVar(name), ":dop_eid": BindVar(dopEid)])
+            await MainActor.run {
+                self.populateData()
+            }
+        }
+    }
+    
+    func killSession(sid: Int, serial: Int) {
+        isExecuting = true
+        let sql = "alter system kill session '\(sid),\(serial)' immediate"
+        Task.detached(priority: .background) {
+            let _ = await self.executeCommand(sql: sql, using: self.conn!)
+            await MainActor.run {
+                self.populateData()
+            }
+        }
     }
 }
 

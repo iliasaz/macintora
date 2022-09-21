@@ -32,6 +32,8 @@ class TableViewWithPasteboard: NSTableView, NSMenuItemValidation {
 //            // add your logic to paste rows from the clipboard
 //        }
 
+    
+
     // this is needed to teach our table view respond to Cmd-C
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.identifier {

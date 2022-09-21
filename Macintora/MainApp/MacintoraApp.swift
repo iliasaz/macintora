@@ -98,7 +98,7 @@ struct MainDocumentMenuCommands: Commands {
 
     var body: some Commands {
         CommandMenu("Database") {
-            NavigationLink("Browser", destination: DBCacheBrowserMainView(connDetails: cacheConnectionDetails ?? ConnectionDetails(), selectedObjectName: selectedObjectName)
+            NavigationLink("DB Browser", destination: DBCacheBrowserMainView(connDetails: cacheConnectionDetails ?? ConnectionDetails(), selectedObjectName: selectedObjectName)
                 .preferredColorScheme(appSettings.currentTheme.colorScheme)
                 .environmentObject(appSettings)
             )
@@ -106,7 +106,7 @@ struct MainDocumentMenuCommands: Commands {
                 .presentedWindowStyle(TitleBarWindowStyle())
                 .keyboardShortcut("d", modifiers: [.command])
             
-            NavigationLink("Session", destination: SBMainView(connDetails: sbConnDetails ?? .preview())
+            NavigationLink("Session Browser", destination: SBMainView(connDetails: sbConnDetails ?? .preview())
                 .preferredColorScheme(appSettings.currentTheme.colorScheme)
                 .environmentObject(appSettings)
             )

@@ -21,7 +21,19 @@ struct SBMainView: View {
                 Text("Not connected")
                     .hidden(vm.connStatus == .connected || vm.connStatus == .changing)
                 SessionView(model: vm)
+                    .toolbar {
+                        ToolbarItem(placement: .principal) {
+                            Button {
+                                vm.populateData()
+                            } label: {
+                                Label("Refresh", systemImage: "arrow.triangle.2.circlepath").foregroundColor(.blue)
+                            }
+                            .keyboardShortcut("r", modifiers: .command)
+                            .help("Refresh")
+                        }
+                    }
                     .hidden(vm.connStatus == .disconnected || vm.connStatus == .changing)
+                
                 ProgressView(vm.isExecuting ? "Refreshing..." : "Connecting...")
                     .progressViewStyle(CircularProgressViewStyle())
                     .hidden(vm.connStatus == .connected && !vm.isExecuting || vm.connStatus == .disconnected)
@@ -36,11 +48,6 @@ struct SBMainView: View {
         .onAppear() {
             if vm.connStatus == .disconnected {
                 vm.connectAndQuery()
-            }
-        }
-        .onExitCommand {
-            if vm.connStatus == .connected {
-                vm.disconnect()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification, object: theWindow)) { _ in

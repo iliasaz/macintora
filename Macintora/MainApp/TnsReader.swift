@@ -43,7 +43,7 @@ public class TnsReader: ObservableObject {
             tnsAliases = text.components(separatedBy: "\n").compactMap { $0.components(separatedBy: "=").first?.lowercased().trimmingCharacters(in: [" ","\r","\t","\n"]) }
                 .filter { !$0.isEmpty }
                 .sorted()
-            log.tnsReader.debug("tns aliases: \(self.tnsAliases)")
+//            log.tnsReader.debug("tns aliases: \(self.tnsAliases)")
         } catch {
             log.error("Could not read tnsnames.ora file from path: \(self.tnsnamesPath, privacy: .public)")
         }

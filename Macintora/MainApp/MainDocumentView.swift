@@ -160,6 +160,7 @@ struct MainDocumentView: View {
                     document.compileSource()
                     focusedView = .codeEditor
                 } label: { Image(systemName: "ellipsis.curlybraces") }
+                    .disabled(document.isConnected != .connected || document.resultsController?.isExecuting ?? false)
                     .keyboardShortcut("c", modifiers: [.command, .option])
                     .help("Compile")
                 

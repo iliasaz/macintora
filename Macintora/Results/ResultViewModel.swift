@@ -226,8 +226,20 @@ public class ResultViewModel: ObservableObject {
                     binds[":name"] = BindVar(rsql.storedProc?.name ?? "")
                     binds[":type"] = BindVar(rsql.storedProc?.type ?? "")
                     let compilationResult = await queryData(for: "select line, position, text from all_errors where owner = nvl(:owner, user) and name = :name and type = :type", using: conn, maxRows: -1, binds: binds, prefetchSize: 1000)
+                    // if there are no errors, we want to show a message "Compiled Successfully" instead of a blank grid
+                    let tweakedCompilationResult: Result<([String], [SwiftyRow], String, String), Error>
+                    switch compilationResult {
+                        case .success(let (_, resultRows, _, _)):
+                            if resultRows.count == 0 {
+                                // handcrafting the result
+                                tweakedCompilationResult = .success((["#", "Message"], [SwiftyRow(withSwiftyFields: [SwiftyField(name: "Message", type: .string, index: 0, value: String("Compiled Successfully"), isNull: false, valueString: "Compiled Successfully")])], "", ""))
+                            } else {
+                                tweakedCompilationResult = compilationResult
+                            }
+                        case .failure(_): tweakedCompilationResult = compilationResult
+                    }
                     await MainActor.run {
-                        updateViews(with: compilationResult)
+                        updateViews(with: tweakedCompilationResult)
                     }
                 default: return
             }
