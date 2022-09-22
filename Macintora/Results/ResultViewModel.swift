@@ -134,8 +134,8 @@ public class ResultViewModel: ObservableObject {
                 self.rows = resultRows
                 runningLog.append(RunningLogEntry(text: "sqlId: \(sqlId)\n" + currentSql + (dbmsOutput.isEmpty ? "" : "\n********* DBMS_OUTPUT *********\n\(dbmsOutput)"), type: .info))
                 self.sqlId = sqlId
+                showingLog = !dbmsOutput.isEmpty
                 isFailed = false
-                showingLog = false
                 dataHasChanged = true
             case .failure(let error):
                 isFailed = true

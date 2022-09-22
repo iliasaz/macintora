@@ -37,7 +37,6 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
 
     private(set) var resultsController: ResultsController?
     var model: MainModel
-//    var editorSelectionRange: Range<String.Index>// = "".startIndex..<"".endIndex
     private(set) var conn: Connection? // main connection
     private(set) var oraSession: OracleSession?
     
@@ -63,7 +62,12 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
         return fileWrapper
     }
 
-    required init(text: String = "select user, systimestamp from dual;") {
+    required init(text: String = """
+select user, systimestamp, sys_context('userenv','sid') sid, sys_context('userenv','con_name') pdb
+  , sys_context('userenv','current_edition_name') edition, sys_context('userenv','instance') instance
+from dual;\n\n
+"""
+    ) {
         let localModel = MainModel(text: text)
         model = localModel
         dbName = Constants.defaultDBName
@@ -298,8 +302,11 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
         resultsController?.isExecuting = false
     }
     
-    func compileSource() {
-        let runnableSQL = RunnableSQL(sql: model.text)
+    func compileSource(for editorSelectionRange: Range<String.Index>) {
+        let sql: String
+        if editorSelectionRange.isEmpty { sql = model.text }
+        else { sql = String(model.text[editorSelectionRange]) }
+        let runnableSQL = RunnableSQL(sql: sql)
         guard runnableSQL.isStoredProc else { return }
         guard let conn = conn, conn.connected else {
             log.error("connection doesn't exist")
@@ -362,7 +369,6 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
     
     // format selected SQL or current SQL
     func format(of editorSelectionRange: Range<String.Index>) {
-        var editorSelectionRange = editorSelectionRange
         var text = ""
         if editorSelectionRange.lowerBound != editorSelectionRange.upperBound { // user selected something, we'll format that
             text = String(model.text[editorSelectionRange])
@@ -374,9 +380,8 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
         Task.detached(priority: .background) { [self, text] in
             let formattedText = await formatter.formatSource(name: UUID().uuidString, text: text)
             await MainActor.run {
-                objectWillChange.send()
-                model.text = model.text.replacingOccurrences(of: text, with: formattedText)
-//                editorSelectionRange = editorSelectionRange.lowerBound..<editorSelectionRange.lowerBound
+                self.objectWillChange.send()
+                self.model.text = self.model.text.replacingCharacters(in: editorSelectionRange, with: formattedText)
             }
         }
     }

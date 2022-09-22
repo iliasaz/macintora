@@ -431,14 +431,14 @@ from dba_objects o
     }
     
     func processObjects(_ objs: [OracleObject], context: NSManagedObjectContext) {
-//        log.cache.debug("in \(#function, privacy: .public)")
+        log.cache.debug("in \(#function, privacy: .public)")
         let request = DBCacheObject.fetchRequest()
         // TODO: should consider array processing here
         for obj in objs {
             request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@ and type_ = %@ ", obj.name, obj.owner, obj.type.rawValue)
             let results = (try? context.fetch(request)) ?? []
             if let objCache = results.first {
-//                log.cache.debug("updating existing db object \(obj.owner, privacy: .public).\(obj.name, privacy: .public) of type \(obj.type.rawValue, privacy: .public)")
+                log.cache.debug("updating existing db object \(obj.owner, privacy: .public).\(obj.name, privacy: .public) of type \(obj.type.rawValue, privacy: .public)")
                 objCache.lastDDLDate = obj.lastDDL
                 objCache.createDate = obj.createDate
                 objCache.editionName = obj.editionName
@@ -446,7 +446,7 @@ from dba_objects o
                 objCache.isValid = obj.isValid
                 objCache.objectId = obj.objectId
             } else {
-//                log.cache.debug("creating a new db object \(obj.owner, privacy: .public).\(obj.name, privacy: .public) of type \(obj.type.rawValue, privacy: .public)")
+                log.cache.debug("creating a new db object \(obj.owner, privacy: .public).\(obj.name, privacy: .public) of type \(obj.type.rawValue, privacy: .public)")
                 let objCache = DBCacheObject(context: context)
                 objCache.owner = obj.owner
                 objCache.name = obj.name
@@ -459,7 +459,7 @@ from dba_objects o
                 objCache.objectId = obj.objectId
             }
         }
-//        log.cache.debug("exiting from \(#function, privacy: .public)")
+        log.cache.debug("exiting from \(#function, privacy: .public)")
     }
     
     func processTables(_ objs: [OracleObject], context: NSManagedObjectContext, isView: Bool) {
@@ -850,12 +850,55 @@ from dba_objects o
         }
     }
     
-    func refreshObject(obj: OracleObject) async {
-        if obj.type == .package || obj.type == .type {
-            await self.processSource_NEW([obj])
-        } else {
-            await self.processChunkOfObjects([obj], objectType: obj.type)
+    func refreshObject(_ currentObj: OracleObject) async {
+        // get a database version of the object
+        let sql = """
+select /*+ rule */ owner, object_name, object_type, object_id, created, editionable, edition_name, status
+, greatest(last_ddl_time
+, nvl(( select last_ddl_time from dba_objects o1 where o1.owner = o.owner and o1.object_name = o.object_name and o1.object_type = o.object_type || ' BODY'), o.last_ddl_time)) as last_ddl_time
+from dba_objects o
+where object_type = :type and owner = :owner and object_name = :name
+"""
+        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); return }
+        defer { pool?.returnConnection(conn: conn) }
+        let cur = try? conn.cursor()
+        log.cache.debug("Executing single object refresh, sql: \(sql, privacy: .public)")
+        do { try cur?.execute(sql, params: [":type": BindVar(currentObj.type.rawValue), ":owner": BindVar(currentObj.owner), ":name": BindVar(currentObj.name) ], prefetchSize: 10) }
+        catch { log.error("\(error.localizedDescription)"); return }
+        log.cache.debug("finished executing select statement in \(#function, privacy: .public)")
+        if let row = cur?.fetchOneSwifty() {
+            let obj = OracleObject(owner: row["OWNER"]!.string!,
+                                   name: row["OBJECT_NAME"]!.string!,
+                                   type: OracleObjectType(rawValue: row["OBJECT_TYPE"]!.string!) ?? .unknown,
+                                   lastDDL: row["LAST_DDL_TIME"]!.date!,
+                                   createDate: row["CREATED"]!.date!,
+                                   editionName: row["EDITION_NAME"]!.string,
+                                   isEditionable: row["EDITIONABLE"]!.string == "Y",
+                                   isValid: row["STATUS"]!.string == "VALID",
+                                   objectId: row["OBJECT_ID"]!.int!
+            )
+            if currentObj.type == .package || currentObj.type == .type {
+                await self.processSource_NEW([obj])
+            } else {
+                await self.processChunkOfObjects([obj], objectType: obj.type)
+            }
+        } else { // no object in the database, should drop it from the cache
+            dropLocalObject(currentObj)
         }
+    }
+    
+    func dropLocalObject(_ obj: OracleObject) {
+        log.cache.debug("in \(#function, privacy: .public)")
+        let context = persistenceController.container.viewContext
+        let request = DBCacheObject.fetchRequest()
+        request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@ and type_ = %@ ", obj.name, obj.owner, obj.type.rawValue)
+        let results = (try? context.fetch(request)) ?? []
+        if let objCache = results.first {
+            log.cache.debug("deleting an existing cache object \(obj.owner, privacy: .public).\(obj.name, privacy: .public) of type \(obj.type.rawValue, privacy: .public)")
+            context.delete(objCache)
+            try? context.save()
+        }
+        log.cache.debug("exiting from \(#function, privacy: .public)")
     }
     
     func processTriggers(_ objs: [OracleObject], context: NSManagedObjectContext) {

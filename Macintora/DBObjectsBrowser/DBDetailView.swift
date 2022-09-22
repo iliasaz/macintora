@@ -96,7 +96,7 @@ struct DBDetailViewHeader: View {
         Task(priority: .background) {
             isRefreshing = true
             try cache.connectSvc()
-            await cache.refreshObject(obj: OracleObject(
+            await cache.refreshObject(OracleObject(
                 owner: dbObject.owner,
                 name: dbObject.name,
                 type: OracleObjectType(rawValue: dbObject.type) ?? .unknown,

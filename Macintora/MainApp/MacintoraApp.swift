@@ -33,6 +33,8 @@ struct MacOraApp: App {
                 MainDocumentView(document: config.document)
                     .preferredColorScheme(appSettings.currentTheme.colorScheme)
                     .environmentObject(appSettings)
+                    .frame(minWidth: 400, idealWidth: 1600, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
+            
         }
         .handlesExternalEvents(matching: ["file"])
         .commands {

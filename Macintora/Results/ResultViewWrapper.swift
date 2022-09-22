@@ -25,7 +25,7 @@ struct ResultViewWrapper: View {
                 GeometryReader { geo in
                     HStack {
                         ResultView(model: self.queryResults )
-                            .frame(maxWidth: .infinity, minHeight: 200)
+                            .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity)
                         
                         BindVarInputView(bindVarVM: $queryResults.bindVarVM, runAction: runWithBinds, cancelAction: {queryResults.showingBindVarInputView = false})
                             .frame(width: queryResults.showingBindVarInputView ? geo.size.width/3 : 0, alignment: .trailing)
@@ -37,7 +37,7 @@ struct ResultViewWrapper: View {
                 }
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle())
-                    .frame(minHeight: 200)
+                    .frame(minHeight: 100)
                     .hidden(!queryResults.resultsController.isExecuting)
             }
         }
@@ -85,12 +85,13 @@ struct ResultViewWrapper: View {
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 120, alignment: .leading)
             }
-            Button {
-                
-            } label: {
-                Image(systemName: "arrow.clockwise").foregroundColor(Color.blue)
-            }
-            .help("Refresh")
+            
+//            Button {
+//
+//            } label: {
+//                Image(systemName: "arrow.clockwise").foregroundColor(Color.blue)
+//            }
+//            .help("Refresh")
             
             Toggle(isOn: $queryResults.showingLog) {
                 Image(systemName: "list.dash") //.foregroundColor(Color.blue)

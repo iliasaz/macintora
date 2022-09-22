@@ -110,6 +110,23 @@ and :1 = 23:50:50
         sp = RunnableSQL.detectStoredProc(sql)
         XCTAssert(sp.0 == true && sp.1 == StoredProc(owner: nil, name: "TEST", type: "PROCEDURE"))
 
+        sql = "create procedure test(param number) as"
+        sp = RunnableSQL.detectStoredProc(sql)
+        XCTAssert(sp.0 == true && sp.1 == StoredProc(owner: nil, name: "TEST", type: "PROCEDURE"))
+
+        sql = """
+create procedure test(
+    param1 number
+  , param2 varchar2
+) as
+"""
+        sp = RunnableSQL.detectStoredProc(sql)
+        XCTAssert(sp.0 == true && sp.1 == StoredProc(owner: nil, name: "TEST", type: "PROCEDURE"))
+
+        sql = "create procedure user.test as"
+        sp = RunnableSQL.detectStoredProc(sql)
+        XCTAssert(sp.0 == true && sp.1 == StoredProc(owner: "USER", name: "TEST", type: "PROCEDURE"))
+
         sql = "create procedure user.test as"
         sp = RunnableSQL.detectStoredProc(sql)
         XCTAssert(sp.0 == true && sp.1 == StoredProc(owner: "USER", name: "TEST", type: "PROCEDURE"))
@@ -132,6 +149,19 @@ and :1 = 23:50:50
         var sp: (Bool, StoredProc?), sql: String
 
         sql = "create function test as"
+        sp = RunnableSQL.detectStoredProc(sql)
+        XCTAssert(sp.0 == true && sp.1 == StoredProc(owner: nil, name: "TEST", type: "FUNCTION"))
+
+        sql = "create function test(param number) as"
+        sp = RunnableSQL.detectStoredProc(sql)
+        XCTAssert(sp.0 == true && sp.1 == StoredProc(owner: nil, name: "TEST", type: "FUNCTION"))
+
+        sql = """
+create function test(
+    param1 number
+  , param2 varchar2
+) pipelined as
+"""
         sp = RunnableSQL.detectStoredProc(sql)
         XCTAssert(sp.0 == true && sp.1 == StoredProc(owner: nil, name: "TEST", type: "FUNCTION"))
 

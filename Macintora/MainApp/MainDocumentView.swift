@@ -16,6 +16,7 @@ public enum FocusedView: Int, Hashable {
 struct MainDocumentView: View {
     @ObservedObject var document: MainDocumentVM
     @EnvironmentObject var appSettings: AppSettings
+    @Environment(\.undoManager) var undoManager
     @State private var selectedTab: String = "queryResults"
     @FocusState private var focusedView: FocusedView?
 
@@ -44,7 +45,7 @@ struct MainDocumentView: View {
                 disconnect: document.disconnect
             )
             VStack {
-                GeometryReader { geo in
+//                GeometryReader { geo in
                     VSplitView {
                         CodeEditor(source: $document.model.text,
                                    selection: $editorSelection,
@@ -53,16 +54,18 @@ struct MainDocumentView: View {
                                    autoPairs: [ "{": "}", "(": ")" ],
                                    inset: CGSize(width: 8, height: 8),
                                    autoscroll: false)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .frame(maxWidth: .infinity, minHeight:100, maxHeight: .infinity)
                             .focused($focusedView, equals: .codeEditor)
+                            .layoutPriority(1)
                         
                         ResultViewWrapper(resultsController: resultsController)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                    .frame(width: geo.size.width, height: geo.size.height)
+//                    }
+//                    .frame(width: geo.size.width, height: geo.size.height)
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .focusedSceneValue(\.cacheConnectionDetails, document.connDetails )
         .focusedSceneValue(\.selectedObjectName, selectedText )
         .focusedSceneValue(\.sbConnDetails, document.sbConnDetails )
@@ -149,15 +152,15 @@ struct MainDocumentView: View {
                 // format sql
                 Button {
                     document.format(of: editorSelection)
-                    editorSelection = editorSelection.lowerBound..<editorSelection.lowerBound
+//                    editorSelection = editorSelection.lowerBound..<editorSelection.lowerBound
                     focusedView = .codeEditor
                 } label: { Image(systemName: "wand.and.stars") }
-                    .keyboardShortcut("f", modifiers: [.control])
+                    .keyboardShortcut("f", modifiers: [.command, .control])
                     .help("Format")
                 
                 // compile source
                 Button {
-                    document.compileSource()
+                    document.compileSource(for: editorSelection)
                     focusedView = .codeEditor
                 } label: { Image(systemName: "ellipsis.curlybraces") }
                     .disabled(document.isConnected != .connected || document.resultsController?.isExecuting ?? false)
