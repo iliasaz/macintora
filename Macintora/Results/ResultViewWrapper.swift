@@ -58,6 +58,13 @@ struct ResultViewWrapper: View {
 //            .help("export")
             
             Button {
+                self.queryResults.refreshData()
+            } label: {
+                Image(systemName: "arrow.clockwise").foregroundColor(Color.blue)
+            }
+            .help("Refresh")
+            
+            Button {
                 sqlShown.toggle()
             } label: { Text("SQL").foregroundColor(Color.blue)}
             .help("show SQL")
@@ -86,20 +93,32 @@ struct ResultViewWrapper: View {
                 .frame(width: 120, alignment: .leading)
             }
             
-//            Button {
-//
-//            } label: {
-//                Image(systemName: "arrow.clockwise").foregroundColor(Color.blue)
-//            }
-//            .help("Refresh")
+            Button {
+                self.queryResults.fetchMoreData()
+            } label: {
+                Image(systemName: "forward")
+            }
+            .help("More Data")
+            
+            Button {
+                self.queryResults.getSQLCount()
+            } label: {
+                Image(systemName: "sum") //.foregroundColor(Color.blue)
+            }
+            .help("Count")
+
+            Text(self.queryResults.sqlCount, format: .number)
+                .padding(.horizontal, 3)
+            
+            Spacer()
             
             Toggle(isOn: $queryResults.showingLog) {
                 Image(systemName: "list.dash") //.foregroundColor(Color.blue)
             }
             .toggleStyle(.button)
+            .padding(.horizontal)
             .help("Show log")
-            
-            Spacer()
+
         }
         .padding(.horizontal, 3)
     }

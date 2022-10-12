@@ -54,16 +54,20 @@ struct RunningLogEntry {
 public class ResultViewModel: ObservableObject {
     @AppStorage("rowFetchLimit") var rowFetchLimit: Int = 200
     @AppStorage("queryPrefetchSize") private var queryPrefetchSize: Int = 200
-
+    
     var rows = [SwiftyRow]()
     var columnLabels = [String]()
     var isFailed = false
+    
     @Published var autoColWidth = true { willSet {
         objectWillChange.send()
         dataHasChanged = true
     }}
+    
     @Published var showingLog = false
     @Published var showingBindVarInputView = false
+    @Published var sqlCount: Int = 0
+    
     var bindVarVM = BindVarInputVM()
     private(set) var resultsController: ResultsController
     var dataHasChanged = false
@@ -90,6 +94,8 @@ public class ResultViewModel: ObservableObject {
     
     var currentSql: String = ""
     var sqlId: String = ""
+    var currentCursor: Cursor?
+
 //    var data = ResultData()
     
     // Test data
@@ -117,9 +123,24 @@ public class ResultViewModel: ObservableObject {
     func populateData2(using conn: Connection) {
         objectWillChange.send()
         rows.removeAll()
+        sqlCount = 0
         resultsController.isExecuting = true
         Task.detached(priority: .background) { [self] in
-            let result = await queryData(for: currentSql, using: conn, maxRows: rowFetchLimit, showDbmsOutput: enabledDbmsOutput, binds: getBinds(), prefetchSize: queryPrefetchSize)
+            if currentCursor == nil {
+                do {
+                    currentCursor = try conn.cursor()
+                } catch {
+                    log.error("\(error.localizedDescription, privacy: .public)")
+                    await MainActor.run {
+                        resultsController.isExecuting = false
+                        isFailed = true
+                        showingLog = true
+                        runningLog.append(RunningLogEntry(text: (error as! DatabaseError).description, type: .error))
+                    }
+                    return
+                }
+            }
+            let result = await queryData(for: currentSql, using: currentCursor!, maxRows: rowFetchLimit, showDbmsOutput: enabledDbmsOutput, binds: getBinds(), prefetchSize: queryPrefetchSize)
             await MainActor.run {
                 updateViews(with: result)
             }
@@ -143,7 +164,70 @@ public class ResultViewModel: ObservableObject {
                 runningLog.append(RunningLogEntry(text: (error as! DatabaseError).description, type: .error))
         }
         resultsController.isExecuting = false
-        log.debug("end of refreshData")
+        log.debug("end of updateViews, row count: \(self.rows.count)")
+    }
+    
+    func setSQLCount(with result: Result<([String], [SwiftyRow], String, String), Error>) {
+        objectWillChange.send()
+        switch result {
+            case .success(let (_, resultRows, _, _)):
+                self.sqlCount = resultRows[0]["CNT"]!.int ?? 0
+                isFailed = false
+            case .failure(let error):
+                isFailed = true
+                showingLog = true
+                runningLog.append(RunningLogEntry(text: (error as! DatabaseError).description, type: .error))
+        }
+        resultsController.isExecuting = false
+        log.debug("end of setSQLCount")
+    }
+    
+    func fetchMoreData() {
+        objectWillChange.send()
+        resultsController.isExecuting = true
+        Task.detached(priority: .background) { [self] in
+            let result = await queryMoreData(for: self.currentCursor, maxRows: rowFetchLimit)
+            await MainActor.run {
+                objectWillChange.send()
+                switch result {
+                    case .success(let moreRows):
+                        self.rows.append(contentsOf: moreRows)
+                        isFailed = false
+                        dataHasChanged = true
+                    case .failure(let error):
+                        isFailed = true
+                        showingLog = true
+                        runningLog.append(RunningLogEntry(text: (error as! DatabaseError).description, type: .error))
+                }
+                resultsController.isExecuting = false
+            }
+        }
+    }
+    
+    func getSQLCount() {
+        guard let conn = self.resultsController.document?.conn else { return }
+        let sql = "select count(1) CNT from (\(currentSql))"
+        objectWillChange.send()
+        resultsController.isExecuting = true
+        Task.detached(priority: .background) { [self] in
+            do {
+                // discardable cursor here
+                let cursor = try conn.cursor()
+                let result = await queryData(for: sql, using: cursor, maxRows: 1, showDbmsOutput: false, binds: getBinds(), prefetchSize: 1)
+                await MainActor.run {
+                    setSQLCount(with: result)
+                }
+            } catch {
+                log.error("\(error.localizedDescription, privacy: .public)")
+                await MainActor.run {
+                    resultsController.isExecuting = false
+                    isFailed = true
+                    showingLog = true
+                    runningLog.append(RunningLogEntry(text: (error as! DatabaseError).description, type: .error))
+                }
+                return
+            }
+        }
     }
     
     @MainActor
@@ -194,13 +278,27 @@ public class ResultViewModel: ObservableObject {
         rows.removeAll()
         resultsController.isExecuting = true
         Task.detached(priority: .background) { [self] in
-            let explainStatus = await queryData(for: currentSql, using: conn, maxRows: -1)
+            if currentCursor == nil {
+                do {
+                    currentCursor = try conn.cursor()
+                } catch {
+                    log.error("\(error.localizedDescription, privacy: .public)")
+                    await MainActor.run {
+                        resultsController.isExecuting = false
+                        isFailed = true
+                        showingLog = true
+                        runningLog.append(RunningLogEntry(text: (error as! DatabaseError).description, type: .error))
+                    }
+                    return
+                }
+            }
+            let explainStatus = await queryData(for: currentSql, using: currentCursor!, maxRows: -1)
             await MainActor.run {
                 updateViews(with: explainStatus)
             }
             switch explainStatus {
                 case .success( _):
-                    let explainResult = await queryData(for: "select * from dbms_xplan.display(format => 'ALL')", using: conn, maxRows: -1, prefetchSize: 1000)
+                    let explainResult = await queryData(for: "select * from dbms_xplan.display(format => 'ALL')", using: currentCursor!, maxRows: -1, prefetchSize: 1000)
                     await MainActor.run {
                         updateViews(with: explainResult)
                     }
@@ -215,7 +313,21 @@ public class ResultViewModel: ObservableObject {
         rows.removeAll()
         resultsController.isExecuting = true
         Task.detached(priority: .background) { [self] in
-            let compilationStatus = await queryData(for: currentSql, using: conn, maxRows: -1)
+            if currentCursor == nil {
+                do {
+                    currentCursor = try conn.cursor()
+                } catch {
+                    log.error("\(error.localizedDescription, privacy: .public)")
+                    await MainActor.run {
+                        resultsController.isExecuting = false
+                        isFailed = true
+                        showingLog = true
+                        runningLog.append(RunningLogEntry(text: (error as! DatabaseError).description, type: .error))
+                    }
+                    return
+                }
+            }
+            let compilationStatus = await queryData(for: currentSql, using: currentCursor!, maxRows: -1)
             await MainActor.run {
                 updateViews(with: compilationStatus)
             }
@@ -225,7 +337,7 @@ public class ResultViewModel: ObservableObject {
                     binds[":owner"] = BindVar(rsql.storedProc?.owner ?? "")
                     binds[":name"] = BindVar(rsql.storedProc?.name ?? "")
                     binds[":type"] = BindVar(rsql.storedProc?.type ?? "")
-                    let compilationResult = await queryData(for: "select line, position, text from all_errors where owner = nvl(:owner, user) and name = :name and type = :type", using: conn, maxRows: -1, binds: binds, prefetchSize: 1000)
+                    let compilationResult = await queryData(for: "select line, position, text from all_errors where owner = nvl(:owner, user) and name = :name and type = :type", using: currentCursor!, maxRows: -1, binds: binds, prefetchSize: 1000)
                     // if there are no errors, we want to show a message "Compiled Successfully" instead of a blank grid
                     let tweakedCompilationResult: Result<([String], [SwiftyRow], String, String), Error>
                     switch compilationResult {
@@ -246,19 +358,19 @@ public class ResultViewModel: ObservableObject {
         }
     }
     
-    func queryData(for sql:String, using conn:Connection, maxRows: Int, showDbmsOutput: Bool = false, binds: [String: BindVar] = [:], prefetchSize: Int = 200) async -> Result<([String], [SwiftyRow], String, String), Error> {
+    func queryData(for sql:String, using cursor: Cursor, maxRows: Int, showDbmsOutput: Bool = false, binds: [String: BindVar] = [:], prefetchSize: Int = 200) async -> Result<([String], [SwiftyRow], String, String), Error> {
         let result: Result<([String], [SwiftyRow], String, String), Error>
         var rows = [SwiftyRow]()
         var columnLabels = [String]()
         do {
-            let cursor = try conn.cursor()
             try cursor.execute(sql, params: binds, prefetchSize: prefetchSize, enableDbmsOutput: showDbmsOutput)
             let sqlId = cursor.sqlId
             let dbmsOuput = cursor.dbmsOutputContent
             columnLabels = cursor.getColumnLabels()
             rows = [SwiftyRow]()
             var rowCnt = 0
-            while let row = cursor.nextSwifty(withStringRepresentation: true), rowCnt < (maxRows == -1 ? 10000 : maxRows) {
+            while rowCnt < (maxRows == -1 ? 10000 : maxRows), let row = cursor.nextSwifty(withStringRepresentation: true) {
+                print("rowCnt: \(rowCnt), row: \(row)")
                 rows.append(row)
                 rowCnt += 1
             }
@@ -273,6 +385,58 @@ public class ResultViewModel: ObservableObject {
             result = .failure(error)
         }
         return result
+    }
+    
+    func queryMoreData(for cursor: Cursor?, maxRows: Int) async -> Result<[SwiftyRow], Error> {
+        log.debug("in queryMoreData")
+        guard let cursor = cursor else { log.debug("no active cursor"); return .success([]) }
+        let result: Result<[SwiftyRow], Error>
+        var rows = [SwiftyRow]()
+        var rowCnt = 0
+        while rowCnt < (maxRows == -1 ? 10000 : maxRows), let row = cursor.nextSwifty(withStringRepresentation: true) {
+            print("rowCnt: \(rowCnt), row: \(row)")
+            rows.append(row)
+            rowCnt += 1
+        }
+        result = .success(rows)
+        log.debug("more data loaded, rows.count: \(rows.count)")
+        return result
+    }
+    
+    func refreshData() {
+        log.debug("in refreshData()")
+        guard let cursor = currentCursor else { return }
+        objectWillChange.send()
+        resultsController.isExecuting = true
+        rows.removeAll()
+        sqlCount = 0
+        Task.detached(priority: .background) { [self] in
+            let result: Result<([String], [SwiftyRow], String, String), Error>
+            var rows = [SwiftyRow]()
+            do {
+                try cursor.refreshData(prefetchSize: rowFetchLimit)
+                rows = [SwiftyRow]()
+                var rowCnt = 0
+                while rowCnt < (rowFetchLimit == -1 ? 10000 : rowFetchLimit), let row = cursor.nextSwifty(withStringRepresentation: true) {
+                    print("rowCnt: \(rowCnt), row: \(row)")
+                    rows.append(row)
+                    rowCnt += 1
+                }
+                result = .success((self.columnLabels, rows, self.sqlId, ""))
+                log.debug("data loaded, rows.count: \(rows.count)")
+            } catch DatabaseErrors.SQLError (let error) {
+                log.error("\(error.description, privacy: .public)")
+                result = .failure(error)
+            } catch {
+                log.error("\(error.localizedDescription, privacy: .public)")
+                result = .failure(error)
+            }
+            await MainActor.run {
+                log.debug("updating views with result")
+                updateViews(with: result)
+                log.debug("finished refreshData()")
+            }
+        }
     }
 }
 
