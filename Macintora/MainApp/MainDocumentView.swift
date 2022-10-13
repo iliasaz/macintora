@@ -122,7 +122,7 @@ struct MainDocumentView: View {
                     }
                 }
                 .disabled(document.isConnected != .connected)
-                .keyboardShortcut("r", modifiers: .command)
+                .keyboardShortcut(document.resultsController?.isExecuting ?? false ? "b" : "r", modifiers: .command)
                 .help("Execute current statement")
                 
                 // explain plan

@@ -154,6 +154,7 @@ from dual;\n\n
                 log.error("connection doesn't exist")
                 return
             }
+            self.resultsController?.results["current"]?.currentCursor = nil
             conn.close()
             oraSession = nil
             self.pingTimer?.invalidate() // stop scheduled pings
@@ -281,6 +282,7 @@ from dual;\n\n
         Task.detached(priority: .background) {
             log.debug("attempting to stop current SQL")
             conn.break()
+            self.resultsController?.results["current"]?.currentCursor = nil
             log.debug("done attempting to stop current SQL")
             await MainActor.run {
                 self.resultsController?.isExecuting = false
