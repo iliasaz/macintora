@@ -257,6 +257,7 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
 //        }
     
     func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
+        guard row < parent.model.rows.count else { return "" }
         if tableColumn?.identifier.rawValue == "#" {
             return row+1
         } else {
