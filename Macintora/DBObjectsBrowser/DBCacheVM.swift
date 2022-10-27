@@ -233,7 +233,7 @@ from dba_objects o
         // check to see if name prefix filter is applied
         if !searchCriteria.namePrefixInclusionList.isEmpty {
             sql += " and ( "
-            sql += searchCriteria.namePrefixInclusionList.map { "object_name like '\($0)%'" }.joined(separator: " or ")
+            sql += searchCriteria.namePrefixInclusionList.map { "object_name like '\($0.replacingOccurrences(of: "_", with: #"\_"#))%' escape \(#"'\'"#)" }.joined(separator: " or ")
             sql += ")"
         }
         // exclude system objects - LOB indexes and etc.
