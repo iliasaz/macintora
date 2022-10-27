@@ -37,7 +37,7 @@ struct DBCacheListView: View {
                         ForEach(section) { item in
                             NavigationLink (tag: item, selection: $listSelection) {
                                 DBDetailView(dbObject: item)
-                                    .frame(minWidth: 400, idealWidth: 600, maxWidth: .infinity, maxHeight: .infinity)
+                                    .frame(minWidth: 400, idealWidth: 600, maxWidth: .infinity, idealHeight: 1000, maxHeight: .infinity)
                             } label: {
                                 DBCacheListEntryView(dbObject: item)
                                     .frame(maxWidth: .infinity, alignment: .leading)

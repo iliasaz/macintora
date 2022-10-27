@@ -27,12 +27,14 @@ struct DBSourceDetailView: View {
     var body: some View {
         VStack(alignment: .leading) {
             tableHeader
-            
-            SourceView(objName: dbObject.name, text: tables.first?.textSpec, title: "Specification")
-            SourceView(objName: dbObject.name, text: tables.first?.textBody, title: "Body")
-
+            VSplitView {
+                SourceView(objName: dbObject.name, text: tables.first?.textSpec, title: "Specification")
+                    .padding(.vertical,5)
+                SourceView(objName: dbObject.name, text: tables.first?.textBody, title: "Body")
+                    .padding(.vertical,5)
+            }
         }
-        .frame(minWidth: 200, idealWidth: 1000, maxWidth: .infinity)
+        .frame(minWidth: 200, idealWidth: 1000, maxWidth: .infinity, idealHeight: 1000, maxHeight: .infinity)
         .padding()
     }
 }
