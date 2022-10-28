@@ -23,9 +23,11 @@ struct MainDocumentView: View {
     @StateObject private var resultsController: ResultsController
     @State private var editorSelection: Range<String.Index> = "".startIndex..<"".endIndex
     
-    var selectedText: String {
+    var selectedObject: String {
         if editorSelection.isEmpty { return "" }
-        return String(document.model.text[editorSelection])
+        let s = String(document.model.text[editorSelection])
+        if s.count > 128 { return "" }
+        return s
     }
     
     init(document: MainDocumentVM) {
@@ -67,7 +69,7 @@ struct MainDocumentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .focusedSceneValue(\.cacheConnectionDetails, document.connDetails )
-        .focusedSceneValue(\.selectedObjectName, selectedText )
+        .focusedSceneValue(\.selectedObjectName, selectedObject)
         .focusedSceneValue(\.sbConnDetails, document.sbConnDetails )
         .onAppear {
           DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {

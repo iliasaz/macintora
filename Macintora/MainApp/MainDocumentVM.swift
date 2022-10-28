@@ -379,6 +379,7 @@ from dual;\n\n
         }
         guard !text.isEmpty else { return }
         let formatter = Formatter()
+        log.debug(">>>>>>> sql text: \n \(text) \n -------------")
         Task.detached(priority: .background) { [self, text] in
             let formattedText = await formatter.formatSource(name: UUID().uuidString, text: text)
             await MainActor.run {
