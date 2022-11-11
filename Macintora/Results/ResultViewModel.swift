@@ -264,9 +264,9 @@ public class ResultViewModel: ObservableObject {
     
     func sort(by colName: String?, ascending: Bool) {
         guard let colName = colName else { return }
-        guard let colIndex = columnLabels.firstIndex(of: colName) else { return }
+        guard let colIndex = columnLabels.firstIndex(of: colName), colIndex > 0 else { return } // account for row number!
         if ascending {
-            rows.sort(by: {SwiftyRow.less(colIndex: colIndex-1, lhs: $0, rhs: $1)} ) // account for row number!
+            rows.sort(by: {SwiftyRow.less(colIndex: colIndex-1, lhs: $0, rhs: $1)} )
         } else {
             rows.sort(by: {SwiftyRow.less(colIndex: colIndex-1, lhs: $1, rhs: $0)} )
         }
@@ -370,7 +370,7 @@ public class ResultViewModel: ObservableObject {
             rows = [SwiftyRow]()
             var rowCnt = 0
             while rowCnt < (maxRows == -1 ? 10000 : maxRows), let row = cursor.nextSwifty(withStringRepresentation: true) {
-                print("rowCnt: \(rowCnt), row: \(row)")
+                log.debug("row#: \(rowCnt), row: \(row)")
                 rows.append(row)
                 rowCnt += 1
             }

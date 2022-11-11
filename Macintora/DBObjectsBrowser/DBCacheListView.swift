@@ -13,6 +13,7 @@ struct DBCacheListView: View {
     @SectionedFetchRequest var items: SectionedFetchResults<String?, DBCacheObject>
     @State private var isItemSeleceted: Bool = false
     @State private var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
+    @State private var totalCountMatched: Int = 0
 
     init( searchCriteria: DBCacheSearchCriteria, request: SectionedFetchRequest<String?, DBCacheObject>) {
         _searchCriteria = StateObject(wrappedValue: searchCriteria)
@@ -24,6 +25,7 @@ struct DBCacheListView: View {
             searchCriteria
         } set: { newValue in
             items.nsPredicate = newValue.predicate
+            totalCountMatched = 0
         }
     }
 
@@ -46,14 +48,15 @@ struct DBCacheListView: View {
                         }
                     }
                 }
-                .onReceive(items.publisher) { items in
-                    if items.count == 1 {
-                        listSelection = items[0]
-                    }
-                }
             }
             .searchable(text: filters.searchText, placement: .sidebar, prompt: "type something")
             .listStyle(SidebarListStyle())
+        }
+        .onReceive(items.publisher ) { items in
+            totalCountMatched += items.count
+            if totalCountMatched == 1 {
+                listSelection = items[0]
+            }
         }
     }
 }

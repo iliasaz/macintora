@@ -162,7 +162,7 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
         text.isBordered = false
         text.translatesAutoresizingMaskIntoConstraints = false
         text.font = NSFont(name: "Source Code Pro", size: NSFont.systemFontSize)
-        text.placeholderString = "this is a text field"
+//        text.placeholderString = "this is a text field"
         text.usesSingleLineMode = true
 //        text.maximumNumberOfLines = 1
         text.cell?.wraps = false
@@ -176,7 +176,7 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
         
         // bind text field to cell's objectValue, which is auto-magically populated
         // by tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? (see below)
-        cell.textField?.bind(.value , to: cell, withKeyPath: "objectValue", options: nil)
+        cell.textField?.bind(.value, to: cell, withKeyPath: "objectValue", options: nil)
         
         cell.addConstraint(NSLayoutConstraint(item: text, attribute: .top, relatedBy: .equal, toItem: cell, attribute: .top, multiplier: 1, constant: 0))
         cell.addConstraint(NSLayoutConstraint(item: text, attribute: .leading, relatedBy: .equal, toItem: cell, attribute: .leading, multiplier: 1, constant: 0))
@@ -261,7 +261,9 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
         if tableColumn?.identifier.rawValue == "#" {
             return row+1
         } else {
-            return parent.model.rows[row][tableColumn!.identifier.rawValue]?.valueString
+            let value = parent.model.rows[row][tableColumn!.identifier.rawValue]?.valueString
+//            log.viewCycle.debug("setting row# \(row), column \(tableColumn!.identifier.rawValue), value \(value ?? "null")")
+            return (value?.isEmpty ?? true) ? "\0" : value // a workaround for a ghost value displayed in NSTextField when the actual value is nil or an empty string
         }
     }
 
