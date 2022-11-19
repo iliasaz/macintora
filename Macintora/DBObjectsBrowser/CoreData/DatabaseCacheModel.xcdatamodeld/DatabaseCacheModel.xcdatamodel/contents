@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="20086" systemVersion="21G83" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="21512" systemVersion="21G217" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="ConnDatabase" representedClassName="ConnDatabase" syncable="YES">
         <attribute name="dbid" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="lastUpdate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -60,6 +60,9 @@
         <attribute name="type_" optional="YES" attributeType="String" versionHashModifier="Added Index"/>
         <fetchIndex name="byName">
             <fetchIndexElement property="name_" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="byObjectId">
+            <fetchIndexElement property="objectId" type="Binary" order="ascending"/>
         </fetchIndex>
     </entity>
     <entity name="DBCacheSource" representedClassName="DBCacheSource" syncable="YES">
@@ -146,15 +149,4 @@
     <entity name="Item" representedClassName="Item" syncable="YES">
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
-    <elements>
-        <element name="ConnDatabase" positionX="-45" positionY="0" width="128" height="104"/>
-        <element name="DBCacheIndex" positionX="-243" positionY="162" width="128" height="314"/>
-        <element name="DBCacheIndexColumn" positionX="-234" positionY="171" width="128" height="119"/>
-        <element name="DBCacheObject" positionX="204.351318359375" positionY="24.83657836914062" width="128" height="164"/>
-        <element name="DBCacheSource" positionX="152.1181640625" positionY="205.1347045898438" width="128" height="89"/>
-        <element name="DBCacheTable" positionX="-450.23291015625" positionY="375.5834350585938" width="128" height="164"/>
-        <element name="DBCacheTableColumn" positionX="-97.259765625" positionY="294.3717651367188" width="128" height="314"/>
-        <element name="DBCacheTrigger" positionX="-243" positionY="162" width="128" height="344"/>
-        <element name="Item" positionX="-243" positionY="162" width="128" height="44"/>
-    </elements>
 </model>

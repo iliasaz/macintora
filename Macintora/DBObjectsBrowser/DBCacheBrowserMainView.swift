@@ -58,10 +58,21 @@ struct DBCacheBrowserMainView: View {
                         cache.updateCache()
                     }
                     
-                    Button(cache.isReloading ? "Working..." : "Full Refresh") {
+                    Button(cache.isReloading ? "Working..." : "Full Refresh (No Vacuum)") {
                         guard !cache.isReloading else { return }
                         cache.updateCache(ignoreLastUpdate: true)
                     }
+                    
+                    Button(cache.isReloading ? "Working..." : "Full Refresh + Vacuum") {
+                        guard !cache.isReloading else { return }
+                        cache.updateCache(ignoreLastUpdate: true, withCleanup: true)
+                    }
+
+                    Button(cache.isReloading ? "Working..." : "Vacuum Only") {
+                        guard !cache.isReloading else { return }
+                        cache.updateCache(cleanupOnly: true)
+                    }
+
                 } label: {
 //                                Image(systemName: "arrow.triangle.2.circlepath")
                     Label(cache.isReloading ? "Working..." : "Refresh", systemImage: "arrow.triangle.2.circlepath")

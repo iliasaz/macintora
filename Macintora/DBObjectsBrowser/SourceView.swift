@@ -30,10 +30,26 @@ struct SourceView: View {
                     }
                     .closeOnEscape(true)
                 }
-            label: { Text("Format Source") }
+                label: { Text("Format&View") }
+                Button {
+                    Task.init(priority: .background) {
+                        let formatter = Formatter()
+                        var formattedSource = await formatter.formatSource(name: objName, text: text)
+                        
+                    }
+                }
+                label: { Text("Format&Save") }
+                    .disabled(true)
             }
             CodeEditor(source: .constant(text ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false)
                 .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
         }
+    }
+}
+
+struct SourceView_Preview: PreviewProvider {
+    static var previews: some View {
+        SourceView(objName: "ObjectName", text: "this is the source code sample", title: "Title")
+            .frame(width: 800, height: 800)
     }
 }

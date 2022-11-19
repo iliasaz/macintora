@@ -7,14 +7,43 @@
 
 import SwiftUI
 import AppKit
+import Combine
 
 struct ResultViewWrapper: View {
     @ObservedObject var queryResults: ResultViewModel
     var resultsController: ResultsController
+    @State private var dbTimeStr = "Server Time"
+    @State private var dbTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @State private var isDbTimerRunning = false
+    @AppStorage("serverTimeSeconds") private var serverTimeSeconds = false
+    
+    let dateFormatter: DateFormatter = DateFormatter()
+
     
     init(resultsController: ResultsController) {
         self.resultsController = resultsController
         queryResults = resultsController.results["current"]!
+        dateFormatter.calendar = Calendar(identifier: .iso8601)
+//        dateFormatter.dateFormat = serverTimeSeconds ? "yyyy-MM-dd HH:mm:ss" : "yyyy-MM-dd HH:mm"
+    }
+    
+    func stopDBTimer() {
+        self.dbTimer.upstream.connect().cancel()
+        log.viewCycle.debug(("stopped timer"))
+    }
+        
+    func startDBTimer() {
+        dateFormatter.dateFormat = serverTimeSeconds ? "yyyy-MM-dd HH:mm:ss" : "yyyy-MM-dd HH:mm"
+        dateFormatter.timeZone = resultsController.document?.oraSession?.dbTimeZone
+        log.viewCycle.debug(("started timer"))
+        self.dbTimer = Timer.publish(every: serverTimeSeconds ? 1 : 60, on: .main, in: .common).autoconnect()
+    }
+
+    func updateTimerDisplay(with input: Date) {
+        log.viewCycle.debug("received timer input: \(input)")
+        if isDbTimerRunning {
+            dbTimeStr = dateFormatter.string(from: input)
+        } else { dbTimeStr = "Server time" }
     }
     
     var body: some View {
@@ -111,6 +140,21 @@ struct ResultViewWrapper: View {
                 .padding(.horizontal, 3)
             
             Spacer()
+
+            Toggle(isOn: $isDbTimerRunning) {
+                Text("\(dbTimeStr)")
+                    .padding()
+                    .onReceive(dbTimer) { input in
+                        updateTimerDisplay(with: input)
+                    }
+            }
+            .toggleStyle(.button)
+            .onChange(of: isDbTimerRunning) { newValue in
+                if newValue { startDBTimer(); updateTimerDisplay(with: .now) }
+                else { stopDBTimer(); dbTimeStr = "Server time" }
+            }
+            .disabled(resultsController.document?.isConnected != .connected)
+            .frame(width: 200)
             
             Toggle(isOn: $queryResults.showingLog) {
                 Image(systemName: "list.dash") //.foregroundColor(Color.blue)
@@ -121,6 +165,7 @@ struct ResultViewWrapper: View {
 
         }
         .padding(.horizontal, 3)
+        .onAppear() { stopDBTimer() }
     }
 }
 

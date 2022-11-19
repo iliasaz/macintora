@@ -34,6 +34,7 @@ struct RunnableSQL: Identifiable {
     }
     
     static func scanBindVars(_ sql: String?) -> Set<String> {
+        log.sqlparse.debug("in scanBindVarrs")
         var ret = Set<String>()
         var quotedRanges = [Range<String.Index>]()
         guard let sql = sql else { return ret }
@@ -74,9 +75,9 @@ struct RunnableSQL: Identifiable {
     
     static func detectStoredProc(_ sql: String) -> (Bool, StoredProc?) {
         // https://regex101.com/r/m5OckH/1
-        
+        log.sqlparse.debug("in detectStoredProc")
         var ret = (false, nil as StoredProc?)
-        let createPackagePattern = #"create.*(package|package\s+body)\s+((\"?\w+\"?\.\"?\w+\"?)|(\"?\w+\"?))\s+(as|is)"#
+        let createPackagePattern = #"create.*(package\s+body|package)\s+((\"?\w+\"?\.\"?\w+\"?)|(\"?\w+\"?))\s+(\w+\s+)*(as|is)"#
         let createProcedurePattern = #"create.*(procedure)\s+((\"?\w+\"?\.\"?\w+\"?)|(\"?\w+\"?)).*(\(.*\))*.*(as|is)"#
         let createFunctionPattern = #"create.*(function)\s+((\"?\w+\"?\.\"?\w+\"?)|(\"?\w+\"?)).*(\(.*\))*.*(as|is)"#
         let pattern = "(\(createPackagePattern))|(\(createProcedurePattern))|(\(createFunctionPattern))"
@@ -90,7 +91,7 @@ struct RunnableSQL: Identifiable {
             
             log.sqlparse.debug("=====================================")
             for i in 0 ..< match.numberOfRanges {
-                log.sqlparse.debug("range \(i), \(match.range(at: i))") //: value: \(sql[Range(match.range(at: i), in: sql)!])")
+                log.sqlparse.debug("range \(i), \(match.range(at: i)): value: \(sql[Range(match.range(at: i), in: sql) ?? sql.startIndex..<sql.startIndex ])")
             }
             
             // get first two nonzero-based and nonzero-length ranges - should be type and compound name

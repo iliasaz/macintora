@@ -8,13 +8,16 @@
 import Foundation
 import SwiftOracle
 
-struct OracleSession {
+struct OracleSession: CustomStringConvertible {
+    var description: String { "sid: \(sid), serial#: \(serial), instance: \(instance), timezone: \(dbTimeZone.debugDescription)" }
+    
     let sid: Int
     let serial: Int
     let instance: Int
+    let dbTimeZone: TimeZone?
     
     static func preview() -> OracleSession {
-        OracleSession(sid: 100, serial: 2000, instance: 2)
+        OracleSession(sid: 100, serial: 2000, instance: 2, dbTimeZone: .current)
     }
 }
 

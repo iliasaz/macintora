@@ -176,11 +176,12 @@ from dual;\n\n
         var oraSession: OracleSession?
         do {
             let cursor = try conn.cursor()
-            let sql = "select sid, serial#, to_number(sys_context('userenv','instance')) instance from v$session where sid = sys_context('userenv','sid')"
+            let sql = "select sid, serial#, to_number(sys_context('userenv','instance')) instance, systimestamp as ts from v$session where sid = sys_context('userenv','sid')"
             try cursor.execute(sql, enableDbmsOutput: false)
             guard let row = cursor.fetchOneSwifty() else {return nil}
-            oraSession = OracleSession(sid: row["SID"]!.int!, serial: row["SERIAL#"]!.int!, instance: row["INSTANCE"]!.int!)
-            log.debug("received Oracle session details")
+            let dbTimestamp = row["TS"]!.timestamp!
+            oraSession = OracleSession(sid: row["SID"]!.int!, serial: row["SERIAL#"]!.int!, instance: row["INSTANCE"]!.int!, dbTimeZone: dbTimestamp.timeZone)
+            log.debug("received Oracle session details \(oraSession.debugDescription, privacy: .public)")
         } catch {
             log.error("\(error.localizedDescription, privacy: .public)")
         }
@@ -320,16 +321,6 @@ from dual;\n\n
         resultsController?.isExecuting = false
     }
     
-    func refreshQueryResults() async {
-        return
-        
-        guard let conn = conn, conn.connected else {
-            log.error("connection doesn't exist")
-            isConnected = .disconnected
-            return
-        }
-    }
-    
     func newDocument(from editorSelectionRange: Range<String.Index>) -> URL? {
         var text = ""
         // grab selected text or current SQL
@@ -417,16 +408,4 @@ from dual;\n\n
             }
         }
     }
-    
-//    func backgroundAction() {
-//        queryResults.isExecuting = true
-//        self.objectWillChange.send()
-//        Task {
-//            await MainActor.run {
-//                self.queryResults.isExecuting = false
-//                self.objectWillChange.send()
-//            }
-//        }
-//    }
-
 }

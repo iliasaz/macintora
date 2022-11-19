@@ -172,12 +172,11 @@ class DBCacheVM: ObservableObject {
         }
     }
     
-    func updateCache(ignoreLastUpdate: Bool = false) {
+    func updateCache(ignoreLastUpdate: Bool = false, withCleanup: Bool = false, cleanupOnly: Bool = false) {
         log.cache.debug("in \(#function, privacy: .public)")
         isReloading = true
         Task.init(priority: .background) {
             if isConnected == .disconnected {
-//                await MainActor.run { isConnected = .changing }
                 do {
                     try connectSvc()
                     await MainActor.run { isConnected = .connected }
@@ -196,17 +195,93 @@ class DBCacheVM: ObservableObject {
                 return
             }
             pool?.returnConnection(conn: connCheck)
-            await withTaskGroup(of: Void.self) { taskGroup in
-                await cacheState.startEnqueuing()
-                taskGroup.addTask { await self.populateObjectQueues(ignoreLastUpdate: ignoreLastUpdate) }
-                taskGroup.addTask { await self.processObjectQueues() }
+            if withCleanup || cleanupOnly {
+                await cleanupDroppedObjects()
             }
-            log.cache.debug("finished taskGroup in \(#function, privacy: .public)")
+            if !cleanupOnly {
+                await withTaskGroup(of: Void.self) { taskGroup in
+                    await cacheState.startEnqueuing()
+                    taskGroup.addTask { await self.populateObjectQueues(ignoreLastUpdate: ignoreLastUpdate) }
+                    taskGroup.addTask { await self.processObjectQueues() }
+                }
+                log.cache.debug("finished taskGroup in \(#function, privacy: .public)")
+            }
             disconnectSvc()
             await MainActor.run { isConnected = .disconnected }
             await MainActor.run { isReloading = false }
         }
         log.cache.debug("exiting from \(#function, privacy: .public)")
+    }
+    
+    // cleanup local cache objects that no logner exist in the database
+    func cleanupDroppedObjects() async {
+        await self.persistenceController.container.performBackgroundTask { (context) in
+            context.automaticallyMergesChangesFromParent = true
+            let request = DBCacheObject.fetchRequest()
+            let results = (try? context.fetch(request)) ?? []
+            var strVal = ""
+            var nexs = [Int]()
+            strVal.reserveCapacity(4000)
+            for r in results {
+                if strVal.lengthOfBytes(using: .utf8) > 3900 {
+                    strVal.append(contentsOf: String(r.objectId))
+                    nexs.append(contentsOf: self.cleanupDroppedObjectsBatch(for: strVal))
+                    strVal.removeAll(keepingCapacity: true)
+                } else {
+                    strVal.append(contentsOf: String(r.objectId))
+                    strVal.append(",")
+                }
+            }
+            // remainder
+            if strVal.lengthOfBytes(using: .utf8) > 3900 {
+                nexs.append(contentsOf: self.cleanupDroppedObjectsBatch(for: strVal))
+                strVal.removeAll(keepingCapacity: true)
+            }
+            if !nexs.isEmpty {
+                self.dropLocalObjectsByIds(nexs, with: context)
+                try? context.save()
+            }
+        }
+    }
+    
+    // take a batch of comma separated object IDs and query them in the database, then remove the ones not existing from the local cache
+    func cleanupDroppedObjectsBatch(for idStr: String) -> [Int] {
+        log.cache.debug("in \(#function, privacy: .public)")
+        var nexs = [Int]()
+        let sql = buildCleanupCheckQuery(for: idStr)
+        log.cache.debug("executing cleanup sql: \(sql, privacy: .public)")
+        guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); return [] }
+        defer { pool?.returnConnection(conn: conn) }
+        let cur = try? conn.cursor()
+        try? cur?.execute(sql, prefetchSize: 1000)
+        log.cache.debug("finished executing cleanup sql in \(#function, privacy: .public)")
+        while let row = cur?.nextSwifty() {
+            nexs.append(row["OBJECT_ID"]!.int!)
+        }
+        log.cache.debug("got array of non-existing objects, count: \(nexs.count)")
+        return nexs
+    }
+    
+    func dropLocalObjectsByIds(_ ids: [Int], with context: NSManagedObjectContext) {
+        let request = DBCacheObject.fetchRequest()
+        request.predicate = NSPredicate(format: "objectId IN %@", ids)
+        let results = (try? context.fetch(request)) ?? []
+        for r in results {
+            dropLocalObject(r, with: context)
+        }
+    }
+    
+    func buildCleanupCheckQuery(for ids: String) -> String {
+        var sql = """
+        with rws as (select '\(ids)' str from dual)
+        , ids as (select regexp_substr (str,'[^,]+', 1, level) id
+        from rws connect by level <= length ( str ) - length ( replace ( str, ',' ) ) + 1
+        )
+        select to_number(ids.id) object_id
+        from ids
+        where not exists (select 1 from dba_objects o where o.object_id = ids.id)
+        """
+        return sql
     }
     
     func buildObjectQuerySQL(ignoreLastUpdate: Bool = false) -> String {
@@ -367,46 +442,12 @@ from dba_objects o
             }
         } while true
 
-//        let _ = await withTaskGroup(of: Void.self) { taskGroup in
-//            repeat {
-//                while let obj = await q.dequeue() {
-////                    log.cache.debug("dequeued \(obj, privacy: .public) from queue: \(objectType, privacy: .public)")
-//                    objs.append(obj)
-//                    iter += 1
-//                    if iter%100 == 0 {
-//                        let objstemp = objs
-//                        taskGroup.addTask { await self.processChunkOfObjects(objstemp, objectType: objectType) }
-//                        objs.removeAll()
-//                        log.cache.debug("dequeued \(iter, privacy: .public) objects from queue \(objectType, privacy: .public)")
-//                    }
-//                }
-//                log.cache.debug("queue \(objectType, privacy: .public) is empty")
-//                // the remainder
-//                if objs.count > 0 {
-//                    log.cache.debug("remaining items in queue \(objectType, privacy: .public)")
-//                    let objstemp = objs
-//                    taskGroup.addTask { await self.processChunkOfObjects(objstemp, objectType: objectType) }
-//                }
-//                // exit if not currently enqueueing, otherwise wait and repeat
-//                if !(await cacheState.isCacheEnqueueing) {
-//                    log.cache.debug("not enqueueing")
-//                    break
-//                }
-//                else {
-//                    log.cache.debug("still enqueueing")
-//                    try? await Task.sleep(nanoseconds: 3_000_000_000)
-//                }
-//            } while true
-//            log.cache.debug("no more items in queue \(objectType, privacy: .public)")
-//        }
         log.cache.debug("exiting from \(#function, privacy: .public); processed \(iter, privacy: .public) objects from queue \(objectType, privacy: .public)")
     }
     
     func processChunkOfObjects(_ objs: [OracleObject], objectType: OracleObjectType) async {
         log.cache.debug("in \(#function, privacy: .public) for queue: \(objectType, privacy: .public) in thread \(Thread.current, privacy: .public)")
         await self.persistenceController.container.performBackgroundTask { (context) in
-//            context.automaticallyMergesChangesFromParent = true
-//            context.parent = self.persistenceController.container.viewContext
             switch objectType {
                 case .table, .view:
                     self.processTables(objs, context: context, isView: objectType == .view)
@@ -683,7 +724,8 @@ from dba_objects o
 //        log.cache.debug("exiting from \(#function, privacy: .public); added \(cnt) columns in index \(table.owner, privacy: .public).\(table.name, privacy: .public)")
     }
     
-    func deleteTableColumns(for table: DBCacheTable, in context: NSManagedObjectContext) throws {
+    func deleteTableColumns(for table: DBCacheTable?, in context: NSManagedObjectContext) throws {
+        guard let table else { return }
 //        log.cache.debug("\(#function, privacy: .public) Deleting table columns from \(table.owner, privacy: .public).\(table.name, privacy: .public)")
         let fetchRequest: NSFetchRequest<NSFetchRequestResult>
         fetchRequest = NSFetchRequest(entityName: "DBCacheTableColumn")
@@ -701,7 +743,8 @@ from dba_objects o
 //        log.cache.debug("exiting from \(#function, privacy: .public); deletion of columns for \(table.owner, privacy: .public).\(table.name, privacy: .public) finished")
     }
     
-    func deleteIndexColumns(for table: DBCacheIndex, in context: NSManagedObjectContext) throws {
+    func deleteIndexColumns(for table: DBCacheIndex?, in context: NSManagedObjectContext) throws {
+        guard let table else { return }
 //        log.cache.debug("\(#function, privacy: .public) Deleting index columns from \(table.owner, privacy: .public).\(table.name, privacy: .public)")
         let fetchRequest: NSFetchRequest<NSFetchRequestResult>
         fetchRequest = NSFetchRequest(entityName: "DBCacheIndexColumn")
@@ -899,6 +942,59 @@ where object_type = :type and owner = :owner and object_name = :name
             try? context.save()
         }
         log.cache.debug("exiting from \(#function, privacy: .public)")
+    }
+    
+    func dropLocalObject(_ obj: DBCacheObject, with context: NSManagedObjectContext) {
+        log.cache.debug("in \(#function, privacy: .public)")
+        switch OracleObjectType(rawValue: obj.type) {
+            case .table, .view:
+                // get table object
+                let tableRequest = DBCacheTable.fetchRequest()
+                tableRequest.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@", obj.name, obj.owner)
+                let table = (try? context.fetch(tableRequest))?.first
+                // drop table columns
+                try? deleteTableColumns(for: table, in: context)
+                // drop indexes
+                let indexRequest = DBCacheIndex.fetchRequest()
+                indexRequest.predicate = NSPredicate(format: "tableName_ = %@ and tableOwner_ = %@", obj.name, obj.owner)
+                let indexes = (try? context.fetch(indexRequest)) ?? []
+                for index in indexes {
+                    try? deleteIndexColumns(for: index, in: context)
+                    context.delete(index)
+                }
+                // drop triggers
+                let triggerRequest = DBCacheTrigger.fetchRequest()
+                triggerRequest.predicate = NSPredicate(format: "objectName = %@ and objectOwner = %@", obj.name, obj.owner)
+                let triggers = (try? context.fetch(triggerRequest)) ?? []
+                for trigger in triggers {
+                    context.delete(trigger)
+                }
+                // drop table object
+                dropManagedObject(table, with: context)
+            case .index:
+                let request = DBCacheIndex.fetchRequest()
+                request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@", obj.name, obj.owner)
+                let index = (try? context.fetch(request))?.first
+                try? deleteIndexColumns(for: index, in: context)
+                dropManagedObject(index, with: context)
+            case .type, .package:
+                let request = DBCacheSource.fetchRequest()
+                request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@", obj.name, obj.owner)
+                let src = (try? context.fetch(request))?.first
+                dropManagedObject(src, with: context)
+            case .unknown:
+                break
+            default:
+                break
+        }
+        // drop cache object
+        context.delete(obj)
+        log.cache.debug("exiting from \(#function, privacy: .public)")
+    }
+    
+    func dropManagedObject(_ obj: NSManagedObject?, with context: NSManagedObjectContext) {
+        guard let obj else { return }
+        context.delete(obj)
     }
     
     func processTriggers(_ objs: [OracleObject], context: NSManagedObjectContext) {

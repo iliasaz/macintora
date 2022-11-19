@@ -337,7 +337,7 @@ public class ResultViewModel: ObservableObject {
                     binds[":owner"] = BindVar(rsql.storedProc?.owner ?? "")
                     binds[":name"] = BindVar(rsql.storedProc?.name ?? "")
                     binds[":type"] = BindVar(rsql.storedProc?.type ?? "")
-                    let compilationResult = await queryData(for: "select line, position, text from all_errors where owner = nvl(:owner, user) and name = :name and type = :type", using: currentCursor!, maxRows: -1, binds: binds, prefetchSize: 1000)
+                    let compilationResult = await queryData(for: "select line, position, text from all_errors where owner = nvl(:owner, user) and name = :name and type = :type order by line", using: currentCursor!, maxRows: -1, binds: binds, prefetchSize: 1000)
                     // if there are no errors, we want to show a message "Compiled Successfully" instead of a blank grid
                     let tweakedCompilationResult: Result<([String], [SwiftyRow], String, String), Error>
                     switch compilationResult {

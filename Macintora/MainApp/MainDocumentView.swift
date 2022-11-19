@@ -8,6 +8,7 @@
 import SwiftUI
 import CodeEditor
 import Logging
+import Combine
 
 public enum FocusedView: Int, Hashable {
     case codeEditor, grid, login, connectionList
@@ -53,6 +54,7 @@ struct MainDocumentView: View {
                                    selection: $editorSelection,
                                    language: .pgsql,
                                    theme: .atelierDuneLight,
+                                   indentStyle: .softTab(width: 2),
                                    autoPairs: [ "{": "}", "(": ")" ],
                                    inset: CGSize(width: 8, height: 8),
                                    autoscroll: false)
@@ -72,9 +74,9 @@ struct MainDocumentView: View {
         .focusedSceneValue(\.selectedObjectName, selectedObject)
         .focusedSceneValue(\.sbConnDetails, document.sbConnDetails )
         .onAppear {
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-              self.focusedView = .codeEditor
-          }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                self.focusedView = .codeEditor
+            }
         }
         
         .toolbar {

@@ -35,7 +35,7 @@ struct EditorSettings: View {
     @AppStorage("shellPath") private var shellPath = "/bin/zsh"
     @AppStorage("rowFetchLimit") private var rowFetchLimit: Int = 200
     @AppStorage("queryPrefetchSize") private var queryPrefetchSize: Int = 200
-    
+    @AppStorage("serverTimeSeconds") private var serverTimeSeconds = false
 
     var body: some View {
         Form {
@@ -58,6 +58,8 @@ struct EditorSettings: View {
             TextField("Query PreFetch Size", value: $queryPrefetchSize, format: .number)
                 .disableAutocorrection(true)
                 .textFieldStyle(.roundedBorder)
+            
+            Toggle("Show seconds in server time", isOn: $serverTimeSeconds)
         }
         .padding(20)
         .frame(width: 600, height: 200)
