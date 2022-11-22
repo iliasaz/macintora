@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct SettingsView: View {
     private enum Tabs: Hashable {
@@ -42,11 +43,11 @@ struct EditorSettings: View {
             TextField("TNS Path", text: $tnsnamesPath)
                 .disableAutocorrection(true)
                 .textFieldStyle(.roundedBorder)
-
+            
             TextField("Formatter Path", text: $formatterPath)
                 .disableAutocorrection(true)
                 .textFieldStyle(.roundedBorder)
-
+            
             TextField("Shell Command", text: $shellPath)
                 .disableAutocorrection(true)
                 .textFieldStyle(.roundedBorder)
@@ -60,6 +61,7 @@ struct EditorSettings: View {
                 .textFieldStyle(.roundedBorder)
             
             Toggle("Show seconds in server time", isOn: $serverTimeSeconds)
+
         }
         .padding(20)
         .frame(width: 600, height: 200)

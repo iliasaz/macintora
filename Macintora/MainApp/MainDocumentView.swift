@@ -191,10 +191,10 @@ struct MainDocumentView: View {
                 }
                 .help("Ping")
                 
-                Button(action: appSettings.setCurrentTheme, label: {
-                    Image(systemName: AppSettings.shared.currentTheme == .light ? "moon" : "moon.fill")
-                })
-                .help("Theme")
+//                Button(action: appSettings.setCurrentTheme, label: {
+//                    Image(systemName: AppSettings.shared.currentTheme == .light ? "moon" : "moon.fill")
+//                })
+//                .help("Theme")
                 
                 Button(action: {
                     NSApplication.shared.terminate(self)

@@ -31,7 +31,7 @@ struct MacOraApp: App {
 
         DocumentGroup(newDocument: { MainDocumentVM() }) { config in
                 MainDocumentView(document: config.document)
-                    .preferredColorScheme(appSettings.currentTheme.colorScheme)
+//                .preferredColorScheme(systemColorScheme ? nil : appSettings.currentTheme.colorScheme)
                     .environmentObject(appSettings)
                     .frame(minWidth: 400, idealWidth: 1600, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
             
@@ -58,33 +58,6 @@ struct MacOraApp: App {
                 .keyboardShortcut("t", modifiers: [.command])
             }
         }
-
-//        WindowGroup {
-//            let cacheConnectionDetails = ConnectionDetails()
-//            DBCacheBrowserMainView(connDetails: cacheConnectionDetails)
-//                .preferredColorScheme(appSettings.currentTheme.colorScheme)
-//                .environmentObject(appSettings)
-//        }
-//        .commands {
-//            SidebarCommands()
-//            ToolbarCommands()
-//            TextEditingCommands()
-//            CommandGroup(after: .newItem) {
-//                Button(action: {
-//                    if let currentWindow = NSApp.keyWindow,
-//                       let windowController = currentWindow.windowController {
-//                        windowController.newWindowForTab(nil)
-//                        if let newWindow = NSApp.keyWindow,
-//                           currentWindow != newWindow {
-//                            currentWindow.addTabbedWindow(newWindow, ordered: .above)
-//                        }
-//                    }
-//                }) {
-//                    Text("New Tab")
-//                }
-//                .keyboardShortcut("t", modifiers: [.command])
-//            }
-//        }
         
         Settings {
             SettingsView()
@@ -101,7 +74,7 @@ struct MainDocumentMenuCommands: Commands {
     var body: some Commands {
         CommandMenu("Database") {
             NavigationLink("DB Browser", destination: DBCacheBrowserMainView(connDetails: cacheConnectionDetails ?? ConnectionDetails(), selectedObjectName: selectedObjectName)
-                .preferredColorScheme(appSettings.currentTheme.colorScheme)
+//                .preferredColorScheme(systemColorScheme ? nil : appSettings.currentTheme.colorScheme)
                 .environmentObject(appSettings)
             )
                 .disabled(cacheConnectionDetails == nil)
@@ -109,7 +82,7 @@ struct MainDocumentMenuCommands: Commands {
                 .keyboardShortcut("d", modifiers: [.command])
             
             NavigationLink("Session Browser", destination: SBMainView(connDetails: sbConnDetails ?? .preview())
-                .preferredColorScheme(appSettings.currentTheme.colorScheme)
+//                .preferredColorScheme(systemColorScheme ? nil : appSettings.currentTheme.colorScheme)
                 .environmentObject(appSettings)
             )
                 .disabled(cacheConnectionDetails == nil)
