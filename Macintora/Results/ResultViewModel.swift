@@ -84,7 +84,7 @@ public class ResultViewModel: ObservableObject {
                 if element.type == .error {
                     return NSAttributedString(string: "--------------------\n" + element.timestamp.ISO8601Format() + "\n" + element.text, attributes: [.foregroundColor: NSColor.red])
                 } else {
-                    return NSAttributedString(string: "--------------------\n" + element.timestamp.ISO8601Format() + "\n" + element.text, attributes: [.font: NSFont.monospacedSystemFont(ofSize: 12.0, weight: .regular)])
+                    return NSAttributedString(string: "--------------------\n" + element.timestamp.ISO8601Format() + "\n" + element.text, attributes: [.foregroundColor: NSColor.textColor, .font: NSFont.monospacedSystemFont(ofSize: 12.0, weight: .regular)])
                 }
             }.joined(with: "\n")
             

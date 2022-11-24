@@ -12,7 +12,7 @@ import Combine
 struct ResultViewWrapper: View {
     @ObservedObject var queryResults: ResultViewModel
     var resultsController: ResultsController
-    @State private var dbTimeStr = "Server Time"
+    @State private var dbTimeStr = ""
     @State private var dbTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     @State private var isDbTimerRunning = false
     @AppStorage("serverTimeSeconds") private var serverTimeSeconds = false
@@ -24,7 +24,8 @@ struct ResultViewWrapper: View {
         self.resultsController = resultsController
         queryResults = resultsController.results["current"]!
         dateFormatter.calendar = Calendar(identifier: .iso8601)
-//        dateFormatter.dateFormat = serverTimeSeconds ? "yyyy-MM-dd HH:mm:ss" : "yyyy-MM-dd HH:mm"
+        dateFormatter.dateFormat = serverTimeSeconds ? "yyyy-MM-dd HH:mm:ss" : "yyyy-MM-dd HH:mm"
+        dateFormatter.timeZone = resultsController.document?.oraSession?.dbTimeZone
     }
     
     func stopDBTimer() {
@@ -40,15 +41,15 @@ struct ResultViewWrapper: View {
     }
 
     func updateTimerDisplay(with input: Date) {
-        log.viewCycle.debug("received timer input: \(input)")
+//        log.viewCycle.debug("received timer input: \(input), \(dateFormatter.string(from: input))")
         if isDbTimerRunning {
             dbTimeStr = dateFormatter.string(from: input)
-        } else { dbTimeStr = "Server time" }
+        } else { dbTimeStr = "" }
     }
     
     var body: some View {
         VStack {
-            let _ = log.viewCycle.debug("Redrawing ResultViewWrapper, queryResults: \(queryResults.bindVarVM)")
+//            let _ = log.viewCycle.debug("Redrawing ResultViewWrapper, queryResults: \(queryResults.bindVarVM)")
             queryResultToolbar
             ZStack {
                 GeometryReader { geo in
@@ -56,9 +57,11 @@ struct ResultViewWrapper: View {
                         ResultView(model: self.queryResults )
                             .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity)
                         
-                        BindVarInputView(bindVarVM: $queryResults.bindVarVM, runAction: runWithBinds, cancelAction: {queryResults.showingBindVarInputView = false})
-                            .frame(width: queryResults.showingBindVarInputView ? geo.size.width/3 : 0, alignment: .trailing)
-                            .hidden(!queryResults.showingBindVarInputView)
+                        if queryResults.showingBindVarInputView {
+                            BindVarInputView(bindVarVM: $queryResults.bindVarVM, runAction: runWithBinds, cancelAction: {queryResults.showingBindVarInputView = false})
+                                .frame(width: queryResults.showingBindVarInputView ? geo.size.width/3 : 0, alignment: .trailing)
+//                                .hidden(!queryResults.showingBindVarInputView)
+                        }
                         
                         RunningLogView(attributedText: queryResults.runningLogStr)
                             .frame(width: queryResults.showingLog ? geo.size.width/3 : 0, alignment: .trailing)
@@ -140,21 +143,7 @@ struct ResultViewWrapper: View {
                 .padding(.horizontal, 3)
             
             Spacer()
-
-            Toggle(isOn: $isDbTimerRunning) {
-                Text("\(dbTimeStr)")
-                    .padding()
-                    .onReceive(dbTimer) { input in
-                        updateTimerDisplay(with: input)
-                    }
-            }
-            .toggleStyle(.button)
-            .onChange(of: isDbTimerRunning) { newValue in
-                if newValue { startDBTimer(); updateTimerDisplay(with: .now) }
-                else { stopDBTimer(); dbTimeStr = "Server time" }
-            }
-            .disabled(resultsController.document?.isConnected != .connected)
-            .frame(width: 200)
+            serverTimeToolbar
             
             Toggle(isOn: $queryResults.showingLog) {
                 Image(systemName: "list.dash") //.foregroundColor(Color.blue)
@@ -166,6 +155,26 @@ struct ResultViewWrapper: View {
         }
         .padding(.horizontal, 3)
         .onAppear() { stopDBTimer() }
+    }
+    
+    var serverTimeToolbar: some View {
+        HStack(spacing: 2) {
+            
+            Toggle(isOn: $isDbTimerRunning) {
+                Label("\(dbTimeStr.isEmpty ? "server time" : dbTimeStr)", systemImage: "clock")
+                    .onReceive(dbTimer) { input in
+                        updateTimerDisplay(with: input)
+                    }
+            }
+                .toggleStyle(.button)
+                .labelStyle(.titleAndIcon)
+                .onChange(of: isDbTimerRunning) { newValue in
+                    log.viewCycle.debug("onChange of isDbTimerRunning: \(newValue)")
+                    if newValue { startDBTimer(); updateTimerDisplay(with: .now) }
+                    else { stopDBTimer() }
+                }
+                .disabled(resultsController.document?.isConnected != .connected)
+        }
     }
 }
 

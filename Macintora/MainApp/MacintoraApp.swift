@@ -20,18 +20,14 @@ extension Logger {
 
 let log = Logger().default
 
-
-
 @main
 struct MacOraApp: App {
     @StateObject var appStateContainer = AppStateContainer()
     @ObservedObject var appSettings = AppSettings.shared
-
+    
     var body: some Scene {
-
         DocumentGroup(newDocument: { MainDocumentVM() }) { config in
                 MainDocumentView(document: config.document)
-//                .preferredColorScheme(systemColorScheme ? nil : appSettings.currentTheme.colorScheme)
                     .environmentObject(appSettings)
                     .frame(minWidth: 400, idealWidth: 1600, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
             
@@ -74,16 +70,16 @@ struct MainDocumentMenuCommands: Commands {
     var body: some Commands {
         CommandMenu("Database") {
             NavigationLink("DB Browser", destination: DBCacheBrowserMainView(connDetails: cacheConnectionDetails ?? ConnectionDetails(), selectedObjectName: selectedObjectName)
-//                .preferredColorScheme(systemColorScheme ? nil : appSettings.currentTheme.colorScheme)
                 .environmentObject(appSettings)
+                .frame(minWidth: 400, idealWidth: 1200, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
             )
                 .disabled(cacheConnectionDetails == nil)
                 .presentedWindowStyle(TitleBarWindowStyle())
                 .keyboardShortcut("d", modifiers: [.command])
             
             NavigationLink("Session Browser", destination: SBMainView(connDetails: sbConnDetails ?? .preview())
-//                .preferredColorScheme(systemColorScheme ? nil : appSettings.currentTheme.colorScheme)
                 .environmentObject(appSettings)
+                .frame(minWidth: 400, idealWidth: 1200, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
             )
                 .disabled(cacheConnectionDetails == nil)
                 .presentedWindowStyle(TitleBarWindowStyle())

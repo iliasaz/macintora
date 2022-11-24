@@ -15,7 +15,7 @@ let predicate = NSPredicate(format: "category == %@", argumentArray: ["generic"]
 func getEntries() -> String {
     var osLogEntries = try? store?.getEntries(with: [.reverse], at: oneMinuteAgo, matching: predicate)
     let s = osLogEntries?.map { "\($0.composedMessage) \n" }.joined() ?? ""
-    print(">>> \(s) <<<")
+//    print(">>> \(s) <<<")
     return s
 }
 
