@@ -9,8 +9,8 @@ import SwiftUI
 import CodeEditor
 
 struct SourceView: View {
-    @State var objName: String
-    @State var text: String?
+    @Binding var objName: String
+    @Binding var text: String?
     @State var title: String
     
     var body: some View {
@@ -49,7 +49,7 @@ struct SourceView: View {
 
 struct SourceView_Preview: PreviewProvider {
     static var previews: some View {
-        SourceView(objName: "ObjectName", text: "this is the source code sample", title: "Title")
+        SourceView(objName: .constant("ObjectName"), text: .constant("this is the source code sample"), title: "Title")
             .frame(width: 800, height: 800)
     }
 }

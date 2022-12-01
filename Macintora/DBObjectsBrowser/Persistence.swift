@@ -105,6 +105,9 @@ struct PersistenceController {
                  Check the error message to determine what the actual problem was.
                  */
                 fatalError("Unresolved error \(error), \(error.userInfo)")
+            } else {
+//                storeDescription.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+//                storeDescription.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
             }
         })
     }

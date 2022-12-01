@@ -12,7 +12,12 @@ import CodeEditor
 struct DBSourceDetailView: View {
     @Environment(\.managedObjectContext) var context
     @FetchRequest private var tables: FetchedResults<DBCacheSource>
-    private var dbObject: DBCacheObject
+    @ObservedObject var dbObject: DBCacheObject
+    {
+        mutating didSet {
+            _tables = FetchRequest<DBCacheSource>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@ ", dbObject.name, dbObject.owner))
+        }
+    }
     
     init(dbObject: DBCacheObject) {
         self.dbObject = dbObject
@@ -28,9 +33,9 @@ struct DBSourceDetailView: View {
         VStack(alignment: .leading) {
             tableHeader
             VSplitView {
-                SourceView(objName: dbObject.name, text: tables.first?.textSpec, title: "Specification")
+                SourceView(objName: $dbObject.name, text: Binding<String?>(get: {tables.first?.textSpec ?? ""}, set: {_ in}), title: "Specification")
                     .padding(.vertical,5)
-                SourceView(objName: dbObject.name, text: tables.first?.textBody, title: "Body")
+                SourceView(objName: $dbObject.name, text: Binding<String?>(get: {tables.first?.textBody ?? ""}, set: {_ in}), title: "Body")
                     .padding(.vertical,5)
             }
         }

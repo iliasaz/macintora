@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct DBDetailView: View {
-    var dbObject: DBCacheObject
+    @StateObject var dbObject: DBCacheObject
     
     var body: some View {
         VStack {
@@ -16,13 +16,13 @@ struct DBDetailView: View {
                 .padding([.top, .leading, .trailing])
             ScrollView {
             Form {
-                TextField("Object ID", value: .constant(dbObject.objectId), format: .number.grouping(.never))
-                TextField("Created", value: .constant(dbObject.createDate), format: .dateTime)
-                TextField("Last DDL", value: .constant(dbObject.lastDDLDate), format: .dateTime)
-                TextField("Edition", text: .constant(dbObject.editionName ?? ""))
+                TextField("Object ID", value: Binding(get: { dbObject.objectId }, set: {_ in}) , format: .number.grouping(.never))
+                TextField("Created", value: Binding(get: { dbObject.createDate} , set: {_ in}), format: .dateTime)
+                TextField("Last DDL", value: Binding(get: { dbObject.lastDDLDate} , set: {_ in}), format: .dateTime)
+                TextField("Edition", text: Binding(get: { dbObject.editionName ?? "" } , set: {_ in}))
                 HStack {
-                    Toggle("Editionable", isOn: .constant(dbObject.isEditionable))
-                    Toggle("Valid", isOn: .constant(dbObject.isValid))
+                    Toggle("Editionable", isOn: Binding(get: { dbObject.isEditionable } , set: {_ in}))
+                    Toggle("Valid", isOn: Binding(get: { dbObject.isValid } , set: {_ in}))
                 }
             }
             .padding()
@@ -95,7 +95,8 @@ struct DBDetailViewHeader: View {
     func refresh() {
         Task(priority: .background) {
             isRefreshing = true
-            try cache.connectSvc()
+            try? cache.connectSvc()
+            guard cache.isConnected == .connected else { isRefreshing = false; return }
             await cache.refreshObject(OracleObject(
                 owner: dbObject.owner,
                 name: dbObject.name,

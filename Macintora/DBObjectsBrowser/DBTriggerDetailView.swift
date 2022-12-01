@@ -12,7 +12,12 @@ import CoreData
 struct DBTriggerDetailView: View {
     @Environment(\.managedObjectContext) var context
     @FetchRequest private var tables: FetchedResults<DBCacheTrigger>
-    private var dbObject: DBCacheObject
+    @ObservedObject var dbObject: DBCacheObject
+    {
+        mutating didSet {
+            _tables = FetchRequest<DBCacheTrigger>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@ ", dbObject.name, dbObject.owner))
+        }
+    }
     
     init(dbObject: DBCacheObject) {
         self.dbObject = dbObject
@@ -62,7 +67,7 @@ struct DBTriggerDetailView: View {
         VStack(alignment: .leading) {
             tableHeader
             
-            SourceView(objName: dbObject.name, text: tables.first?.body, title: "Body")
+            SourceView(objName: $dbObject.name, text: Binding<String?>(get: {tables.first?.body ?? ""}, set: {_ in}), title: "Body")
 
         }
         .padding()

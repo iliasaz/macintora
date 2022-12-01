@@ -771,7 +771,7 @@ from dba_objects o
     }
     
     func processSource_NEW(_ objs: [OracleObject]) async {
-//        log.cache.debug("in \(#function, privacy: .public)")
+        log.cache.debug("in \(#function, privacy: .public)")
         guard objs.count > 0 else { return }
         guard objs.count < 1000 else { log.cache.error("Unexpected obj count: \(objs.count, privacy: .public)"); fatalError("Unexpected obj count: \(objs.count)") }
         var sql = "select type, owner, name, text from dba_source where owner in ($OWNERS$) and name in ($NAMES$) and type in (:ts, :tb) order by type, owner, name, line"
@@ -806,6 +806,7 @@ from dba_objects o
         sql = sql.replacingOccurrences(of: "$NAMES$", with: nameString)
         // execute SQL
         let cur = try? conn.cursor()
+        log.cache.debug("executing SQL \(sql, privacy: .public)")
         do { try cur?.execute(sql, params: params, prefetchSize: 50000) }
         catch { log.cache.error("\(error.localizedDescription)") }
         // now scroll through the results and pull all hte details into a temp set
@@ -894,6 +895,7 @@ from dba_objects o
     }
     
     func refreshObject(_ currentObj: OracleObject) async {
+        log.cache.debug("in \(#function, privacy: .public)")
         // get a database version of the object
         let sql = """
 select /*+ rule */ owner, object_name, object_type, object_id, created, editionable, edition_name, status
@@ -910,6 +912,7 @@ where object_type = :type and owner = :owner and object_name = :name
         catch { log.error("\(error.localizedDescription)"); return }
         log.cache.debug("finished executing select statement in \(#function, privacy: .public)")
         if let row = cur?.fetchOneSwifty() {
+            log.cache.debug("got db object \(row["OWNER"]!.string ?? "", privacy: .public).\(row["OBJECT_NAME"]!.string ?? "")")
             let obj = OracleObject(owner: row["OWNER"]!.string!,
                                    name: row["OBJECT_NAME"]!.string!,
                                    type: OracleObjectType(rawValue: row["OBJECT_TYPE"]!.string!) ?? .unknown,
@@ -926,20 +929,21 @@ where object_type = :type and owner = :owner and object_name = :name
                 await self.processChunkOfObjects([obj], objectType: obj.type)
             }
         } else { // no object in the database, should drop it from the cache
-            dropLocalObject(currentObj)
+            await dropLocalObject(currentObj)
         }
     }
     
-    func dropLocalObject(_ obj: OracleObject) {
+    func dropLocalObject(_ obj: OracleObject) async {
         log.cache.debug("in \(#function, privacy: .public)")
-        let context = persistenceController.container.viewContext
-        let request = DBCacheObject.fetchRequest()
-        request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@ and type_ = %@ ", obj.name, obj.owner, obj.type.rawValue)
-        let results = (try? context.fetch(request)) ?? []
-        if let objCache = results.first {
-            log.cache.debug("deleting an existing cache object \(obj.owner, privacy: .public).\(obj.name, privacy: .public) of type \(obj.type.rawValue, privacy: .public)")
-            context.delete(objCache)
-            try? context.save()
+        await persistenceController.container.performBackgroundTask { (context) in
+            let request = DBCacheObject.fetchRequest()
+            request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@ and type_ = %@ ", obj.name, obj.owner, obj.type.rawValue)
+            let results = (try? context.fetch(request)) ?? []
+            if let objCache = results.first {
+                log.cache.debug("deleting an existing cache object \(obj.owner, privacy: .public).\(obj.name, privacy: .public) of type \(obj.type.rawValue, privacy: .public)")
+                context.delete(objCache)
+                try? context.save()
+            }
         }
         log.cache.debug("exiting from \(#function, privacy: .public)")
     }
@@ -1173,6 +1177,7 @@ where object_type = :type and owner = :owner and object_name = :name
         let oracleService = OracleService(from_string: connDetails.tns)
         pool = try ConnectionPool(service: oracleService, user: connDetails.username, pwd: connDetails.password, minConn: 0, maxConn: cacheUpdateSessionLimit, poolType: .Session, isSysDBA: connDetails.connectionRole == .sysDBA)
         pool?.timeout = 5
+        self.isConnected = .connected
         log.cache.debug("Connection pool created")
     }
     
@@ -1183,6 +1188,7 @@ where object_type = :type and owner = :owner and object_name = :name
             return
         }
         pool.close()
+        self.isConnected = .disconnected
         log.cache.debug("Connection pool closed")
     }
     

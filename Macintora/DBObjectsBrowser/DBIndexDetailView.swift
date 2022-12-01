@@ -14,7 +14,13 @@ struct DBIndexDetailView: View {
     @State private var selectedTab: String = "columns"
     @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
     @FetchRequest private var columns: FetchedResults<DBCacheIndexColumn>
-    private var dbObject: DBCacheObject
+    @ObservedObject var dbObject: DBCacheObject
+    {
+        mutating didSet {
+            _indexes = FetchRequest<DBCacheIndex>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
+            _columns = FetchRequest<DBCacheIndexColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "indexName_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
+        }
+    }
     
     let columnLabels = ["position", "columnName", "isDescending", "length"]
     let booleanColumnLabels = ["isDescending"]

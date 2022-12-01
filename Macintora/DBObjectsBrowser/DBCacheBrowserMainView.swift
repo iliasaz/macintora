@@ -27,6 +27,7 @@ struct DBCacheBrowserMainView: View {
     
     init(connDetails: ConnectionDetails, preview: Bool = false, selectedObjectName: String? = nil) {
         _connDetails = State(initialValue: connDetails)
+        log.viewCycle.debug("init DBCacheBrowserMainView")
         if preview {
             self.cache = DBCacheVM.init(preview: true)
         } else {

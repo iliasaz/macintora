@@ -14,7 +14,13 @@ struct DBTableDetailView: View {
     @State private var selectedTab: String = "columns"
     @FetchRequest private var tables: FetchedResults<DBCacheTable>
     @FetchRequest private var columns: FetchedResults<DBCacheTableColumn>
-    private var dbObject: DBCacheObject
+    @ObservedObject var dbObject: DBCacheObject
+    {
+        mutating didSet {
+            _tables = FetchRequest<DBCacheTable>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
+            _columns = FetchRequest<DBCacheTableColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "tableName_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
+        }
+    }
     
     let columnLabels = ["columnID", "columnName", "dataType", "dataTypeMod", "dataTypeOwner", "length", "precision", "scale", "isNullable", "numNulls", "numDistinct", "isIdentity", "isHidden", "isVirtual", "isSysGen", "defaultValue","internalColumnID", ]
     let booleanColumnLabels = ["isNullable", "isHidden", "isIdentity", "isSysGen", "isVirtual"]
