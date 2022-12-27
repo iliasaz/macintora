@@ -11,6 +11,7 @@ import CodeEditor
 
 struct DBSourceDetailView: View {
     @Environment(\.managedObjectContext) var context
+    @State private var selectedTab: String = "spec"
     @FetchRequest private var tables: FetchedResults<DBCacheSource>
     @ObservedObject var dbObject: DBCacheObject
     {
@@ -32,10 +33,14 @@ struct DBSourceDetailView: View {
     var body: some View {
         VStack(alignment: .leading) {
             tableHeader
-            VSplitView {
+            TabView(selection: $selectedTab) {
                 SourceView(objName: $dbObject.name, text: Binding<String?>(get: {tables.first?.textSpec ?? ""}, set: {_ in}), title: "Specification")
+                    .tabItem { Text("Spec") }
+                    .tag("spec")
                     .padding(.vertical,5)
                 SourceView(objName: $dbObject.name, text: Binding<String?>(get: {tables.first?.textBody ?? ""}, set: {_ in}), title: "Body")
+                    .tabItem { Text("Body") }
+                    .tag("body")
                     .padding(.vertical,5)
             }
         }

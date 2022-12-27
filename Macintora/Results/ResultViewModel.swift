@@ -140,20 +140,22 @@ public class ResultViewModel: ObservableObject {
                     return
                 }
             }
+            let start = Date.now
             let result = await queryData(for: currentSql, using: currentCursor!, maxRows: rowFetchLimit, showDbmsOutput: enabledDbmsOutput, binds: getBinds(), prefetchSize: queryPrefetchSize)
+            let elapsed = Date.now.timeIntervalSince(start)
             await MainActor.run {
-                updateViews(with: result)
+                updateViews(with: result, elapsedTime: elapsed)
             }
         }
     }
     
-    func updateViews(with result: Result<([String], [SwiftyRow], String, String), Error>) {
+    func updateViews(with result: Result<([String], [SwiftyRow], String, String), Error>, elapsedTime: TimeInterval = TimeInterval(0)) {
         objectWillChange.send()
         switch result {
             case .success(let (resultColumns, resultRows, sqlId, dbmsOutput)):
                 self.columnLabels = resultColumns
                 self.rows = resultRows
-                runningLog.append(RunningLogEntry(text: "sqlId: \(sqlId)\n" + currentSql + (dbmsOutput.isEmpty ? "" : "\n********* DBMS_OUTPUT *********\n\(dbmsOutput)"), type: .info))
+                runningLog.append(RunningLogEntry(text: "sqlId: \(sqlId)\n" + "Elapsed: \(elapsedTime) sec.\n" + currentSql + (dbmsOutput.isEmpty ? "" : "\n********* DBMS_OUTPUT *********\n\(dbmsOutput)"), type: .info))
                 self.sqlId = sqlId
                 showingLog = !dbmsOutput.isEmpty
                 isFailed = false
@@ -438,5 +440,90 @@ public class ResultViewModel: ObservableObject {
             }
         }
     }
+    
+    func export(to fileURL: URL, type: ExportType) {
+        log.debug("in export()")
+        guard let cursor = currentCursor else { return }
+        objectWillChange.send()
+        runningLog.append(RunningLogEntry(text: "Starting export to \(fileURL)", type: .info))
+        showingLog = true
+        Task.detached(priority: .background) { [self] in
+            var rowCnt = 0
+            // ensure file exists and is empty
+            try? "".write(to: fileURL, atomically: true, encoding: .utf8)
+            guard let fileHandle = try? FileHandle(forWritingTo: fileURL) else {
+                log.error("Could not create file \(fileURL)")
+                return
+            }
+            
+            defer {
+                fileHandle.closeFile()
+            }
+            
+            let bufferSize = 8*1024
+            var buffer: [UInt8] = []
+            buffer.reserveCapacity(bufferSize)
+            // Write the final buffer
+            try? fileHandle.write(contentsOf: buffer)
+            await MainActor.run {
+                resultsController.isExecuting = true
+            }
+            do {
+                try cursor.refreshData(prefetchSize: 10_000)
+                while let row = cursor.nextSwifty(withStringRepresentation: true) {
+                    rowCnt += 1
+                    let s = getLine(from: row, delimiter: type).appending("\n")
+                    // bufferred writing
+                    buffer.append(contentsOf: s.utf8)
+                    if buffer.count >= bufferSize {
+                        try? fileHandle.write(contentsOf: buffer)
+                        buffer.removeAll(keepingCapacity: true)
+                    }
+                    // log
+                    if rowCnt%1000 == 0 {
+                        runningLog.append(RunningLogEntry(text: "\(rowCnt) rows ezported", type: .info))
+                    }
+                }
+                // remainder
+                if buffer.count >= 0 {
+                    try? fileHandle.write(contentsOf: buffer)
+                }
+            } catch DatabaseErrors.SQLError (let error) {
+                log.error("\(error.description, privacy: .public)")
+                runningLog.append(RunningLogEntry(text: error.text, type: .error))
+                await MainActor.run {
+                    showingLog = true
+                    resultsController.isExecuting = false
+                }
+            } catch {
+                log.error("\(error.localizedDescription, privacy: .public)")
+                runningLog.append(RunningLogEntry(text: error.localizedDescription, type: .error))
+                await MainActor.run {
+                    showingLog = true
+                    resultsController.isExecuting = false
+                }
+            }
+            runningLog.append(RunningLogEntry(text: "Export completed; row count: \(rowCnt)", type: .info))
+            await MainActor.run {
+                showingLog = true
+                resultsController.isExecuting = false
+            }
+        }
+    }
+    
+    func getLine(from row: SwiftyRow, delimiter: ExportType) -> String {
+        let s = (row.fields.map { value in
+            switch delimiter {
+                case .csv, .tsv:
+                    return "\"\(value.valueString)\""
+                case .none :
+                    return value.valueString
+            }
+        }).joined(separator: delimiter.rawValue)
+        return s
+    }
 }
 
+enum ExportType: String {
+    case csv = ",", tsv = "\t", none = ""
+}

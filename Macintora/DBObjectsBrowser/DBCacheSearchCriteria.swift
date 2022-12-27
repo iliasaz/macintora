@@ -9,8 +9,12 @@ import CoreData
 import os
 import SwiftUI
 
-class DBCacheSearchCriteria: ObservableObject {
-    @Published var searchText = ""
+struct DBCacheSearchCriteria: Equatable {
+    static func == (lhs: DBCacheSearchCriteria, rhs: DBCacheSearchCriteria) -> Bool {
+        lhs.predicate == rhs.predicate
+    }
+    
+    var searchText = ""
     @AppStorage("prefixList") var prefixList = ["preview": ""] // tns = key: value
     @AppStorage("ownerList") var ownerList = ["preview": ""] // tns = key: value
     @AppStorage("showTables") var showTables = true
@@ -19,8 +23,9 @@ class DBCacheSearchCriteria: ObservableObject {
     @AppStorage("showPackages") var showPackages = true
     @AppStorage("showTypes") var showTypes = true
     @AppStorage("showTriggers") var showTriggers = true
-    @Published var showProcedures = false
-    @Published var showFunctions = false
+    var showProcedures = false
+    var showFunctions = false
+//    var changed = false
     
     private let tns: String
     

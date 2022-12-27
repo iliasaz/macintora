@@ -7,14 +7,10 @@
 
 import SwiftUI
 
-struct DBDetailView: View {
-    @StateObject var dbObject: DBCacheObject
-    
+struct DBDetailObjectMainView: View {
+    var dbObject: DBCacheObject
     var body: some View {
-        VStack {
-            DBDetailViewHeader(dbObject: dbObject)
-                .padding([.top, .leading, .trailing])
-            ScrollView {
+        VStack(alignment: .leading, spacing: 0.0) {
             Form {
                 TextField("Object ID", value: Binding(get: { dbObject.objectId }, set: {_ in}) , format: .number.grouping(.never))
                 TextField("Created", value: Binding(get: { dbObject.createDate} , set: {_ in}), format: .dateTime)
@@ -31,16 +27,48 @@ struct DBDetailView: View {
                     .stroke(.quaternary, lineWidth: 2)
             )
             .padding([.top, .leading, .trailing])
-            
-            switch dbObject.type {
-                case OracleObjectType.table.rawValue: DBTableDetailView(dbObject: dbObject)
-                case OracleObjectType.view.rawValue: DBTableDetailView(dbObject: dbObject)
-                case OracleObjectType.type.rawValue: DBSourceDetailView(dbObject: dbObject)
-                case OracleObjectType.package.rawValue: DBSourceDetailView(dbObject: dbObject)
-                case OracleObjectType.trigger.rawValue: DBTriggerDetailView(dbObject: dbObject)
-                case OracleObjectType.index.rawValue: DBIndexDetailView(dbObject: dbObject)
-                default: EmptyView()
-            }
+            Spacer()
+        }
+    }
+}
+
+struct DBDetailObjectDetailsView: View {
+    var dbObject: DBCacheObject
+    var body: some View {
+        switch dbObject.type {
+            case OracleObjectType.table.rawValue: DBTableDetailView(dbObject: dbObject)
+            case OracleObjectType.view.rawValue: DBTableDetailView(dbObject: dbObject)
+            case OracleObjectType.type.rawValue: DBSourceDetailView(dbObject: dbObject)
+            case OracleObjectType.package.rawValue: DBSourceDetailView(dbObject: dbObject)
+            case OracleObjectType.trigger.rawValue: DBTriggerDetailView(dbObject: dbObject)
+            case OracleObjectType.index.rawValue: DBIndexDetailView(dbObject: dbObject)
+            default: EmptyView()
+        }
+    }
+}
+
+struct DBDetailView: View {
+    var dbObject: DBCacheObject
+    @State private var selectedTab: String = "main"
+    
+    var body: some View {
+        VStack(alignment: .leading) {
+            DBDetailViewHeader(dbObject: dbObject)
+                .padding([.top, .leading, .trailing])
+
+            TabView {
+                DBDetailObjectMainView(dbObject: dbObject)
+                    .frame(alignment: .topLeading)
+                    .tabItem {
+                        Text("Main")
+                    }
+                    .tag("main")
+
+                DBDetailObjectDetailsView(dbObject: dbObject)
+                    .tabItem {
+                        Text("Details")
+                    }
+                    .tag("details")
             }
         }
     }
@@ -121,19 +149,19 @@ struct DBDetailViewHeaderImage: View {
     var body: some View {
         switch type {
             case .table:
-                Image(systemName: "tablecells")
+                Label("Table", systemImage: "tablecells")
             case .view:
-                Image(systemName: "tablecells.badge.ellipsis")
+                Label("View", systemImage: "tablecells.badge.ellipsis")
             case .index:
-                Image(systemName: "decrease.indent")
+                Label("Index", systemImage: "ecrease.indent")
             case .type:
-                Image(systemName: "t.square")
+                Label("Type", systemImage: "t.square")
             case .package:
-                Image(systemName: "ellipsis.curlybraces")
+                Label("Package", systemImage: "ellipsis.curlybraces")
             case .trigger:
-                Image(systemName: "bolt")
+                Label("Trigger", systemImage: "bolt")
             default:
-                Image(systemName: "questionmark.square")
+                Label("Unknown", systemImage: "questionmark.square")
         }
     }
 }
@@ -143,6 +171,12 @@ struct DBDetailViewHeaderImage: View {
 struct DBDetailView_Previews: PreviewProvider {
     static var previews: some View {
         DBDetailView(dbObject: DBCacheObject.exampleTrigger)
+            .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+            .frame(width: 800, height: 800)
+        DBDetailView(dbObject: DBCacheObject.exampleTable)
+            .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+            .frame(width: 800, height: 800)
+        DBDetailView(dbObject: DBCacheObject.examplePackage)
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
             .frame(width: 800, height: 800)
     }

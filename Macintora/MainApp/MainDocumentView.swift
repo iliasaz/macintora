@@ -9,6 +9,7 @@ import SwiftUI
 import CodeEditor
 import Logging
 import Combine
+import AppKit
 
 public enum FocusedView: Int, Hashable {
     case codeEditor, grid, login, connectionList
@@ -20,6 +21,7 @@ struct MainDocumentView: View {
     @Environment(\.undoManager) var undoManager
     @State private var selectedTab: String = "queryResults"
     @FocusState private var focusedView: FocusedView?
+    @Environment(\.openDocument) private var openDocument
 
     @StateObject private var resultsController: ResultsController
     @State private var editorSelection: Range<String.Index> = "".startIndex..<"".endIndex
@@ -37,42 +39,40 @@ struct MainDocumentView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationSplitView {
             ConnectionListView(
                 connectionSatus: $document.isConnected,
-                username: $document.connDetails.username,
-                password: $document.connDetails.password,
-                selectedTns: Binding<String> ( get: { document.connDetails.tns }, set: {document.connDetails.tns = $0} ),
-                connectionRole: $document.connDetails.connectionRole,
+                username: $document.mainConnection.mainConnDetails.username,
+                password: $document.mainConnection.mainConnDetails.password,
+                selectedTns: Binding<String> ( get: { document.mainConnection.mainConnDetails.tns }, set: {document.mainConnection.mainConnDetails.tns = $0} ),
+                connectionRole: $document.mainConnection.mainConnDetails.connectionRole,
                 connect: document.connect,
                 disconnect: document.disconnect
             )
+        } detail: {
             VStack {
-//                GeometryReader { geo in
-                    VSplitView {
-                        CodeEditor(source: $document.model.text,
-                                   selection: $editorSelection,
-                                   language: .pgsql,
-                                   theme: .atelierDuneLight,
-                                   indentStyle: .softTab(width: 2),
-                                   autoPairs: [ "{": "}", "(": ")" ],
-                                   inset: CGSize(width: 8, height: 8),
-                                   autoscroll: false)
-                            .frame(maxWidth: .infinity, minHeight:100, maxHeight: .infinity)
-                            .focused($focusedView, equals: .codeEditor)
-                            .layoutPriority(1)
-                        
-                        ResultViewWrapper(resultsController: resultsController)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-//                    }
-//                    .frame(width: geo.size.width, height: geo.size.height)
+                VSplitView {
+                    CodeEditor(source: $document.model.text,
+                               selection: $editorSelection,
+                               language: .pgsql,
+                               theme: .atelierDuneLight,
+                               indentStyle: .softTab(width: 2),
+                               autoPairs: [ "{": "}", "(": ")" ],
+                               inset: CGSize(width: 8, height: 8),
+                               autoscroll: false)
+                        .frame(maxWidth: .infinity, minHeight:100, maxHeight: .infinity)
+                        .focused($focusedView, equals: .codeEditor)
+                        .layoutPriority(1)
+                    
+                    ResultViewWrapper(resultsController: resultsController)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .focusedSceneValue(\.cacheConnectionDetails, document.connDetails )
+        .focusedSceneValue(\.mainConnection, document.mainConnection)
+//        .focusedSceneValue(\.cacheConnectionDetails, document.mainConnection.mainConnDetails)
         .focusedSceneValue(\.selectedObjectName, selectedObject)
-        .focusedSceneValue(\.sbConnDetails, document.sbConnDetails )
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
                 self.focusedView = .codeEditor
@@ -80,12 +80,12 @@ struct MainDocumentView: View {
         }
         
         .toolbar {
-            ToolbarItemGroup(placement: .navigation) {
-                Button(action: toggleSidebar, label: {
-                    Image(systemName: "sidebar.left")
-                } )
-                .help("Sidebar")
-            }
+//            ToolbarItemGroup(placement: .navigation) {
+//                Button(action: toggleSidebar, label: {
+//                    Image(systemName: "sidebar.left")
+//                } )
+//                .help("Sidebar")
+//            }
             
             ToolbarItemGroup(placement: .principal) {
                 // connect / disconnect
@@ -142,20 +142,24 @@ struct MainDocumentView: View {
                 .keyboardShortcut("e", modifiers: .command)
                 .help("Explain plan of current statement")
                 
-                // open a new window
+                // copy current sql into a new tab
                 Button {
                     Task {
                         if let url = document.newDocument(from: editorSelection) {
-                            NSWorkspace.shared.open(url)
+                            let (doc,_): (NSDocument, Bool) = try await NSDocumentController.shared.openDocument(withContentsOf: url, display: false)
+                            NSDocumentController.shared.addDocument(doc)
+                            doc.makeWindowControllers()
+                            doc.windowControllers.first?.window?.tabbingMode = .preferred
+                            doc.showWindows()
                         }
                     }
                 } label: { Image(systemName: "doc.on.doc") }
-                    .keyboardShortcut("n", modifiers: [.command, .shift])
-                    .help("Clone")
+                    .keyboardShortcut("t", modifiers: [.command, .shift])
+                    .help("New Tab")
                 
                 // format sql
                 Button {
-                    document.format(of: editorSelection)
+                    document.format(of: $editorSelection)
 //                    editorSelection = editorSelection.lowerBound..<editorSelection.lowerBound
                     focusedView = .codeEditor
                 } label: { Image(systemName: "wand.and.stars") }
@@ -172,9 +176,8 @@ struct MainDocumentView: View {
                     .help("Compile")
                 
                 Spacer()
-            }
-            
-            ToolbarItemGroup(placement: .confirmationAction) {
+//            }
+//            ToolbarItemGroup(placement: .confirmationAction ) {
                 Button {
                     document.ping()
                 } label: {
@@ -196,12 +199,12 @@ struct MainDocumentView: View {
 //                })
 //                .help("Theme")
                 
-                Button(action: {
-                    NSApplication.shared.terminate(self)
-                }, label: {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                })
-                .help("Exit")
+//                Button(action: {
+//                    NSApplication.shared.terminate(self)
+//                }, label: {
+//                    Image(systemName: "rectangle.portrait.and.arrow.right")
+//                })
+//                .help("Exit")
             }
         }
     }

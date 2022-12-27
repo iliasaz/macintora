@@ -10,6 +10,9 @@ import Logging
 import SwiftOracle
 import CoreData
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
+
 
 struct Constants {
     static let maxColumnWidth: CGFloat = 1500.0
@@ -136,4 +139,33 @@ extension Dictionary: RawRepresentable where Key: Codable, Value: Codable {
         }
         return result
     }
+}
+
+extension Animation {
+    func `repeat`(while expression: Bool, autoreverses: Bool = true) -> Animation {
+        if expression {
+            return self.repeatForever(autoreverses: autoreverses)
+        } else {
+            return self
+        }
+    }
+}
+
+public func showSavePanel(defaultName: String, defaultExtensions: [UTType] = []) -> URL? {
+    let savePanel = NSSavePanel()
+    if !defaultExtensions.isEmpty {
+        savePanel.allowedContentTypes = defaultExtensions
+        savePanel.allowsOtherFileTypes = true
+    }
+    savePanel.canCreateDirectories = true
+    savePanel.isExtensionHidden = false
+    savePanel.title = "Save"
+    savePanel.message = "Choose a folder and a name to store your value."
+    savePanel.nameFieldLabel = "File name:"
+    savePanel.nameFieldStringValue = defaultName
+    savePanel.directoryURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
+    
+    // display the dialog
+    let response = savePanel.runModal()
+    return response == .OK ? savePanel.url : nil
 }

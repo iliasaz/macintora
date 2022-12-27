@@ -44,7 +44,6 @@
 		498288EA28B7DCB000A28B04 /* HorizontalLabelStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D128B7DCB000A28B04 /* HorizontalLabelStyle.swift */; };
 		498288EB28B7DCB000A28B04 /* DBTableDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D228B7DCB000A28B04 /* DBTableDetailView.swift */; };
 		498288EC28B7DCB000A28B04 /* SwiftUIWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D328B7DCB000A28B04 /* SwiftUIWindow.swift */; };
-		498288F028B7DCB000A28B04 /* DBCacheBrowserMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D728B7DCB000A28B04 /* DBCacheBrowserMainView.swift */; };
 		498288F228B7DCB000A28B04 /* DBCacheSearchCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */; };
 		498288F428B7DCB000A28B04 /* FormField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DB28B7DCB000A28B04 /* FormField.swift */; };
 		498288F528B7DCB000A28B04 /* DBCacheListEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */; };
@@ -72,7 +71,6 @@
 		49C62C1C27DD7BAF00DE69E4 /* MainDocumentVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */; };
 		49C62C2427E010AE00DE69E4 /* ConnectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */; };
 		49CE5FF027279F3A009C2A94 /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CE5FEF27279F3A009C2A94 /* ResultView.swift */; };
-		49EAEF9F28C04858008F0B80 /* DBCacheListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEF9E28C04858008F0B80 /* DBCacheListView.swift */; };
 		49EAEFA128C048B8008F0B80 /* QuickFilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA028C048B8008F0B80 /* QuickFilterView.swift */; };
 		49EAEFA328C0493F008F0B80 /* DBDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA228C0493F008F0B80 /* DBDetailView.swift */; };
 		49EAEFA528C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA428C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift */; };
@@ -80,6 +78,8 @@
 		49EAEFA928C93263008F0B80 /* DBTriggerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA828C93263008F0B80 /* DBTriggerDetailView.swift */; };
 		49EAEFAB28C9331C008F0B80 /* SourceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFAA28C9331C008F0B80 /* SourceView.swift */; };
 		49EAEFC728CD5822008F0B80 /* TableTriggerListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */; };
+		49EB5E0C29528995003A0E23 /* DBCacheMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EB5E0B29528995003A0E23 /* DBCacheMainView.swift */; };
+		49F481F0294A84A1005DC77F /* PersistencePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49F481EF294A84A1005DC77F /* PersistencePreview.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -138,7 +138,6 @@
 		498288D228B7DCB000A28B04 /* DBTableDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBTableDetailView.swift; sourceTree = "<group>"; };
 		498288D328B7DCB000A28B04 /* SwiftUIWindow.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SwiftUIWindow.swift; sourceTree = "<group>"; };
 		498288D428B7DCB000A28B04 /* DBObjectsBrowserApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBObjectsBrowserApp.swift; sourceTree = "<group>"; };
-		498288D728B7DCB000A28B04 /* DBCacheBrowserMainView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheBrowserMainView.swift; sourceTree = "<group>"; };
 		498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheSearchCriteria.swift; sourceTree = "<group>"; };
 		498288DB28B7DCB000A28B04 /* FormField.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FormField.swift; sourceTree = "<group>"; };
 		498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheListEntryView.swift; sourceTree = "<group>"; };
@@ -181,7 +180,6 @@
 		49CD08FB2817B0C2006657ED /* TableColumnsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TableColumnsView.swift; sourceTree = "<group>"; };
 		49CE5FEF27279F3A009C2A94 /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
 		49E8E66A2752EC5600A99C05 /* Persistence.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
-		49EAEF9E28C04858008F0B80 /* DBCacheListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheListView.swift; sourceTree = "<group>"; };
 		49EAEFA028C048B8008F0B80 /* QuickFilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickFilterView.swift; sourceTree = "<group>"; };
 		49EAEFA228C0493F008F0B80 /* DBDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBDetailView.swift; sourceTree = "<group>"; };
 		49EAEFA428C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheTrigger+CoreDataClass.swift"; sourceTree = "<group>"; };
@@ -189,6 +187,8 @@
 		49EAEFA828C93263008F0B80 /* DBTriggerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBTriggerDetailView.swift; sourceTree = "<group>"; };
 		49EAEFAA28C9331C008F0B80 /* SourceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceView.swift; sourceTree = "<group>"; };
 		49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTriggerListView.swift; sourceTree = "<group>"; };
+		49EB5E0B29528995003A0E23 /* DBCacheMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheMainView.swift; sourceTree = "<group>"; };
+		49F481EF294A84A1005DC77F /* PersistencePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistencePreview.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -225,9 +225,8 @@
 		496FC8F7276AA5F900B689F4 /* DBObjectsBrowser */ = {
 			isa = PBXGroup;
 			children = (
-				498288D728B7DCB000A28B04 /* DBCacheBrowserMainView.swift */,
+				49EB5E0B29528995003A0E23 /* DBCacheMainView.swift */,
 				49EAEFA028C048B8008F0B80 /* QuickFilterView.swift */,
-				49EAEF9E28C04858008F0B80 /* DBCacheListView.swift */,
 				49EAEFA228C0493F008F0B80 /* DBDetailView.swift */,
 				49EAEFA828C93263008F0B80 /* DBTriggerDetailView.swift */,
 				498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */,
@@ -243,12 +242,13 @@
 				498288D128B7DCB000A28B04 /* HorizontalLabelStyle.swift */,
 				498288DF28B7DCB000A28B04 /* HostingView.swift */,
 				498288E528B7DCB000A28B04 /* Persistence.swift */,
+				49F481EF294A84A1005DC77F /* PersistencePreview.swift */,
 				498288E828B7DCB000A28B04 /* Queue.swift */,
 				498288D328B7DCB000A28B04 /* SwiftUIWindow.swift */,
 				498288E428B7DCB000A28B04 /* TableIndexListView.swift */,
 				498288D028B7DCB000A28B04 /* WindowModifier.swift */,
-				498288AD28B7DC5700A28B04 /* CoreData */,
 				49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */,
+				498288AD28B7DC5700A28B04 /* CoreData */,
 			);
 			path = DBObjectsBrowser;
 			sourceTree = "<group>";
@@ -534,6 +534,7 @@
 				498288C328B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataProperties.swift in Sources */,
 				49EAEFA328C0493F008F0B80 /* DBDetailView.swift in Sources */,
 				498288F728B7DCB000A28B04 /* DBIndexDetailView.swift in Sources */,
+				49F481F0294A84A1005DC77F /* PersistencePreview.swift in Sources */,
 				498288C928B7DC5700A28B04 /* DBCacheIndex+CoreDataProperties.swift in Sources */,
 				498288CC28B7DC5700A28B04 /* DBCacheObject+CoreDataClass.swift in Sources */,
 				49EAEFA728C83685008F0B80 /* DBCacheTrigger+CoreDataProperties.swift in Sources */,
@@ -558,7 +559,6 @@
 				49438678273753A000D7D464 /* ResultViewModel.swift in Sources */,
 				498288FD28B7DCB000A28B04 /* TableIndexListView.swift in Sources */,
 				498288C628B7DC5700A28B04 /* ConnDatabase+CoreDataProperties.swift in Sources */,
-				49EAEF9F28C04858008F0B80 /* DBCacheListView.swift in Sources */,
 				49B55F32270ADD8B00CFB3C7 /* MacintoraApp.swift in Sources */,
 				498288EA28B7DCB000A28B04 /* HorizontalLabelStyle.swift in Sources */,
 				498288C228B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataClass.swift in Sources */,
@@ -573,7 +573,6 @@
 				498288CF28B7DC5700A28B04 /* DBCacheSource+CoreDataProperties.swift in Sources */,
 				49B6D13327335FF400D9D788 /* Utils.swift in Sources */,
 				498288C028B7DC5700A28B04 /* DBCacheObject+CoreDataProperties.swift in Sources */,
-				498288F028B7DCB000A28B04 /* DBCacheBrowserMainView.swift in Sources */,
 				498288F828B7DCB000A28B04 /* HostingView.swift in Sources */,
 				49CE5FF027279F3A009C2A94 /* ResultView.swift in Sources */,
 				4947FEA6286FA39D00AEBE60 /* TableViewWithPasteboard.swift in Sources */,
@@ -593,6 +592,7 @@
 				4947FEAA286FA73B00AEBE60 /* RunnableSQL.swift in Sources */,
 				4982890128B7DCB000A28B04 /* Queue.swift in Sources */,
 				498288CE28B7DC5700A28B04 /* DBCacheTable+CoreDataClass.swift in Sources */,
+				49EB5E0C29528995003A0E23 /* DBCacheMainView.swift in Sources */,
 				4927FBF72746DFB4007EED5B /* TnsReader.swift in Sources */,
 				49EAEFA528C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift in Sources */,
 			);
@@ -715,7 +715,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LIBRARY_SEARCH_PATHS = /Users/ilia/instantclient_19_8;
-				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -773,7 +773,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LIBRARY_SEARCH_PATHS = /Users/ilia/instantclient_19_8;
-				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -792,6 +792,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Macintora/Macintora.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -809,7 +810,7 @@
 					"@executable_path/../Frameworks",
 					/Users/ilia/instantclient_19_8,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.macintora;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -828,6 +829,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Macintora/Macintora.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -845,7 +847,7 @@
 					"@executable_path/../Frameworks",
 					/Users/ilia/instantclient_19_8,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.macintora;
 				PRODUCT_NAME = "$(TARGET_NAME)";

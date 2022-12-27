@@ -39,20 +39,28 @@ struct MacOraApp: App {
             MainDocumentMenuCommands(appSettings: appSettings)
             TextEditingCommands()
             CommandGroup(after: .newItem) {
-                Button(action: {
-                    if let currentWindow = NSApp.keyWindow,
-                       let windowController = currentWindow.windowController {
-                        windowController.newWindowForTab(nil)
-                        if let newWindow = NSApp.keyWindow,
-                           currentWindow != newWindow {
-                            currentWindow.addTabbedWindow(newWindow, ordered: .above)
-                        }
-                    }
-                }) {
-                    Text("New Tab")
+                Button("New Tab") {
+                    let doc = try! NSDocumentController.shared.makeUntitledDocument(ofType: NSDocumentController.shared.defaultType!)
+                    NSDocumentController.shared.addDocument(doc)
+                    doc.makeWindowControllers()
+                    doc.windowControllers.first?.window?.tabbingMode = .preferred
+                    doc.showWindows()
                 }
-                .keyboardShortcut("t", modifiers: [.command])
+                    .keyboardShortcut("t", modifiers: [.command])
             }
+        }
+        
+        WindowGroup(for: DBCacheInputValue.self) { $value in
+//            DBCacheBrowserMainView(input: value ?? .preview())
+//            DBCacheMainView(input: value ?? .preview())
+            let v = value ?? .preview()
+            let cache = DBCacheVM(connDetails: v.mainConnection.mainConnDetails, selectedObjectName: v.selectedObjectName)
+            DBCacheMainView(cache: cache)
+                .environment(\.managedObjectContext, cache.persistenceController.container.viewContext)
+        }
+        
+        WindowGroup(for: SBInputValue.self) { $value in
+            SBMainView(inputValue: value ?? .preview())
         }
         
         Settings {
@@ -62,26 +70,42 @@ struct MacOraApp: App {
 }
 
 struct MainDocumentMenuCommands: Commands {
-    @FocusedValue(\.cacheConnectionDetails) var cacheConnectionDetails: ConnectionDetails?
+//    @FocusedValue(\.cacheConnectionDetails) var cacheConnectionDetails: ConnectionDetails?
     @FocusedValue(\.selectedObjectName) var selectedObjectName: String?
-    @FocusedValue(\.sbConnDetails) var sbConnDetails: SBConnDetails?
+    @FocusedValue(\.mainConnection) var mainConnection
     @ObservedObject var appSettings: AppSettings
+    @Environment(\.openWindow) var openWindow
 
     var body: some Commands {
         CommandMenu("Database") {
-            NavigationLink("DB Browser", destination: DBCacheBrowserMainView(connDetails: cacheConnectionDetails ?? ConnectionDetails(), selectedObjectName: selectedObjectName)
-                .environmentObject(appSettings)
-                .frame(minWidth: 400, idealWidth: 1200, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
-            )
-                .disabled(cacheConnectionDetails == nil)
+//            NavigationLink("DB Browser", destination: DBCacheBrowserMainView(connDetails: cacheConnectionDetails ?? ConnectionDetails(), selectedObjectName: selectedObjectName)
+//                .environmentObject(appSettings)
+//                .frame(minWidth: 400, idealWidth: 1200, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
+//            )
+//                .disabled(cacheConnectionDetails == nil)
+//                .presentedWindowStyle(TitleBarWindowStyle())
+//                .keyboardShortcut("d", modifiers: [.command])
+            Button("Database Browser") {
+                openWindow(value: DBCacheInputValue(mainConnection: mainConnection ?? .preview(), selectedObjectName: selectedObjectName))
+            }
+            .disabled(mainConnection?.mainConnDetails == nil)
                 .presentedWindowStyle(TitleBarWindowStyle())
                 .keyboardShortcut("d", modifiers: [.command])
             
-            NavigationLink("Session Browser", destination: SBMainView(connDetails: sbConnDetails ?? .preview())
-                .environmentObject(appSettings)
-                .frame(minWidth: 400, idealWidth: 1200, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
-            )
-                .disabled(cacheConnectionDetails == nil)
+            
+//            NavigationLink("Session Browser", destination: SBMainView(connDetails: sbConnDetails ?? .preview())
+//                .environmentObject(appSettings)
+//                .frame(minWidth: 400, idealWidth: 1200, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
+//            )
+//                .disabled(cacheConnectionDetails == nil)
+//                .presentedWindowStyle(TitleBarWindowStyle())
+//                .keyboardShortcut("s", modifiers: [.command, .control, .shift])
+
+            Button("Session Browser") {
+                log.viewCycle.debug("Opening SB with mainConnection: \(mainConnection?.description ?? "no main connection")")
+                openWindow(value: SBInputValue(mainConnection: mainConnection ?? .preview()))
+            }
+            .disabled(mainConnection?.mainConnDetails == nil)
                 .presentedWindowStyle(TitleBarWindowStyle())
                 .keyboardShortcut("s", modifiers: [.command, .control, .shift])
         }
@@ -89,28 +113,28 @@ struct MainDocumentMenuCommands: Commands {
 }
 
 
-struct DocumentFocusedKey: FocusedValueKey {
-    typealias Value = ConnectionDetails
-}
+//struct DocumentFocusedKey: FocusedValueKey {
+//    typealias Value = ConnectionDetails
+//}
 
 struct SelectedObjectNameKey: FocusedValueKey {
     typealias Value = String
 }
 
-struct SBConnDetailsKey: FocusedValueKey {
-    typealias Value = SBConnDetails
+struct MainConnectionKey: FocusedValueKey {
+    typealias Value = MainConnection
 }
 
 
 extension FocusedValues {
-    var cacheConnectionDetails: ConnectionDetails? {
-        get {
-            self[DocumentFocusedKey.self]
-        }
-        set {
-            self[DocumentFocusedKey.self] = newValue
-        }
-    }
+//    var cacheConnectionDetails: ConnectionDetails? {
+//        get {
+//            self[DocumentFocusedKey.self]
+//        }
+//        set {
+//            self[DocumentFocusedKey.self] = newValue
+//        }
+//    }
     
     var selectedObjectName: SelectedObjectNameKey.Value? {
         get {
@@ -121,15 +145,14 @@ extension FocusedValues {
         }
     }
     
-    var sbConnDetails: SBConnDetails? {
+    var mainConnection: MainConnectionKey.Value? {
         get {
-            self[SBConnDetailsKey.self]
+            self[MainConnectionKey.self]
         }
         set {
-            self[SBConnDetailsKey.self] = newValue
+            self[MainConnectionKey.self] = newValue
         }
     }
-
 }
 
 
@@ -168,6 +191,6 @@ class AppStateContainer: ObservableObject {
     public var tnsReader = TnsReader()
 }
 
-public func toggleSidebar() {
-    NSApp.keyWindow?.firstResponder?.tryToPerform(#selector(NSSplitViewController.toggleSidebar(_:)), with: nil)
-}
+//public func toggleSidebar() {
+//    NSApp.keyWindow?.firstResponder?.tryToPerform(#selector(NSSplitViewController.toggleSidebar(_:)), with: nil)
+//}

@@ -101,6 +101,7 @@ class DBCacheVM: ObservableObject {
     @AppStorage("cacheUpdateBatchSize") private var cacheUpdateBatchSize: Int = 200
     @AppStorage("includeSystemObjects") private var includeSystemObjects = false
     @AppStorage("cacheUpdateSessionLimit") private var cacheUpdateSessionLimit: Int = 5
+    @AppStorage("searchLimit") var searchLimit: Int = 20
     
     let connDetails: ConnectionDetails
     private(set) var pool: ConnectionPool? // service connections
@@ -108,7 +109,7 @@ class DBCacheVM: ObservableObject {
     var dbVersionMajor: Int?
     let dateFormatter: DateFormatter = DateFormatter()
     var cacheState = CacheState()
-    var searchCriteria: DBCacheSearchCriteria
+    @Published var searchCriteria: DBCacheSearchCriteria
     
     var lastUpdatedStr: String {
         guard let lst = lastUpdate else { return "(never)" }
@@ -1177,7 +1178,9 @@ where object_type = :type and owner = :owner and object_name = :name
         let oracleService = OracleService(from_string: connDetails.tns)
         pool = try ConnectionPool(service: oracleService, user: connDetails.username, pwd: connDetails.password, minConn: 0, maxConn: cacheUpdateSessionLimit, poolType: .Session, isSysDBA: connDetails.connectionRole == .sysDBA)
         pool?.timeout = 5
-        self.isConnected = .connected
+        Task { await MainActor.run {
+            self.isConnected = .connected
+        }}
         log.cache.debug("Connection pool created")
     }
     
@@ -1188,7 +1191,9 @@ where object_type = :type and owner = :owner and object_name = :name
             return
         }
         pool.close()
-        self.isConnected = .disconnected
+        Task { await MainActor.run {
+            self.isConnected = .disconnected
+        }}
         log.cache.debug("Connection pool closed")
     }
     

@@ -11,11 +11,14 @@ enum ConnectionRole: String, Codable {
     case regular, sysDBA
 }
 
-struct ConnectionDetails: Codable, Hashable {
+struct ConnectionDetails: CustomStringConvertible, Codable, Hashable, Equatable {
+    var description: String { "username: \(username), tns: \(tns), connectionRole: \(connectionRole)" }
+    
     var username: String
     var password: String
     var tns: String
     var connectionRole: ConnectionRole
+//    private var shortStrings: [String]? = [String]()
     
     init(username: String = "", password: String = "", tns: String = "preview", connectionRole: ConnectionRole = .regular) {
         self.username = username
@@ -25,26 +28,41 @@ struct ConnectionDetails: Codable, Hashable {
     }
     
     static func preview() -> ConnectionDetails {
-        ConnectionDetails(username: "username")
+        ConnectionDetails(username: "username", password: "password", tns: "tns", connectionRole: .regular)
     }
-    
-//    static func < (lhs: ConnectionDetails, rhs: ConnectionDetails) -> Bool {
-//        let result = lhs.tns < rhs.tns //&& ( lhs.username ?? "" < rhs.username ?? "" )
-//        return result
-//    }
 }
 
-//struct CacheConnectionDetails {
-//    var username: String
-//    var password: String
-//    var tns: String
-//    var connectionRole: ConnectionRole
-//
-//    init(from connDetails: ConnectionDetails) {
-//        self.username = connDetails.username
-//        self.password = connDetails.password
-//        self.tns = connDetails.tns
-//        self.connectionRole = connDetails.connectionRole
-//    }
-//}
+struct OracleSession: CustomStringConvertible, Codable, Hashable, Equatable {
+    var description: String { "sid: \(sid), serial#: \(serial), instance: \(instance), timezone: \(dbTimeZone.debugDescription)" }
+    
+    let sid: Int
+    let serial: Int
+    let instance: Int
+    let dbTimeZone: TimeZone?
+    
+    static func preview() -> OracleSession {
+        OracleSession(sid: -100, serial: -2000, instance: -1, dbTimeZone: .current)
+    }
+}
+
+struct MainConnection: CustomStringConvertible, Hashable, Codable, Equatable {
+    var description: String { "mainConnDetails: \(mainConnDetails), mainSession: \(mainSession)" }
+    
+    static func == (lhs: MainConnection, rhs: MainConnection) -> Bool {
+        lhs.mainConnDetails == rhs.mainConnDetails && (lhs.mainSession ?? .preview() == rhs.mainSession ?? .preview())
+    }
+    
+    var mainConnDetails: ConnectionDetails
+    var mainSession: OracleSession?
+    
+    static func preview() -> MainConnection {
+        MainConnection(mainConnDetails: ConnectionDetails.preview(), mainSession: OracleSession.preview())
+    }
+    
+    init(mainConnDetails: ConnectionDetails, mainSession: OracleSession? = nil) {
+        self.mainConnDetails = mainConnDetails
+        self.mainSession = mainSession
+    }
+}
+
 

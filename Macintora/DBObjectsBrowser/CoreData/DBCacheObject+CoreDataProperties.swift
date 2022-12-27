@@ -67,4 +67,22 @@ extension DBCacheObject {
         let results = try? context.fetch(request)
         return (results?.first!)!
     }
+    
+    static var exampleTable: DBCacheObject {
+        let context = PersistenceController.preview.container.viewContext
+        let request = DBCacheObject.fetchRequest()
+        request.fetchLimit = 1
+        request.predicate = NSPredicate(format: "type_ = %@", "TABLE")
+        let results = try? context.fetch(request)
+        return (results?.first!)!
+    }
+    
+    static var examplePackage: DBCacheObject {
+        let context = PersistenceController.preview.container.viewContext
+        let request = DBCacheObject.fetchRequest()
+        request.fetchLimit = 1
+        request.predicate = NSPredicate(format: "type_ = %@", "PACKAGE")
+        let results = try? context.fetch(request)
+        return (results?.first!)!
+    }
 }

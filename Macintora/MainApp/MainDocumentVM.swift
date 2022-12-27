@@ -38,21 +38,14 @@ class MainDocumentVM: ReferenceFileDocument, ObservableObject {
     private(set) var resultsController: ResultsController?
     var model: MainModel
     private(set) var conn: Connection? // main connection
-    private(set) var oraSession: OracleSession?
-    
-    @Published var connDetails: ConnectionDetails
-    
+    @Published var mainConnection: MainConnection
     @Published var isConnected = ConnectionStatus.disconnected
     @Published var connectionHealth = ConnectionHealthStatus.notConnected
     @Published var dbName: String
     var pingTimer: Timer?
     
-    var sbConnDetails: SBConnDetails {
-        SBConnDetails(mainConnDetails: connDetails, mainSession: oraSession)
-    }
-    
     func snapshot(contentType: UTType) throws -> MainModel {
-        model.connectionDetails = connDetails
+        model.connectionDetails = mainConnection.mainConnDetails
         return model
     }
     
@@ -71,8 +64,7 @@ from dual;\n\n
         let localModel = MainModel(text: text)
         model = localModel
         dbName = Constants.defaultDBName
-        connDetails = localModel.connectionDetails
-//        editorSelectionRange = "".startIndex..<"".endIndex
+        mainConnection = MainConnection(mainConnDetails: localModel.connectionDetails)
         resultsController = ResultsController(document: self)
     }
 
@@ -85,9 +77,8 @@ from dual;\n\n
         let localModel = try! JSONDecoder().decode(MainModel.self, from: data)
         self.model = localModel
 //        log.debug("model loaded: \(localModel, privacy: .public)")
-        dbName = localModel.connectionDetails.tns ?? ""
-        connDetails = localModel.connectionDetails
-//        editorSelectionRange = "".startIndex..<"".endIndex
+        dbName = localModel.connectionDetails.tns
+        mainConnection = MainConnection(mainConnDetails: localModel.connectionDetails)
         resultsController = ResultsController(document: self)
         if model.autoConnect ?? false {
             connect()
@@ -101,25 +92,22 @@ from dual;\n\n
         Task.detached(priority: .background) { [self] in
             
             // we need a main stateful connection, and a pool of stateless sessions for navigation around the database
-//            if conn == nil {
-            let oracleService = OracleService(from_string: connDetails.tns)
-            conn = Connection(service: oracleService, user: connDetails.username, pwd: connDetails.password, sysDBA: connDetails.connectionRole == .sysDBA)
-//            }
+            let oracleService = OracleService(from_string: mainConnection.mainConnDetails.tns)
+            conn = Connection(service: oracleService, user: mainConnection.mainConnDetails.username, pwd: mainConnection.mainConnDetails.password, sysDBA: mainConnection.mainConnDetails.connectionRole == .sysDBA)
             guard let conn = conn else {
                 log.error("connection object is nil")
                 await MainActor.run { isConnected = .disconnected }
                 return
             }
             do {
-                log.debug("Attempting to connect to \(self.connDetails.username, privacy: .public) @ \(self.connDetails.tns ?? Constants.nullValue, privacy: .public) as \(self.connDetails.connectionRole == .sysDBA ? "SysDBA" : "regular user", privacy: .public)")
+                log.debug("Attempting to connect to \(self.mainConnection.mainConnDetails.username, privacy: .public)@\(self.mainConnection.mainConnDetails.tns , privacy: .public) as \(self.mainConnection.mainConnDetails.connectionRole == .sysDBA ? "SysDBA" : "regular user", privacy: .public)")
                 try conn.open()
-                log.debug("connected to \(self.connDetails.tns, privacy: .public)")
+                log.debug("connected to \(self.mainConnection.mainConnDetails.tns, privacy: .public)")
                 do { try conn.setFormat(fmtType: .date, fmtString: "YYYY-MM-DD HH24:MI:SS") }
                 catch {
                     log.debug("setFormat failed: \(error.localizedDescription, privacy: .public)")
                     await resultsController?.displayError(error)
                 }
-                oraSession = MainDocumentVM.getOracleSession(for: conn)
             } catch DatabaseErrors.SQLError(let error) {
                 log.error("connection failure: \(error.description, privacy: .public)")
                 await resultsController?.displayError(error)
@@ -141,6 +129,8 @@ from dual;\n\n
                     connectionHealth = .ok
                     pingTimer = Timer.scheduledTimer(timeInterval: 30, target: self, selector: #selector(ping), userInfo: nil, repeats: true)
                     resultsController?.clearError()
+                    mainConnection.mainSession = MainDocumentVM.getOracleSession(for: conn)
+                    log.debug("Set oraSession to \(self.mainConnection.mainSession!)")
                 }
                 else {isConnected = .disconnected}
             }
@@ -148,42 +138,38 @@ from dual;\n\n
     }
     
     func disconnect() {
-        isConnected = .changing
-        Task.detached(priority: .background) { [self] in
-            guard let conn = conn else {
+        isConnected = .disconnected
+        connectionHealth = .notConnected
+        self.resultsController?.results["current"]?.currentCursor = nil
+        mainConnection.mainSession = nil
+        self.pingTimer?.invalidate() // stop scheduled pings
+        Task.detached(priority: .background) {
+            guard let conn = self.conn else {
                 log.error("connection doesn't exist")
                 return
             }
-            self.resultsController?.results["current"]?.currentCursor = nil
             conn.close()
-            oraSession = nil
-            self.pingTimer?.invalidate() // stop scheduled pings
-            await MainActor.run {
-                if !conn.connected {
-                    isConnected = .disconnected
-                    connectionHealth = .notConnected
-                    log.debug("disconnected from \(self.connDetails.tns, privacy: .public)")
-                }
-            }
+            log.debug("disconnected from \(self.mainConnection.mainConnDetails.tns, privacy: .public)")
         }
     }
     
-    static func getOracleSession(for conn: Connection?) -> OracleSession? {
+    static func getOracleSession(for conn: Connection?) -> OracleSession {
         guard let conn = conn else {
             log.error("connection doesn't exist")
-            return nil
+            return .preview()
         }
-        var oraSession: OracleSession?
+        var oraSession: OracleSession
         do {
             let cursor = try conn.cursor()
             let sql = "select sid, serial#, to_number(sys_context('userenv','instance')) instance, systimestamp as ts from v$session where sid = sys_context('userenv','sid')"
             try cursor.execute(sql, enableDbmsOutput: false)
-            guard let row = cursor.fetchOneSwifty() else {return nil}
+            guard let row = cursor.fetchOneSwifty() else {return .preview() }
             let dbTimestamp = row["TS"]!.timestamp!
             oraSession = OracleSession(sid: row["SID"]!.int!, serial: row["SERIAL#"]!.int!, instance: row["INSTANCE"]!.int!, dbTimeZone: dbTimestamp.timeZone)
-            log.debug("received Oracle session details \(oraSession.debugDescription, privacy: .public)")
+            log.debug("received Oracle session details \(oraSession, privacy: .public)")
         } catch {
             log.error("\(error.localizedDescription, privacy: .public)")
+            return .preview()
         }
         return oraSession
     }
@@ -361,21 +347,24 @@ from dual;\n\n
     }
     
     // format selected SQL or current SQL
-    func format(of editorSelectionRange: Range<String.Index>) {
+    func format(of editorSelectionRange: Binding<Range<String.Index>>) {
         var text = ""
-        if editorSelectionRange.lowerBound != editorSelectionRange.upperBound { // user selected something, we'll format that
-            text = String(model.text[editorSelectionRange])
+        if editorSelectionRange.wrappedValue.lowerBound != editorSelectionRange.wrappedValue.upperBound { // user selected something, we'll format that
+            text = String(model.text[editorSelectionRange.wrappedValue])
+            editorSelectionRange.wrappedValue = editorSelectionRange.wrappedValue.lowerBound ..< editorSelectionRange.wrappedValue.lowerBound // reset selection to the beginning of the range
         } else {
-            text = getCurrentSql(for: editorSelectionRange) ?? ""
+            text = getCurrentSql(for: editorSelectionRange.wrappedValue) ?? ""
+            editorSelectionRange.wrappedValue = (self.model.text.firstIndex(of: text, after: model.text.startIndex) ?? model.text.startIndex) ..< (self.model.text.firstIndex(of: text, after: model.text.startIndex) ?? model.text.startIndex)
         }
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty else { log.debug("text is empty"); return }
         let formatter = Formatter()
         log.debug(">>>>>>> sql text: \n \(text) \n -------------")
         Task.detached(priority: .background) { [self, text] in
             let formattedText = await formatter.formatSource(name: UUID().uuidString, text: text)
             await MainActor.run {
                 self.objectWillChange.send()
-                self.model.text = self.model.text.replacingCharacters(in: editorSelectionRange, with: formattedText)
+//                self.model.text = self.model.text.replacingCharacters(in: editorSelectionRange, with: formattedText)
+                self.model.text = self.model.text.replacingOccurrences(of: text, with: formattedText)
             }
         }
     }

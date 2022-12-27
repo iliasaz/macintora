@@ -25,7 +25,7 @@ struct ResultViewWrapper: View {
         queryResults = resultsController.results["current"]!
         dateFormatter.calendar = Calendar(identifier: .iso8601)
         dateFormatter.dateFormat = serverTimeSeconds ? "yyyy-MM-dd HH:mm:ss" : "yyyy-MM-dd HH:mm"
-        dateFormatter.timeZone = resultsController.document?.oraSession?.dbTimeZone
+        dateFormatter.timeZone = resultsController.document?.mainConnection.mainSession?.dbTimeZone
     }
     
     func stopDBTimer() {
@@ -35,7 +35,7 @@ struct ResultViewWrapper: View {
         
     func startDBTimer() {
         dateFormatter.dateFormat = serverTimeSeconds ? "yyyy-MM-dd HH:mm:ss" : "yyyy-MM-dd HH:mm"
-        dateFormatter.timeZone = resultsController.document?.oraSession?.dbTimeZone
+        dateFormatter.timeZone = resultsController.document?.mainConnection.mainSession?.dbTimeZone
         log.viewCycle.debug(("started timer"))
         self.dbTimer = Timer.publish(every: serverTimeSeconds ? 1 : 60, on: .main, in: .common).autoconnect()
     }
@@ -51,26 +51,25 @@ struct ResultViewWrapper: View {
         VStack {
 //            let _ = log.viewCycle.debug("Redrawing ResultViewWrapper, queryResults: \(queryResults.bindVarVM)")
             queryResultToolbar
-            ZStack {
-                GeometryReader { geo in
-                    HStack {
+            GeometryReader { geo in
+                HStack {
+                    ZStack {
                         ResultView(model: self.queryResults )
                             .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity)
-                        
-                        if queryResults.showingBindVarInputView {
-                            BindVarInputView(bindVarVM: $queryResults.bindVarVM, runAction: runWithBinds, cancelAction: {queryResults.showingBindVarInputView = false})
-                                .frame(width: queryResults.showingBindVarInputView ? geo.size.width/3 : 0, alignment: .trailing)
-//                                .hidden(!queryResults.showingBindVarInputView)
-                        }
-                        
-                        RunningLogView(attributedText: queryResults.runningLogStr)
-                            .frame(width: queryResults.showingLog ? geo.size.width/3 : 0, alignment: .trailing)
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                            .frame(minHeight: 100)
+                            .hidden(!queryResults.resultsController.isExecuting)
                     }
+                    if queryResults.showingBindVarInputView {
+                        BindVarInputView(bindVarVM: $queryResults.bindVarVM, runAction: runWithBinds, cancelAction: {queryResults.showingBindVarInputView = false})
+                            .frame(width: queryResults.showingBindVarInputView ? geo.size.width/3 : 0, alignment: .trailing)
+//                                .hidden(!queryResults.showingBindVarInputView)
+                    }
+                    
+                    RunningLogView(attributedText: queryResults.runningLogStr)
+                        .frame(width: queryResults.showingLog ? geo.size.width/3 : 0, alignment: .trailing)
                 }
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle())
-                    .frame(minHeight: 100)
-                    .hidden(!queryResults.resultsController.isExecuting)
             }
         }
         .padding(.vertical)
@@ -86,61 +85,83 @@ struct ResultViewWrapper: View {
     @State var sqlShown = false
     var queryResultToolbar: some View {
         HStack(spacing: 2) {
-//            Button {} label: { Image(systemName: "laptopcomputer.and.arrow.down").foregroundColor(Color.blue)}
-//            .help("export")
-            
-            Button {
-                self.queryResults.refreshData()
-            } label: {
-                Image(systemName: "arrow.clockwise").foregroundColor(Color.blue)
-            }
-            .help("Refresh")
-            
-            Button {
-                sqlShown.toggle()
-            } label: { Text("SQL").foregroundColor(Color.blue)}
-            .help("show SQL")
-            .sheet(isPresented: $sqlShown) {
-                VStack {
-                    Text("SQL ID: \(queryResults.sqlId)")
-                        .textSelection(.enabled)
-                    Text(queryResults.currentSql)
-                        .textSelection(.enabled)
-                        .lineLimit(10)
-                        .frame(width: 300.0, height: 200.0, alignment: .topLeading)
-                        .padding()
-                    Button { sqlShown.toggle() } label: { Text("Dismiss") }
-                    .padding()
-                }.padding()
-            }
-            
-            Toggle("Auto Width", isOn: $queryResults.autoColWidth).toggleStyle(.switch)
-                .padding(.horizontal)
-            
-            Form {
-                TextField(value: $queryResults.rowFetchLimit, formatter: NumberFormatter()) {
-                    Text("Max Rows")
+            Group {
+                Button {
+                    self.queryResults.refreshData()
+                } label: {
+                    Image(systemName: "arrow.clockwise").foregroundColor(Color.blue)
                 }
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 120, alignment: .leading)
+                .help("Refresh")
+                
+                Button {
+                    sqlShown.toggle()
+                } label: { Text("SQL").foregroundColor(Color.blue)}
+                    .help("show SQL")
+                    .sheet(isPresented: $sqlShown) {
+                        VStack {
+                            Text("SQL ID: \(queryResults.sqlId)")
+                                .textSelection(.enabled)
+                            Text(queryResults.currentSql)
+                                .textSelection(.enabled)
+                                .lineLimit(10)
+                                .frame(width: 300.0, height: 200.0, alignment: .topLeading)
+                                .padding()
+                            Button { sqlShown.toggle() } label: { Text("Dismiss") }
+                                .padding()
+                        }.padding()
+                    }
+                
+                Toggle("Auto Width", isOn: $queryResults.autoColWidth).toggleStyle(.switch)
+                    .padding(.horizontal)
+                
+                Form {
+                    TextField(value: $queryResults.rowFetchLimit, formatter: NumberFormatter()) {
+                        Text("Max Rows")
+                    }
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 120, alignment: .leading)
+                }
+                
+                Button {
+                    self.queryResults.fetchMoreData()
+                } label: {
+                    Image(systemName: "forward")
+                }
+                .help("More Data")
+                
+                Button {
+                    self.queryResults.getSQLCount()
+                } label: {
+                    Image(systemName: "sum") //.foregroundColor(Color.blue)
+                }
+                .help("Count")
+                
+                Text(self.queryResults.sqlCount, format: .number)
+                    .padding(.horizontal, 3)
             }
             
-            Button {
-                self.queryResults.fetchMoreData()
+            Menu {
+                Button {
+                    guard let saveURL = showSavePanel(defaultName: "query1.csv") else { return }
+                    queryResults.export(to: saveURL, type: .csv)
+                } label: { Text("CSV")}
+                
+                Button {
+                    guard let saveURL = showSavePanel(defaultName: "query1.txt") else { return }
+                    queryResults.export(to: saveURL, type: .tsv)
+                } label: { Text("TSV")}
+                
+                Button {
+                    guard let saveURL = showSavePanel(defaultName: "query1.txt") else { return }
+                    queryResults.export(to: saveURL, type: .none)
+                } label: { Text("None")}
             } label: {
-                Image(systemName: "forward")
+                Label("Export", systemImage: "laptopcomputer.and.arrow.down")
             }
-            .help("More Data")
-            
-            Button {
-                self.queryResults.getSQLCount()
-            } label: {
-                Image(systemName: "sum") //.foregroundColor(Color.blue)
-            }
-            .help("Count")
-
-            Text(self.queryResults.sqlCount, format: .number)
-                .padding(.horizontal, 3)
+            .fixedSize()
+            .menuStyle(ButtonMenuStyle())
+            .help("export ")
+                
             
             Spacer()
             serverTimeToolbar

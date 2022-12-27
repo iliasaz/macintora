@@ -35,6 +35,15 @@ struct ResultView: NSViewRepresentable {
         tableView.allowsMultipleSelection = true
         tableView.usesAlternatingRowBackgroundColors = true
         
+        
+        // context menu
+        let contextMenu = NSMenu(title: "Context")
+        let menuSaveValueAsFile = NSMenuItem(title: "Save Value as File", action: #selector(ResultViewCoordinator.saveValueAsFile(_:)), keyEquivalent: "")
+        menuSaveValueAsFile.target = context.coordinator
+        
+        contextMenu.addItem(menuSaveValueAsFile)
+        tableView.menu = contextMenu
+        
 //        tableView.gridStyleMask = [.solidVerticalGridLineMask, .solidHorizontalGridLineMask]
 //        tableView.gridColor = NSColor.blue
         tableView.style = .inset
@@ -161,11 +170,12 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
         text.drawsBackground = false
         text.isBordered = false
         text.translatesAutoresizingMaskIntoConstraints = false
+        text.allowsEditingTextAttributes = false
         text.font = NSFont(name: "Source Code Pro", size: NSFont.systemFontSize)
-//        text.placeholderString = "this is a text field"
         text.usesSingleLineMode = true
-//        text.maximumNumberOfLines = 1
         text.cell?.wraps = false
+
+//        text.maximumNumberOfLines = 1
 //        text.preferredMaxLayoutWidth = 1200
         
         let cell = NSTableCellView()
@@ -267,5 +277,15 @@ class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSourc
         }
     }
 
+    @objc func saveValueAsFile(_ sender: Any) {
+        guard let clickedRow = self.tableView?.clickedRow else { return }
+        guard let clickedColumnTemp = self.tableView?.clickedColumn else { return }
+        let clickedColumn = clickedColumnTemp - 1
+        log.viewCycle.debug("saving value into a file for row \(clickedRow), column number: \(clickedColumn)")
+        let value = self.parent.model.rows[clickedRow][clickedColumn]!.valueString
+        log.viewCycle.debug("value: \(value)")
+        guard let saveURL = showSavePanel(defaultName: self.parent.model.columnLabels[clickedColumnTemp]) else { return }
+        try? value.write(to: saveURL, atomically: false, encoding: .utf8)
+    }
 }
 

@@ -60,7 +60,7 @@ struct SessionView: NSViewRepresentable {
         let menuKillSession = NSMenuItem(title: "Kill Session", action: #selector(SessionViewCoordinator.killSession(_:)), keyEquivalent: "")
         menuKillSession.target = context.coordinator
         
-        let menuRefresh = NSMenuItem(title: "Refresh", action: #selector(SessionViewCoordinator.refresh(_:)), keyEquivalent: "")
+        let menuRefresh = NSMenuItem(title: "Copy Trace File Name", action: #selector(SessionViewCoordinator.copyTraceFileName(_:)), keyEquivalent: "")
         menuRefresh.target = context.coordinator
 
         contextMenu.addItem(menuStartTrace)
@@ -102,7 +102,10 @@ class SessionViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSour
     
     @objc func startSessionTrace(_ sender: Any) {
         log.viewCycle.debug("starting session trace for row \(self.tableView?.clickedRow ?? -1)")
-        self.parent.model.startTrace(sid: parent.model.rows[self.tableView!.clickedRow]["SID"]!.int!, serial: parent.model.rows[self.tableView!.clickedRow]["SERIAL#"]!.int!)
+        let row = self.tableView!.clickedRow
+        let sid = parent.model.rows[row]["SID"]!.int!
+        let serial = parent.model.rows[row]["SERIAL#"]!.int!
+        self.parent.model.startTrace(sid: sid, serial: serial)
     }
     
     @objc func stopSessionTrace(_ sender: Any) {
@@ -125,9 +128,12 @@ class SessionViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSour
         self.parent.model.killSession(sid: parent.model.rows[self.tableView!.clickedRow]["SID"]!.int!, serial: parent.model.rows[self.tableView!.clickedRow]["SERIAL#"]!.int!)
     }
     
-    @objc func refresh(_ sender: Any) {
+    @objc func copyTraceFileName(_ sender: Any) {
         log.viewCycle.debug("Refreshing sessions")
-        self.parent.model.populateData()
+        let row = self.tableView!.clickedRow
+        let processAddr = parent.model.rows[row]["PADDR"]!.string!
+        let instanceNumber = parent.model.rows[row]["INST_ID"]!.int!
+        self.parent.model.copyTraceFileName(paddr: processAddr, instNum: instanceNumber)
     }
 
     func didColumnsChange() -> Bool {
@@ -271,21 +277,27 @@ class SessionViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSour
     }
     
     func tableView(_ tableView: NSTableView, didAdd rowView: NSTableRowView, forRow row: Int) {
+        highlightRow(rowView: rowView, forRow: row)
+    }
+    
+    func highlightRow(rowView: NSTableRowView, forRow row: Int, force: Bool = false) {
+//        if row > 4 { return }
+//        log.viewCycle.debug("row: \(row), force: \(force), sid: \(self.parent.model.rows[row]["SID"]!.int ?? -1), mainSid: \(self.parent.model.mainConnection.mainSession?.sid ?? -1)")
+        // highlight active trace
+        if parent.model.rows[row]["SQL_TRACE"]!.string == "ENABLED" || force {
+            rowView.backgroundColor = .findHighlightColor
+            return
+        }
         // highlight main session
-        if parent.model.rows[row]["SID"]!.int == parent.model.connDetails.mainSession?.sid &&
-            parent.model.rows[row]["SERIAL#"]!.int == parent.model.connDetails.mainSession?.serial {
+        if parent.model.rows[row]["SID"]!.int == parent.model.mainConnection.mainSession?.sid &&
+            parent.model.rows[row]["SERIAL#"]!.int == parent.model.mainConnection.mainSession?.serial || force {
             rowView.backgroundColor = .green.withAlphaComponent(0.3)
             return
         }
         // highlight this session
         if parent.model.rows[row]["SID"]!.int == parent.model.oraSession?.sid &&
-            parent.model.rows[row]["SERIAL#"]!.int == parent.model.oraSession?.serial {
+            parent.model.rows[row]["SERIAL#"]!.int == parent.model.oraSession?.serial || force {
             rowView.backgroundColor = .scrubberTexturedBackground
-            return
-        }
-        // highlight active trace
-        if parent.model.rows[row]["SQL_TRACE"]!.string == "ENABLED" {
-            rowView.backgroundColor = .findHighlightColor
             return
         }
         // highlight waiting sessions

@@ -22,7 +22,7 @@ struct QuickFilterView: View {
     @State private var isQuickFilterViewExpanded = true
 
     var body: some View {
-        DisclosureGroup("Quick Filters", isExpanded: $isQuickFilterViewExpanded) {
+        Group {
             VStack {
                 ControlGroup {
                     Toggle(isOn: $quickFilters.showTables) { Text( "Tables").frame(width: 70, alignment: .leading) }
@@ -37,21 +37,22 @@ struct QuickFilterView: View {
                         .disabled(true)
                 }
                 .controlGroupStyle(GridControlGroupStyle())
-                .padding(.horizontal)
                 
                 TextField("Schemas, ex. SYSTEM,SYS", text: $quickFilters.ownerString)
+                    .lineLimit(3, reservesSpace: true)
                     .textFieldStyle(.roundedBorder)
                     .disableAutocorrection(true)
-                    .padding(.horizontal)
                 
                 TextField("Object Prefix, ex. DBMS,DBA", text: $quickFilters.prefixString)
+                    .lineLimit(3, reservesSpace: true)
                     .textFieldStyle(.roundedBorder)
                     .disableAutocorrection(true)
-                    .padding(.horizontal)
+//                Button("save") {
+//                    quickFilters.changed.toggle()
+//                }
             }
             .padding(.vertical)
         }
-        .padding(.horizontal)
     }
 }
 

@@ -28,62 +28,6 @@ let defaultName = "preview"
 
 struct PersistenceController {
     
-    static var preview: PersistenceController = {
-        let result = PersistenceController(inMemory: true)
-        let viewContext = result.container.viewContext
-        for _ in 0..<10 {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-        }
-        
-        let triggerObj = DBCacheObject(context: viewContext)
-        triggerObj.owner = "OWNER"
-        triggerObj.name = "MYTRIGGER"
-        triggerObj.lastDDLDate = Date()
-        triggerObj.type = "TRIGGER"
-        triggerObj.createDate = Date()
-        triggerObj.objectId = 12345
-        triggerObj.isValid = true
-        triggerObj.isEditionable = true
-        triggerObj.editionName = "ORA$BASE"
-        
-        do { try viewContext.save() } catch { print("failed to save context") }
-
-        let trigger = DBCacheTrigger(context: viewContext)
-        trigger.actionType = "PL/SQL"
-        trigger.body = "begin null; end;"
-        trigger.columnName = "column A"
-        trigger.descr = "no description"
-        trigger.event = "INSERT OR UPDATE OR DELETE"
-        trigger.isAfterRow = false
-        trigger.isAfterStatement = false
-        trigger.isBeforeRow = true
-        trigger.isBeforeStatement = false
-        trigger.isCrossEdition = false
-        trigger.isEnabled = true
-        trigger.isFireOnce = false
-        trigger.isInsteadOfRow = false
-        trigger.name = "MYTRIGGER"
-        trigger.objectName = "MYTABLE"
-        trigger.objectOwner = "OWNER"
-        trigger.objectType = "TABLE"
-        trigger.owner = "OWNER"
-        trigger.referencingNames = "OLD AS OLD NEW AS NEW"
-        trigger.type = "BEFORE EACH ROW"
-        trigger.whenClause = "When clause"
-
-        do {
-            try viewContext.save()
-            debugPrint("created exampleTrigger")
-        } catch {
-            // Replace this implementation with code to handle the error appropriately.
-            // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-            let nsError = error as NSError
-            fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-        }
-        return result
-    }()
-
     var container: NSPersistentContainer
     
     init(name: String) {

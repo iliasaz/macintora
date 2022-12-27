@@ -7,12 +7,19 @@
 
 import SwiftUI
 
+struct SBInputValue: Hashable, Codable {
+    var mainConnection: MainConnection
+    
+    static func preview() -> SBInputValue { SBInputValue(mainConnection: MainConnection.preview()) }
+}
+
+
 struct SBMainView: View {
     @ObservedObject private var vm: SBVM
     @State var theWindow: NSWindow?
     
-    init(connDetails: SBConnDetails) {
-        vm = SBVM(connDetails: connDetails)
+    init(inputValue: SBInputValue) {
+        vm = SBVM(mainConnection: inputValue.mainConnection)
     }
     
     var body: some View {
@@ -22,16 +29,33 @@ struct SBMainView: View {
                     .hidden(vm.connStatus == .connected || vm.connStatus == .changing)
                 SessionView(model: vm)
                     .toolbar {
-                        ToolbarItem(placement: .principal) {
+                        ToolbarItemGroup(placement: .principal) {
                             Button {
                                 vm.populateData()
                             } label: {
                                 Label("Refresh", systemImage: "arrow.triangle.2.circlepath").foregroundColor(.blue)
                             }
-                            .keyboardShortcut("r", modifiers: .command)
-                            .help("Refresh")
+                                .keyboardShortcut("r", modifiers: .command)
+                                .help("Refresh")
+                            
+                            Toggle(isOn: $vm.activeOnly) { Label("Active Only", systemImage: vm.activeOnly ? "externaldrive.fill.badge.wifi" : "externaldrive.badge.wifi") }
+                                .toggleStyle(.automatic)
+                                .foregroundColor(vm.activeOnly ? .green : nil)
+                                .help("Active Only")
+                            
+                            Toggle(isOn: $vm.userOnly) { Label("User Only", systemImage: vm.userOnly ? "person.fill" : "person") }
+                                .toggleStyle(.automatic)
+                                .foregroundColor(vm.userOnly ? .green : nil)
+                                .help("User Only")
+                            
+                            Toggle(isOn: $vm.localInstanceOnly) { Label("Local Instance Only", systemImage: "server.rack") }
+                                .toggleStyle(.automatic)
+                                .foregroundColor(vm.localInstanceOnly ? .green : nil)
+                                .help("Local Instance Only")
                         }
                     }
+                    .buttonStyle(.borderedProminent)
+//                    .labelStyle(.titleAndIcon)
                     .hidden(vm.connStatus == .disconnected || vm.connStatus == .changing)
                 
                 ProgressView(vm.isExecuting ? "Refreshing..." : "Connecting...")
@@ -40,7 +64,7 @@ struct SBMainView: View {
             }
         }
         .padding()
-        .navigationTitle("Sessions @\(vm.connDetails.mainConnDetails.tns)")
+        .navigationTitle("Sessions @\(vm.mainConnection.mainConnDetails.tns)")
         // a hack to get the current window handler
         .background {
             WindowAccessor(window: $theWindow)

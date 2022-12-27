@@ -7,51 +7,37 @@
 
 import Foundation
 import SwiftOracle
-
-struct OracleSession: CustomStringConvertible {
-    var description: String { "sid: \(sid), serial#: \(serial), instance: \(instance), timezone: \(dbTimeZone.debugDescription)" }
-    
-    let sid: Int
-    let serial: Int
-    let instance: Int
-    let dbTimeZone: TimeZone?
-    
-    static func preview() -> OracleSession {
-        OracleSession(sid: 100, serial: 2000, instance: 2, dbTimeZone: .current)
-    }
-}
-
-struct SBConnDetails {
-    let mainConnDetails: ConnectionDetails
-    let mainSession: OracleSession?
-    
-    static func preview() -> SBConnDetails {
-        SBConnDetails(mainConnDetails: ConnectionDetails.preview(), mainSession: OracleSession.preview())
-    }
-}
+import AppKit
 
 class SBVM: ObservableObject {
-    var connDetails: SBConnDetails
+    var mainConnection: MainConnection
     @Published var connStatus: ConnectionStatus = .disconnected
     @Published var isExecuting = false
+    @Published var activeOnly: Bool = true {
+        didSet { populateData() }
+    }
+    @Published var userOnly: Bool = true {
+        didSet { populateData() }
+    }
+    @Published var localInstanceOnly: Bool = true {
+        didSet { populateData() }
+    }
     private var conn: Connection?
     var autoColWidth = true
     var rows = [SwiftyRow]()
     var columnLabels = [String]()
     var dataHasChanged = false
-    let mainSql = "select * from v$session order by decode(sid, $SID$, 1, 0) desc, decode(sql_trace,'ENABLED',1,0) desc, decode(status,'ACTIVE',0,'KILLED',1,'INACTIVE',2,3), decode(wait_class, 'Idle', 0, 1) desc, seconds_in_wait desc"
+    let mainSql = "select * from gv$session where 1=1 $WHERE$ order by decode(sid, $SID$, 1, 0) desc, decode(sql_trace,'ENABLED',1,0) desc, decode(status,'ACTIVE',0,'KILLED',1,'INACTIVE',2,3), decode(wait_class, 'Idle', 0, 1) desc, seconds_in_wait desc"
     
     var oraSession: OracleSession?
-    var mainOrasession: OracleSession? { connDetails.mainSession }
-    var sessionListSql: String { mainSql.replacingOccurrences(of: "$SID$", with: String(mainOrasession?.sid ?? -1)) }
     var sqlMonOperations = [String: Int]() // a dict of current DBMS_SQL_MONITOR operations in the format of [SESS_<sid><serial> : <dop_eid>]
     
-    init(connDetails: SBConnDetails) {
-        self.connDetails = connDetails
+    init(mainConnection: MainConnection) {
+        self.mainConnection = mainConnection
     }
     
     static func preview() -> SBVM {
-        SBVM(connDetails: SBConnDetails.preview())
+        SBVM(mainConnection: MainConnection.preview())
     }
     
     func sort(by colName: String?, ascending: Bool) {
@@ -64,18 +50,33 @@ class SBVM: ObservableObject {
         }
     }
     
+    func buildSessionListSql() -> String {
+        var whereConditions = ""
+        if activeOnly {
+            whereConditions.append(" and (status = 'ACTIVE' or (sid = \(mainConnection.mainSession?.sid ?? -1) and serial# = \(mainConnection.mainSession?.serial ?? -1) ))")
+        }
+        if userOnly {
+            whereConditions.append(" and (type = 'USER')")
+        }
+        if localInstanceOnly && mainConnection.mainSession?.instance != nil {
+            whereConditions.append(" and (inst_id = \(mainConnection.mainSession?.instance ?? -1))")
+        }
+        return mainSql.replacingOccurrences(of: "$SID$", with: String(mainConnection.mainSession?.sid ?? -1))
+            .replacingOccurrences(of: "$WHERE$", with: whereConditions)
+    }
+    
     func connectAndQuery() {
         connStatus = .changing
         Task.detached(priority: .background) { [self] in
-            let oracleService = OracleService(from_string: connDetails.mainConnDetails.tns)
-            conn = Connection(service: oracleService, user: connDetails.mainConnDetails.username, pwd: connDetails.mainConnDetails.password, sysDBA: connDetails.mainConnDetails.connectionRole == .sysDBA)
+            let oracleService = OracleService(from_string: mainConnection.mainConnDetails.tns)
+            conn = Connection(service: oracleService, user: mainConnection.mainConnDetails.username, pwd: mainConnection.mainConnDetails.password, sysDBA: mainConnection.mainConnDetails.connectionRole == .sysDBA)
             guard let conn else {
                 log.error("connection object is nil")
                 await MainActor.run { connStatus = .disconnected }
                 return
             }
             do {
-                log.debug("SB attempting to connect to \(self.connDetails.mainConnDetails.tns, privacy: .public)")
+                log.debug("SB attempting to connect to \(self.mainConnection.mainConnDetails.tns, privacy: .public)")
                 try conn.open()
                 log.debug("SB connected")
                 do { try conn.setFormat(fmtType: .date, fmtString: "YYYY-MM-DD HH24:MI:SS") }
@@ -96,8 +97,9 @@ class SBVM: ObservableObject {
                 rows.removeAll()
                 isExecuting = true
             }
-            log.debug("populating session browser with sql: \(self.sessionListSql, privacy: .public)")
-            let result = await queryData(for: sessionListSql, using: conn, maxRows: 1000, showDbmsOutput: false, prefetchSize: 1000)
+            let sql = buildSessionListSql()
+            log.debug("populating session browser with sql: \(sql, privacy: .public)")
+            let result = await queryData(for: sql, using: conn, maxRows: 1000, showDbmsOutput: false, prefetchSize: 1000)
             await MainActor.run {
                 updateViews(with: result)
             }
@@ -169,13 +171,32 @@ class SBVM: ObservableObject {
         return result
     }
     
+    func executeSingleRowQuery(sql: String, using conn: Connection, binds: [String: BindVar] = [:]) async -> SwiftyRow? {
+        do {
+            let cursor = try conn.cursor()
+            try cursor.execute(sql, params: binds, enableDbmsOutput: false)
+            guard let row = cursor.nextSwifty(withStringRepresentation: true) else {
+                return nil
+            }
+            log.debug("command executed")
+            return row
+        } catch DatabaseErrors.SQLError (let error) {
+            log.error("\(error.description, privacy: .public)")
+            return nil
+        } catch {
+            log.error("\(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+    
     func populateData() {
         objectWillChange.send()
         rows.removeAll()
         isExecuting = true
-        log.debug("populating session browser with sql: \(self.sessionListSql, privacy: .public)")
+        let sql = buildSessionListSql()
+        log.debug("populating session browser with sql: \(sql, privacy: .public)")
         Task.detached(priority: .background) { [self] in
-            let result = await queryData(for: sessionListSql, using: conn!, maxRows: 10000, showDbmsOutput: false, prefetchSize: 1000)
+            let result = await queryData(for: sql, using: conn!, maxRows: 10000, showDbmsOutput: false, prefetchSize: 1000)
             await MainActor.run {
                 updateViews(with: result)
             }
@@ -197,6 +218,7 @@ class SBVM: ObservableObject {
     }
     
     func startTrace(sid: Int, serial: Int) {
+        log.debug("starting session trace for row \(sid),\(serial)")
         isExecuting = true
         let sql = "begin DBMS_MONITOR.SESSION_TRACE_ENABLE(session_id => :sid, serial_num => :serial, waits => true, binds => true); end;"
         Task.detached(priority: .background) {
@@ -208,12 +230,32 @@ class SBVM: ObservableObject {
     }
     
     func stopTrace(sid: Int, serial: Int) {
+        log.debug("stopping session trace for row \(sid),\(serial)")
         isExecuting = true
         let sql = "begin DBMS_MONITOR.SESSION_TRACE_DISABLE(session_id => :sid, serial_num => :serial); end;"
         Task.detached(priority: .background) {
             let _ = await self.executeCommand(sql: sql, using: self.conn!, binds: [":sid": BindVar(sid), ":serial": BindVar(serial)])
             await MainActor.run {
                 self.populateData()
+            }
+        }
+    }
+    
+    func copyTraceFileName(paddr: String, instNum: Int) {
+        isExecuting = true
+        Task.detached(priority: .background) {
+            let sql = "select tracefile from gv$process where addr = :addr and inst_id = :instId"
+            guard let row = await self.executeSingleRowQuery(sql: sql, using: self.conn!, binds: [":addr": BindVar(paddr), ":instId": BindVar(instNum)]) else {
+                await MainActor.run { self.isExecuting = false }
+                return
+            }
+            let traceFileName = row["TRACEFILE"]!.string!
+            // copy traceFileName to clipboard
+            await MainActor.run {
+                self.isExecuting = false
+                let pasteBoard = NSPasteboard.general
+                pasteBoard.clearContents()
+                pasteBoard.setString(traceFileName, forType:NSPasteboard.PasteboardType.string)
             }
         }
     }
