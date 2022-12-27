@@ -65,6 +65,63 @@ struct DBCacheMainView: View {
             listSelection = nil
             items.nsPredicate = value
         }
+        .toolbar {
+            ToolbarItemGroup(placement: .principal) {
+                Menu {
+                    Button(cache.isReloading ? "Working..." : "Incremental Refresh") {
+                        guard !cache.isReloading else { return }
+                        cache.updateCache()
+                    }
+                    
+                    Button(cache.isReloading ? "Working..." : "Full Refresh (No Vacuum)") {
+                        guard !cache.isReloading else { return }
+                        cache.updateCache(ignoreLastUpdate: true)
+                    }
+                    
+                    Button(cache.isReloading ? "Working..." : "Full Refresh + Vacuum") {
+                        guard !cache.isReloading else { return }
+                        cache.updateCache(ignoreLastUpdate: true, withCleanup: true)
+                    }
+
+                    Button(cache.isReloading ? "Working..." : "Vacuum Only") {
+                        guard !cache.isReloading else { return }
+                        cache.updateCache(cleanupOnly: true)
+                    }
+
+                } label: {
+                    Label(cache.isReloading ? "Working..." : "Refresh", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .help("Refresh Cache")
+                
+                Button { cache.clearCache() } label: {
+                    Label("Clear", systemImage: "trash")
+                }
+                .help("Clear Cache")
+            }
+            
+            ToolbarItemGroup(placement: .status) {
+                Button { reportDisplayed.toggle() } label: {
+                    Label("Counts", systemImage: "sum")
+                }
+                .sheet(isPresented: $reportDisplayed) {
+                    VStack {
+                        Text(cache.reportCacheCounts())
+                            .textSelection(.enabled)
+                            .lineLimit(20)
+                            .frame(width: 300.0, height: 200.0, alignment: .topLeading)
+                            .padding()
+                        Button { reportDisplayed.toggle() } label: { Text("Dismiss") }
+                        .padding()
+                    }.padding()
+                }
+                .help("Show Cache counts")
+                
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .rotationEffect(Angle.degrees(cache.isReloading ? 360 : 0))
+                    .animation(.linear(duration: 2.0).repeat(while: cache.isReloading, autoreverses: false), value: cache.isReloading)
+                    .foregroundColor(cache.isReloading ? .red : .green)
+            }
+        }
     }
     
     var headerView: some View {

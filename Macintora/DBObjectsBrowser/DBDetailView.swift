@@ -41,6 +41,8 @@ struct DBDetailObjectDetailsView: View {
             case OracleObjectType.type.rawValue: DBSourceDetailView(dbObject: dbObject)
             case OracleObjectType.package.rawValue: DBSourceDetailView(dbObject: dbObject)
             case OracleObjectType.trigger.rawValue: DBTriggerDetailView(dbObject: dbObject)
+            case OracleObjectType.procedure.rawValue: DBSourceDetailView(dbObject: dbObject)
+            case OracleObjectType.function.rawValue: DBSourceDetailView(dbObject: dbObject)
             case OracleObjectType.index.rawValue: DBIndexDetailView(dbObject: dbObject)
             default: EmptyView()
         }
@@ -158,6 +160,10 @@ struct DBDetailViewHeaderImage: View {
                 Label("Type", systemImage: "t.square")
             case .package:
                 Label("Package", systemImage: "ellipsis.curlybraces")
+            case .procedure:
+                Label("Procedure", systemImage: "curlybraces")
+            case .function:
+                Label("Function", systemImage: "f.cursive")
             case .trigger:
                 Label("Trigger", systemImage: "bolt")
             default:

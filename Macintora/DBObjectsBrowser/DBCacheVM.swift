@@ -26,8 +26,8 @@ public enum OracleObjectType: String, CaseIterable, CustomStringConvertible {
     case package = "PACKAGE"
     case index = "INDEX"
     case trigger = "TRIGGER"
-//    case procedure = "PROCEDURE"
-//    case procedure = "FUNCTION"
+    case procedure = "PROCEDURE"
+    case function = "FUNCTION"
     case unknown = "UNKNOWN"
 }
 
@@ -401,7 +401,7 @@ from dba_objects o
                     }
                     let objstemp = objs
                     await cacheState.startSession()
-                    if objectType == .package || objectType == .type {
+                    if objectType == .package || objectType == .type || objectType == .procedure || objectType == .function {
                         await self.processSource_NEW(objs)
                     } else {
                         await self.processChunkOfObjects(objstemp, objectType: objectType)
@@ -424,7 +424,7 @@ from dba_objects o
                 log.cache.debug("remaining items in queue \(objectType, privacy: .public)")
                 let objstemp = objs
                 await cacheState.startSession()
-                if objectType == .package || objectType == .type {
+                if objectType == .package || objectType == .type || objectType == .procedure || objectType == .function {
                     await self.processSource_NEW(objs)
                 } else {
                     await self.processChunkOfObjects(objstemp, objectType: objectType)

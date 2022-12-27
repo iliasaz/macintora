@@ -23,8 +23,8 @@ struct DBCacheSearchCriteria: Equatable {
     @AppStorage("showPackages") var showPackages = true
     @AppStorage("showTypes") var showTypes = true
     @AppStorage("showTriggers") var showTriggers = true
-    var showProcedures = false
-    var showFunctions = false
+    @AppStorage("showProcedures") var showProcedures = true
+    @AppStorage("showFunctions") var showFunctions = true
 //    var changed = false
     
     private let tns: String

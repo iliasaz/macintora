@@ -22,7 +22,7 @@ struct DBCacheListEntryView: View {
                     case "INDEX": Image(systemName: "decrease.indent").foregroundColor(Color.blue)
                     case "TRIGGER": Image(systemName: "bolt").foregroundColor(Color.blue)
                     case "PROCEDURE": Image(systemName: "curlybraces").foregroundColor(Color.blue)
-                    case "FUNCTION": Image(systemName: "curlybraces").foregroundColor(Color.blue)
+                    case "FUNCTION": Image(systemName: "f.cursive").foregroundColor(Color.blue)
                     default: Image(systemName: "questionmark.square").foregroundColor(Color.blue)
                 }
                 Text(dbObject.name)

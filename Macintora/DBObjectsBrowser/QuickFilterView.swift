@@ -32,9 +32,7 @@ struct QuickFilterView: View {
                     Toggle(isOn: $quickFilters.showTypes) { Text("Types").frame(width: 70, alignment: .leading)}
                     Toggle(isOn: $quickFilters.showTriggers) { Text("Triggers").frame(width: 70, alignment: .leading)}
                     Toggle(isOn: $quickFilters.showProcedures) { Text("Procedures").frame(width: 70, alignment: .leading)}
-                        .disabled(true)
                     Toggle(isOn: $quickFilters.showFunctions) { Text("Functions").frame(width: 70, alignment: .leading)}
-                        .disabled(true)
                 }
                 .controlGroupStyle(GridControlGroupStyle())
                 
