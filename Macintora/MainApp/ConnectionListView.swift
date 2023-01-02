@@ -10,7 +10,7 @@ import AppKit
 
 struct ConnectionListView: View {
     @StateObject var tnsReader = TnsReader()
-    @Binding var connectionSatus: ConnectionStatus
+    @Binding var connectionStatus: ConnectionStatus
     @Binding var username: String
     @Binding var password: String
     @Binding var selectedTns: String
@@ -37,19 +37,19 @@ struct ConnectionListView: View {
                 }
             }
             .frame(minWidth: 200, alignment: .leading)
-            .disabled(connectionSatus == .connected)
+            .disabled(connectionStatus == .connected)
             
             TextField("username", text: $username)
                 .textFieldStyle(.roundedBorder)
                 .frame(minWidth: 50)
                 .disableAutocorrection(true)
-                .disabled(connectionSatus == .connected)
+                .disabled(connectionStatus == .connected)
             
             SecureField("password", text: $password)
                 .textFieldStyle(.roundedBorder)
                 .frame(minWidth: 50)
                 .disableAutocorrection(true)
-                .disabled(connectionSatus == .connected)
+                .disabled(connectionStatus == .connected)
             
             Picker(selection: $connectionRole, label: Text("Connect As:")) {
                 Text("Regular").tag(ConnectionRole.regular)
@@ -58,16 +58,16 @@ struct ConnectionListView: View {
                 .pickerStyle(SegmentedPickerStyle())
                 .labelsHidden()
                 .frame(width: 150)
-                .disabled(connectionSatus == .connected)
+                .disabled(connectionStatus == .connected)
             
             Button {
-                if connectionSatus == .connected {
+                if connectionStatus == .connected {
                     disconnect()
                 } else {
                     connect()
                 }
             } label: {
-                if connectionSatus == .connected {
+                if connectionStatus == .connected {
                     Text("Disconnect")
                 } else {
                     Text("Connect")
@@ -98,7 +98,7 @@ struct ConnectionListInnerView: View {
 struct ConnectionListView_Previews: PreviewProvider {
     static var previews: some View {
         ConnectionListView(
-            connectionSatus: .constant(.disconnected),
+            connectionStatus: .constant(.disconnected),
             username: .constant("user"),
             password: .constant("password"),
             selectedTns: .constant("tns"),

@@ -41,7 +41,7 @@ struct MainDocumentView: View {
     var body: some View {
         NavigationSplitView {
             ConnectionListView(
-                connectionSatus: $document.isConnected,
+                connectionStatus: $document.isConnected,
                 username: $document.mainConnection.mainConnDetails.username,
                 password: $document.mainConnection.mainConnDetails.password,
                 selectedTns: Binding<String> ( get: { document.mainConnection.mainConnDetails.tns }, set: {document.mainConnection.mainConnDetails.tns = $0} ),
@@ -160,7 +160,6 @@ struct MainDocumentView: View {
                 // format sql
                 Button {
                     document.format(of: $editorSelection)
-//                    editorSelection = editorSelection.lowerBound..<editorSelection.lowerBound
                     focusedView = .codeEditor
                 } label: { Image(systemName: "wand.and.stars") }
                     .keyboardShortcut("f", modifiers: [.command, .control])
