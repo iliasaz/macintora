@@ -363,7 +363,6 @@ from dual;\n\n
             let formattedText = await formatter.formatSource(name: UUID().uuidString, text: text)
             await MainActor.run {
                 self.objectWillChange.send()
-//                self.model.text = self.model.text.replacingCharacters(in: editorSelectionRange, with: formattedText)
                 self.model.text = self.model.text.replacingOccurrences(of: text, with: formattedText)
             }
         }

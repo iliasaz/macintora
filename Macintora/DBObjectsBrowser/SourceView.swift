@@ -12,6 +12,7 @@ struct SourceView: View {
     @Binding var objName: String
     @Binding var text: String?
     @State var title: String
+//    @State var formattedSource = "...formatting, please wait..."
     
     var body: some View {
         VStack {
@@ -22,20 +23,22 @@ struct SourceView: View {
                 Spacer()
                 Button {
                     let formatter = Formatter()
-                    var formattedSource = "...formatting, please wait..."
-                    Task.init(priority: .background) { formattedSource = await formatter.formatSource(name: objName, text: text) }
+                    formatter.formattedSource = "...formatting, please wait..."
                     SwiftUIWindow.open {window in
                         let _ = (window.title = objName)
-                        FormattedView(formattedSource: Binding(get: { formattedSource }, set: {_ in }) )
+//                         FormattedView(formattedSource: Binding(get: { formattedSource }, set: { newValue in formattedSource = newValue }) )
+                        FormattedView(formatter: formatter)
                     }
                     .closeOnEscape(true)
+                    
+                    formatter.formatSource(name:objName, text: text)
                 }
                 label: { Text("Format&View") }
+                
                 Button {
-                    Task.init(priority: .background) {
-                        let formatter = Formatter()
+                    let formatter = Formatter()
+                    Task.detached(priority: .background) { [self, text] in
                         var formattedSource = await formatter.formatSource(name: objName, text: text)
-                        
                     }
                 }
                 label: { Text("Format&Save") }

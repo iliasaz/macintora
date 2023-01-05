@@ -7,6 +7,11 @@
 
 import Foundation
 import SwiftUI
+import os
+
+extension Logger {
+    var formatter: Logger { Logger(subsystem: Logger.subsystem, category: "formatter") }
+}
 
 class Formatter: ObservableObject {
     @Published var formattedSource: String = "... formatting, please wait ..."
@@ -18,47 +23,52 @@ class Formatter: ObservableObject {
         let temporaryDirectoryURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
         let temporaryFilename = name + ".sql"
         let temporaryFileURL = temporaryDirectoryURL.appendingPathComponent(temporaryFilename)
-        log.debug("temp file path: \(temporaryFileURL.path, privacy: .public)")
+        log.formatter.debug("temp file path: \(temporaryFileURL.path, privacy: .public)")
         
         defer { try? FileManager.default.removeItem(at: temporaryFileURL) }
         
         do {
             if (FileManager.default.createFile(atPath: temporaryFileURL.path, contents: nil, attributes: nil)) {
-                print("File created successfully.")
+                log.formatter.debug("File created successfully.")
             } else {
-                print("File not created.")
+                log.formatter.error("File not created.")
                 return text
             }
             try text.write(to: temporaryFileURL, atomically: true, encoding: .utf8)
         } catch {
-            print("File write failed: \(error)")
+            log.formatter.error("File write failed: \(error)")
             return text
         }
         
         do {
             var output = await try Formatter.safeShell("\(formatterPath)/tvdformat \(temporaryFileURL.path) xml=\(formatterPath)/trivadis_advanced_format.xml arbori=\(formatterPath)/trivadis_custom_format.arbori")
+            log.formatter.debug("tvdformat first pass output received: \(output, privacy: .public)")
             output = await try Formatter.safeShell("\(formatterPath)/tvdformat \(temporaryFileURL.path) xml=\(formatterPath)/trivadis_advanced_format.xml arbori=\(formatterPath)/trivadis_custom_format.arbori")
-            log.debug("tvdformat output: \(output, privacy: .public)")
+            log.formatter.debug("tvdformat final output received: \(output, privacy: .public)")
         }
         catch {
-            log.error("tvdformat failed: \(error.localizedDescription, privacy: .public)") //handle or silence the error here
+            log.formatter.error("tvdformat failed: \(error.localizedDescription, privacy: .public)") //handle or silence the error here
         }
-
+        
         do {
-//            self.objectWillChange.send()
+            //            self.objectWillChange.send()
             text = try String.init(contentsOfFile: temporaryFileURL.path)
         }
         catch {
-            log.error("file read failed: \(error.localizedDescription, privacy: .public)") //handle or silence the error here
+            log.formatter.error("file read failed: \(error.localizedDescription, privacy: .public)") //handle or silence the error here
         }
         
         return text
-        
-//        Task { [self] in await MainActor.run {
-//            self.formattedSource = tempFormattedText
-//        }}
-        
-        
+    }
+    
+    func formatSource(name: String, text: String?) {
+        Task.detached(priority: .background) { [self] in
+            let formattedText = await formatSource(name: name, text: text)
+            
+            await MainActor.run {
+                self.formattedSource = formattedText
+            }
+        }
     }
     
     static func safeShell(_ command: String) async throws -> String {

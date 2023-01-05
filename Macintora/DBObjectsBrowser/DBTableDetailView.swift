@@ -118,7 +118,8 @@ struct DBTableDetailView: View {
                             Task.init(priority: .background) { formattedSource = await formatter.formatSource(name: dbObject.name, text: tables.first?.sqltext) }
                             SwiftUIWindow.open {window in
                                 let _ = (window.title = dbObject.name)
-                                FormattedView(formattedSource: Binding(get: {formattedSource }, set: {_ in }) )
+//                                FormattedView(formattedSource: Binding(get: {formattedSource }, set: {_ in }) )
+                                FormattedView(formatter: formatter)
                             }
                             .closeOnEscape(true)
                         } label: { Text("Format Source") }
