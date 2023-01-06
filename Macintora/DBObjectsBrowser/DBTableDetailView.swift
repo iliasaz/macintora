@@ -14,24 +14,19 @@ struct DBTableDetailView: View {
     @State private var selectedTab: String = "columns"
     @FetchRequest private var tables: FetchedResults<DBCacheTable>
     @FetchRequest private var columns: FetchedResults<DBCacheTableColumn>
-    @ObservedObject var dbObject: DBCacheObject
-    {
-        mutating didSet {
-            _tables = FetchRequest<DBCacheTable>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
-            _columns = FetchRequest<DBCacheTableColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "tableName_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
-        }
-    }
+    @Binding var dbObject: DBCacheObject
     
     let columnLabels = ["columnID", "columnName", "dataType", "dataTypeMod", "dataTypeOwner", "length", "precision", "scale", "isNullable", "numNulls", "numDistinct", "isIdentity", "isHidden", "isVirtual", "isSysGen", "defaultValue","internalColumnID", ]
     let booleanColumnLabels = ["isNullable", "isHidden", "isIdentity", "isSysGen", "isVirtual"]
     var columnSortFn = { (lhs: NSManagedObject, rhs: NSManagedObject) in (lhs as! DBCacheTableColumn).internalColumnID < (rhs as! DBCacheTableColumn).internalColumnID }
 
-    init(dbObject: DBCacheObject) {
-        self.dbObject = dbObject
-        _tables = FetchRequest<DBCacheTable>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
-        _columns = FetchRequest<DBCacheTableColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "tableName_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
+    init(dbObject: Binding<DBCacheObject>) {
+        self._dbObject = dbObject
+        _tables = FetchRequest<DBCacheTable>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
+        _columns = FetchRequest<DBCacheTableColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "tableName_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
     }
     
+    var sqlText: String { tables.first?.sqltext ?? "" }
     
     var tableHeader: some View {
         HStack {
@@ -84,7 +79,7 @@ struct DBTableDetailView: View {
             if tables.first?.isView ?? false { viewHeader } else { tableHeader }
             
             TabView(selection: $selectedTab) {
-                DetailGridView(rows: Array(columns), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
+                DetailGridView(rows: Binding(get: { Array(columns)}, set: { _ in }), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
                     .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                     .tabItem {
                         Text("Columns")
@@ -102,29 +97,29 @@ struct DBTableDetailView: View {
                         .tabItem {
                             Text("Triggers")
                         }.tag("triggers")
-
-//                    Text("Table DDL")
-//                        .tabItem {
-//                            Text("SQL")
-//                        }.tag("sql")
-
                 }
                 
                 if tables.first?.isView ?? false {
                     VStack {
                         Button {
                             let formatter = Formatter()
-                            var formattedSource = "...formatting, please wait..."
-                            Task.init(priority: .background) { formattedSource = await formatter.formatSource(name: dbObject.name, text: tables.first?.sqltext) }
+                            formatter.formattedSource = "...formatting, please wait..."
+                            
                             SwiftUIWindow.open {window in
                                 let _ = (window.title = dbObject.name)
-//                                FormattedView(formattedSource: Binding(get: {formattedSource }, set: {_ in }) )
                                 FormattedView(formatter: formatter)
                             }
                             .closeOnEscape(true)
+                            
+                            formatter.formatSource(name: dbObject.name, text: tables.first?.sqltext)
+                            
                         } label: { Text("Format Source") }
                         
-                        CodeEditor(source: .constant(tables.first?.sqltext ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false)
+//                        CodeEditor(source: .constant(tables.first?.sqltext ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false, wordWrap: .constant(true))
+                        Text("\(sqlText)")
+                            .monospaced()
+                            .textSelection(.enabled)
+                            .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                     }
                     .tabItem {
@@ -132,9 +127,7 @@ struct DBTableDetailView: View {
                     }.tag("sql")
                 }
             }
-            .font(.headline)
         }
-//        .frame(minWidth: 200, idealWidth: 400, maxWidth: .infinity, minHeight: 300, maxHeight: .infinity)
         .padding()
     }
 }

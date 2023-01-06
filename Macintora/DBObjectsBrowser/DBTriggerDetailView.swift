@@ -12,16 +12,11 @@ import CoreData
 struct DBTriggerDetailView: View {
     @Environment(\.managedObjectContext) var context
     @FetchRequest private var tables: FetchedResults<DBCacheTrigger>
-    @ObservedObject var dbObject: DBCacheObject
-    {
-        mutating didSet {
-            _tables = FetchRequest<DBCacheTrigger>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@ ", dbObject.name, dbObject.owner))
-        }
-    }
+    @Binding var dbObject: DBCacheObject
     
-    init(dbObject: DBCacheObject) {
-        self.dbObject = dbObject
-        _tables = FetchRequest<DBCacheTrigger>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@ ", dbObject.name, dbObject.owner))
+    init(dbObject: Binding<DBCacheObject>) {
+        self._dbObject = dbObject
+        _tables = FetchRequest<DBCacheTrigger>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@ ", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
     }
     
     var tableHeader: some View {
@@ -67,7 +62,7 @@ struct DBTriggerDetailView: View {
         VStack(alignment: .leading) {
             tableHeader
             
-            SourceView(objName: $dbObject.name, text: Binding<String?>(get: {tables.first?.body ?? ""}, set: {_ in}), title: "Body")
+            SourceView(objName: $dbObject.name, text: Binding<String>(get: {tables.first?.body ?? ""}, set: {_ in}), title: "Body")
 
         }
         .padding()
@@ -76,7 +71,7 @@ struct DBTriggerDetailView: View {
 
 struct DBTriggerDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        DBTriggerDetailView(dbObject: DBCacheObject.exampleTrigger)
+        DBTriggerDetailView(dbObject: .constant(DBCacheObject.exampleTrigger))
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
             .frame(width: 800, height: 800)
     }

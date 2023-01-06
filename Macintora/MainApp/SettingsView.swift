@@ -13,20 +13,19 @@ struct SettingsView: View {
         case editor, browser
     }
     var body: some View {
-        TabView {
-            EditorSettings()
-                .tabItem {
-                    Label("Editor", systemImage: "gear")
-                }
-                .tag(Tabs.editor)
-            DBBrowserSettings()
-                .tabItem {
-                    Label("DB Browser", systemImage: "server.rack")
-                }
-                .tag(Tabs.browser)
-        }
-        .padding(20)
-        .frame(width: 600, height: 200)
+            TabView {
+                EditorSettings()
+                    .tabItem {
+                        Label("Editor", systemImage: "gear")
+                    }
+                    .tag(Tabs.editor)
+                DBBrowserSettings()
+                    .tabItem {
+                        Label("DB Browser", systemImage: "server.rack")
+                    }
+                    .tag(Tabs.browser)
+                    .padding(10)
+            }
     }
 }
 
@@ -37,34 +36,39 @@ struct EditorSettings: View {
     @AppStorage("rowFetchLimit") private var rowFetchLimit: Int = 200
     @AppStorage("queryPrefetchSize") private var queryPrefetchSize: Int = 200
     @AppStorage("serverTimeSeconds") private var serverTimeSeconds = false
+    @AppStorage("wordWrap") private var wordWrap = false
 
     var body: some View {
-        Form {
-            TextField("TNS Path", text: $tnsnamesPath)
-                .disableAutocorrection(true)
-                .textFieldStyle(.roundedBorder)
-            
-            TextField("Formatter Path", text: $formatterPath)
-                .disableAutocorrection(true)
-                .textFieldStyle(.roundedBorder)
-            
-            TextField("Shell Command", text: $shellPath)
-                .disableAutocorrection(true)
-                .textFieldStyle(.roundedBorder)
-            
-            TextField("Row Fetch Limit", value: $rowFetchLimit, format: .number)
-                .disableAutocorrection(true)
-                .textFieldStyle(.roundedBorder)
-            
-            TextField("Query PreFetch Size", value: $queryPrefetchSize, format: .number)
-                .disableAutocorrection(true)
-                .textFieldStyle(.roundedBorder)
-            
-            Toggle("Show seconds in server time", isOn: $serverTimeSeconds)
-
+        VStack {
+            Form {
+                TextField("TNS Path", text: $tnsnamesPath)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(.roundedBorder)
+                
+                TextField("Formatter Path", text: $formatterPath)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(.roundedBorder)
+                
+                TextField("Shell Command", text: $shellPath)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(.roundedBorder)
+                
+                TextField("Row Fetch Limit", value: $rowFetchLimit, format: .number)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(.roundedBorder)
+                
+                TextField("Query PreFetch Size", value: $queryPrefetchSize, format: .number)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(.roundedBorder)
+                
+                Toggle("Show seconds in server time", isOn: $serverTimeSeconds)
+                
+                Toggle("Word Wrapping", isOn: $wordWrap)
+                
+            }
+            Spacer()
         }
         .padding(20)
-        .frame(width: 600, height: 200)
     }
 }
 
@@ -76,28 +80,30 @@ struct DBBrowserSettings: View {
     @AppStorage("searchLimit") private var searchLimit: Int = 20
     
     var body: some View {
-        Form {
-            TextField("Cache Update Prefetch Size", value: $cacheUpdatePrefetchSize, format: .number)
-                .disableAutocorrection(true)
-                .textFieldStyle(.roundedBorder)
-            
-            TextField("Cache Update Batch Size", value: $cacheUpdateBatchSize, format: .number)
-                .disableAutocorrection(true)
-                .textFieldStyle(.roundedBorder)
-            
-            TextField("Cache Update Max Sessions", value: $cacheUpdateSessionLimit, format: .number)
-                .disableAutocorrection(true)
-                .textFieldStyle(.roundedBorder)
-            
-            TextField("Search Limit", value: $searchLimit, format: .number)
-                .disableAutocorrection(true)
-                .textFieldStyle(.roundedBorder)
-            
-            Toggle("Include system objects", isOn: $includeSystemObjects)
-
+        VStack {
+            Form {
+                TextField("Cache Update Prefetch Size", value: $cacheUpdatePrefetchSize, format: .number)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(.roundedBorder)
+                
+                TextField("Cache Update Batch Size", value: $cacheUpdateBatchSize, format: .number)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(.roundedBorder)
+                
+                TextField("Cache Update Max Sessions", value: $cacheUpdateSessionLimit, format: .number)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(.roundedBorder)
+                
+                TextField("Search Limit", value: $searchLimit, format: .number)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(.roundedBorder)
+                
+                Toggle("Include system objects", isOn: $includeSystemObjects)
+                
+            }
+            Spacer()
         }
         .padding(20)
-        .frame(width: 600, height: 200)
     }
 }
 

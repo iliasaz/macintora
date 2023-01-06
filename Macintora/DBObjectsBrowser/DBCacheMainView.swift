@@ -54,7 +54,8 @@ struct DBCacheMainView: View {
             .listStyle(SidebarListStyle())
         } detail: {
             if let selectedItem = listSelection {
-                DBDetailView(dbObject: selectedItem)
+                DBDetailView(dbObject: Binding(get: { selectedItem }, set: {_ in }))
+                    .environmentObject(cache)
                     .frame(minWidth: 400, idealWidth: 600, maxWidth: .infinity, idealHeight: 1000, maxHeight: .infinity)
             } else {
                 Text("Nothing selected")

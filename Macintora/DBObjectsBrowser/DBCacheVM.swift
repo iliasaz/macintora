@@ -526,7 +526,7 @@ from dba_objects o
         sql += ")"
         guard let conn = pool?.getConnection(tag: "cache", autoCommit: false) else {log.cache.error("could not get a connection"); return }
         defer { pool?.returnConnection(conn: conn) }
-//        log.cache.debug("in \(#function, privacy: .public), executing SQL: \(sql, privacy: .public) with objects: \(objs, privacy: .public)")
+        log.cache.debug("in \(#function, privacy: .public), executing SQL: \(sql, privacy: .public) with objects: \(objs, privacy: .public)")
         let cur = try? conn.cursor()
         do {
             try cur?.execute(sql, params: params, prefetchSize: 1000)
@@ -545,7 +545,7 @@ from dba_objects o
             request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@", tableName, tableOwner)
             let results = (try? context.fetch(request)) ?? []
             if let obj = results.first {
-//                log.cache.debug("Table found in cache: \(tableOwner).\(tableName)")
+                log.cache.debug("Table found in cache: \(tableOwner).\(tableName)")
                 obj.numRows = Int64(numRows)
                 obj.lastAnalyzed = lastAnalyzed
                 obj.isPartitioned = isPartitioned
@@ -560,7 +560,7 @@ from dba_objects o
                 try? deleteTableColumns(for: obj, in: context)
                 populateTableColumns(for: obj, in: context, using: conn)
             } else {
-//                log.cache.debug("creating a new cache instance for table \(tableOwner, privacy: .public).\(tableName, privacy: .public)")
+                log.cache.debug("creating a new cache instance for table \(tableOwner, privacy: .public).\(tableName, privacy: .public)")
                 let obj = DBCacheTable(context: context)
                 obj.isView = isView
                 obj.owner_ = tableOwner
@@ -577,7 +577,7 @@ from dba_objects o
                 populateTableColumns(for: obj, in: context, using: conn)
             }
         }
-//        log.cache.debug("exiting from \(#function, privacy: .public)")
+        log.cache.debug("exiting from \(#function, privacy: .public)")
     }
     
     func populateTableColumns(for table: DBCacheTable, in context: NSManagedObjectContext, using conn: PooledConnection) {
@@ -1178,9 +1178,6 @@ where object_type = :type and owner = :owner and object_name = :name
         let oracleService = OracleService(from_string: connDetails.tns)
         pool = try ConnectionPool(service: oracleService, user: connDetails.username, pwd: connDetails.password, minConn: 0, maxConn: cacheUpdateSessionLimit, poolType: .Session, isSysDBA: connDetails.connectionRole == .sysDBA)
         pool?.timeout = 5
-        Task { await MainActor.run {
-            self.isConnected = .connected
-        }}
         log.cache.debug("Connection pool created")
     }
     

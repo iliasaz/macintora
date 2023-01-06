@@ -22,6 +22,7 @@ struct MainDocumentView: View {
     @State private var selectedTab: String = "queryResults"
     @FocusState private var focusedView: FocusedView?
     @Environment(\.openDocument) private var openDocument
+    @AppStorage("wordWrap") private var wordWrapping = false
 
     @StateObject private var resultsController: ResultsController
     @State private var editorSelection: Range<String.Index> = "".startIndex..<"".endIndex
@@ -59,7 +60,8 @@ struct MainDocumentView: View {
                                indentStyle: .softTab(width: 2),
                                autoPairs: [ "{": "}", "(": ")" ],
                                inset: CGSize(width: 8, height: 8),
-                               autoscroll: false)
+                               autoscroll: false, wordWrap: $wordWrapping
+                    )
                         .frame(maxWidth: .infinity, minHeight:100, maxHeight: .infinity)
                         .focused($focusedView, equals: .codeEditor)
                         .layoutPriority(1)
@@ -71,7 +73,6 @@ struct MainDocumentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .focusedSceneValue(\.mainConnection, document.mainConnection)
-//        .focusedSceneValue(\.cacheConnectionDetails, document.mainConnection.mainConnDetails)
         .focusedSceneValue(\.selectedObjectName, selectedObject)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
@@ -80,13 +81,6 @@ struct MainDocumentView: View {
         }
         
         .toolbar {
-//            ToolbarItemGroup(placement: .navigation) {
-//                Button(action: toggleSidebar, label: {
-//                    Image(systemName: "sidebar.left")
-//                } )
-//                .help("Sidebar")
-//            }
-            
             ToolbarItemGroup(placement: .principal) {
                 // connect / disconnect
                 Button {
@@ -175,8 +169,7 @@ struct MainDocumentView: View {
                     .help("Compile")
                 
                 Spacer()
-//            }
-//            ToolbarItemGroup(placement: .confirmationAction ) {
+
                 Button {
                     document.ping()
                 } label: {
@@ -193,17 +186,9 @@ struct MainDocumentView: View {
                 }
                 .help("Ping")
                 
-//                Button(action: appSettings.setCurrentTheme, label: {
-//                    Image(systemName: AppSettings.shared.currentTheme == .light ? "moon" : "moon.fill")
-//                })
-//                .help("Theme")
-                
-//                Button(action: {
-//                    NSApplication.shared.terminate(self)
-//                }, label: {
-//                    Image(systemName: "rectangle.portrait.and.arrow.right")
-//                })
-//                .help("Exit")
+                Toggle("Word Wrap", isOn: $wordWrapping)
+                    .toggleStyle(.switch)
+                    .help("Word Wrap")
             }
         }
     }

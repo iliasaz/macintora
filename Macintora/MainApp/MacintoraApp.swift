@@ -105,7 +105,7 @@ struct MainDocumentMenuCommands: Commands {
                 log.viewCycle.debug("Opening SB with mainConnection: \(mainConnection?.description ?? "no main connection")")
                 openWindow(value: SBInputValue(mainConnection: mainConnection ?? .preview()))
             }
-            .disabled(mainConnection?.mainConnDetails == nil)
+                .disabled(mainConnection?.mainConnDetails == nil)
                 .presentedWindowStyle(TitleBarWindowStyle())
                 .keyboardShortcut("s", modifiers: [.command, .control, .shift])
         }

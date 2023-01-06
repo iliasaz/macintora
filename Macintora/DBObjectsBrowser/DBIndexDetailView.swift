@@ -14,22 +14,16 @@ struct DBIndexDetailView: View {
     @State private var selectedTab: String = "columns"
     @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
     @FetchRequest private var columns: FetchedResults<DBCacheIndexColumn>
-    @ObservedObject var dbObject: DBCacheObject
-    {
-        mutating didSet {
-            _indexes = FetchRequest<DBCacheIndex>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
-            _columns = FetchRequest<DBCacheIndexColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "indexName_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
-        }
-    }
+    @Binding var dbObject: DBCacheObject
     
     let columnLabels = ["position", "columnName", "isDescending", "length"]
     let booleanColumnLabels = ["isDescending"]
     var columnSortFn = { (lhs: NSManagedObject, rhs: NSManagedObject) in (lhs as! DBCacheIndexColumn).position < (rhs as! DBCacheIndexColumn).position }
 
-    init(dbObject: DBCacheObject) {
-        self.dbObject = dbObject
-        _indexes = FetchRequest<DBCacheIndex>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
-        _columns = FetchRequest<DBCacheIndexColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "indexName_ = %@ and owner_ = %@", dbObject.name, dbObject.owner))
+    init(dbObject: Binding<DBCacheObject>) {
+        self._dbObject = dbObject
+        _indexes = FetchRequest<DBCacheIndex>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
+        _columns = FetchRequest<DBCacheIndexColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "indexName_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
     }
     
     var tableHeader: some View {
@@ -59,7 +53,7 @@ struct DBIndexDetailView: View {
             tableHeader
             
             TabView(selection: $selectedTab) {
-                DetailGridView(rows: Array(columns), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
+                DetailGridView(rows: Binding(get: { Array(columns)}, set: { _ in }), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
                     .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                     .tabItem {
                         Text("Columns")

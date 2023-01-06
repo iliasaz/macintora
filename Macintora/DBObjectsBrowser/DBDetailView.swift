@@ -8,17 +8,17 @@
 import SwiftUI
 
 struct DBDetailObjectMainView: View {
-    var dbObject: DBCacheObject
+    @Binding var dbObject: DBCacheObject
     var body: some View {
         VStack(alignment: .leading, spacing: 0.0) {
             Form {
-                TextField("Object ID", value: Binding(get: { dbObject.objectId }, set: {_ in}) , format: .number.grouping(.never))
-                TextField("Created", value: Binding(get: { dbObject.createDate} , set: {_ in}), format: .dateTime)
-                TextField("Last DDL", value: Binding(get: { dbObject.lastDDLDate} , set: {_ in}), format: .dateTime)
+                TextField("Object ID", value: $dbObject.objectId, format: .number.grouping(.never))
+                TextField("Created", value: $dbObject.createDate, format: .dateTime)
+                TextField("Last DDL", value: $dbObject.lastDDLDate, format: .dateTime)
                 TextField("Edition", text: Binding(get: { dbObject.editionName ?? "" } , set: {_ in}))
                 HStack {
-                    Toggle("Editionable", isOn: Binding(get: { dbObject.isEditionable } , set: {_ in}))
-                    Toggle("Valid", isOn: Binding(get: { dbObject.isValid } , set: {_ in}))
+                    Toggle("Editionable", isOn: $dbObject.isEditionable)
+                    Toggle("Valid", isOn: $dbObject.isValid)
                 }
             }
             .padding()
@@ -33,40 +33,40 @@ struct DBDetailObjectMainView: View {
 }
 
 struct DBDetailObjectDetailsView: View {
-    var dbObject: DBCacheObject
+    @Binding var dbObject: DBCacheObject
     var body: some View {
         switch dbObject.type {
-            case OracleObjectType.table.rawValue: DBTableDetailView(dbObject: dbObject)
-            case OracleObjectType.view.rawValue: DBTableDetailView(dbObject: dbObject)
-            case OracleObjectType.type.rawValue: DBSourceDetailView(dbObject: dbObject)
-            case OracleObjectType.package.rawValue: DBSourceDetailView(dbObject: dbObject)
-            case OracleObjectType.trigger.rawValue: DBTriggerDetailView(dbObject: dbObject)
-            case OracleObjectType.procedure.rawValue: DBSourceDetailView(dbObject: dbObject)
-            case OracleObjectType.function.rawValue: DBSourceDetailView(dbObject: dbObject)
-            case OracleObjectType.index.rawValue: DBIndexDetailView(dbObject: dbObject)
+            case OracleObjectType.table.rawValue: DBTableDetailView(dbObject: $dbObject)
+            case OracleObjectType.view.rawValue: DBTableDetailView(dbObject: $dbObject)
+            case OracleObjectType.type.rawValue: DBSourceDetailView(dbObject: $dbObject)
+            case OracleObjectType.package.rawValue: DBSourceDetailView(dbObject: $dbObject)
+            case OracleObjectType.trigger.rawValue: DBTriggerDetailView(dbObject: $dbObject)
+            case OracleObjectType.procedure.rawValue: DBSourceDetailView(dbObject: $dbObject)
+            case OracleObjectType.function.rawValue: DBSourceDetailView(dbObject: $dbObject)
+            case OracleObjectType.index.rawValue: DBIndexDetailView(dbObject: $dbObject)
             default: EmptyView()
         }
     }
 }
 
 struct DBDetailView: View {
-    var dbObject: DBCacheObject
-    @State private var selectedTab: String = "main"
+    @Binding var dbObject: DBCacheObject
+    @State private var selectedTab: String = "details"
     
     var body: some View {
         VStack(alignment: .leading) {
-            DBDetailViewHeader(dbObject: dbObject)
+            DBDetailViewHeader(dbObject: $dbObject)
                 .padding([.top, .leading, .trailing])
 
-            TabView {
-                DBDetailObjectMainView(dbObject: dbObject)
+            TabView(selection: $selectedTab) {
+                DBDetailObjectMainView(dbObject: $dbObject)
                     .frame(alignment: .topLeading)
                     .tabItem {
                         Text("Main")
                     }
                     .tag("main")
 
-                DBDetailObjectDetailsView(dbObject: dbObject)
+                DBDetailObjectDetailsView(dbObject: $dbObject)
                     .tabItem {
                         Text("Details")
                     }
@@ -77,14 +77,14 @@ struct DBDetailView: View {
 }
 
 struct DBDetailViewHeader: View {
-    var dbObject: DBCacheObject
+    @Binding var dbObject: DBCacheObject
     @State private var isRefreshing = false
     @State private var isLoadingSource = false
     @EnvironmentObject private var cache: DBCacheVM
     
     var body: some View {
         HStack {
-            DBDetailViewHeaderImage(type: OracleObjectType(rawValue: dbObject.type) ?? .unknown)
+            DBDetailViewHeaderImage(type: Binding( get: { OracleObjectType(rawValue: dbObject.type) ?? .unknown}, set: {_ in }))
                 .foregroundColor(Color.blue)
             Text("\(dbObject.name) (\(dbObject.owner))")
                 .textSelection(.enabled)
@@ -124,9 +124,15 @@ struct DBDetailViewHeader: View {
     
     func refresh() {
         Task(priority: .background) {
-            isRefreshing = true
-            try? cache.connectSvc()
-            guard cache.isConnected == .connected else { isRefreshing = false; return }
+            await MainActor.run { isRefreshing = true }
+            do {
+                try cache.connectSvc()
+                await MainActor.run { cache.isConnected = .connected }
+            } catch {
+                log.cache.error("not connected")
+                await MainActor.run { isRefreshing = false}
+                return
+            }
             await cache.refreshObject(OracleObject(
                 owner: dbObject.owner,
                 name: dbObject.name,
@@ -137,16 +143,15 @@ struct DBDetailViewHeader: View {
                 isEditionable: dbObject.isEditionable,
                 isValid: dbObject.isValid,
                 objectId: dbObject.objectId
-            )
-            )
+            ))
             cache.disconnectSvc()
-            isRefreshing = false
+            await MainActor.run { isRefreshing = false}
         }
     }
 }
 
 struct DBDetailViewHeaderImage: View {
-    var type: OracleObjectType
+    @Binding var type: OracleObjectType
     
     var body: some View {
         switch type {
@@ -176,13 +181,13 @@ struct DBDetailViewHeaderImage: View {
 
 struct DBDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        DBDetailView(dbObject: DBCacheObject.exampleTrigger)
+        DBDetailView(dbObject: .constant(DBCacheObject.exampleTrigger))
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
             .frame(width: 800, height: 800)
-        DBDetailView(dbObject: DBCacheObject.exampleTable)
+        DBDetailView(dbObject: .constant(DBCacheObject.exampleTable))
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
             .frame(width: 800, height: 800)
-        DBDetailView(dbObject: DBCacheObject.examplePackage)
+        DBDetailView(dbObject: .constant(DBCacheObject.examplePackage))
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
             .frame(width: 800, height: 800)
     }

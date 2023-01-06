@@ -12,13 +12,13 @@ import os
 
 struct DetailGridView: NSViewRepresentable {
     @Environment(\.colorScheme) var colorScheme
-    @State var rows: [NSManagedObject]
+    @Binding var rows: [NSManagedObject]
     var columnLabels: [String]
     var booleanColumnLabels: [String]
     var autoColWidth = true
     
-    init(rows: [NSManagedObject], columnLabels: [String], booleanColumnLabels: [String] = [], rowSortFn: (NSManagedObject, NSManagedObject) -> Bool) {
-        _rows = State(initialValue: rows.sorted(by: rowSortFn) )
+    init(rows: Binding<[NSManagedObject]>, columnLabels: [String], booleanColumnLabels: [String] = [], rowSortFn: (NSManagedObject, NSManagedObject) -> Bool) {
+        self._rows = rows
         self.columnLabels = columnLabels
         self.booleanColumnLabels = booleanColumnLabels
     }
