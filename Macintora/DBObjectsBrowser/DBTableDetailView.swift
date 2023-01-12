@@ -116,11 +116,14 @@ struct DBTableDetailView: View {
                         } label: { Text("Format Source") }
                         
 //                        CodeEditor(source: .constant(tables.first?.sqltext ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false, wordWrap: .constant(true))
-                        Text("\(sqlText)")
-                            .monospaced()
-                            .textSelection(.enabled)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
+                        ScrollView {
+                            Text("\(sqlText)")
+                                .monospaced()
+                                .textSelection(.enabled)
+                                .lineLimit(nil)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity)
+                        }
                     }
                     .tabItem {
                         Text("SQL")

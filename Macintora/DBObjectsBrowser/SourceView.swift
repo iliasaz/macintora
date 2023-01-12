@@ -52,11 +52,15 @@ struct SourceView: View {
                 label: { Text("Format&Save") }
                     .disabled(true)
             }
-            Text("\(text)")
-                .monospaced()
-                .textSelection(.enabled)
-                .multilineTextAlignment(.leading)
-//            CodeEditor(source: $text, language: .pgsql, theme: .atelierDuneLight, flags: [.selectable, .editable], autoscroll: false, wordWrap: .constant(true))
+//            ScrollView {
+//                Text("\(text)")
+//                    .monospaced()
+//                    .textSelection(.enabled)
+//                    .lineLimit(nil)
+//                    .multilineTextAlignment(.leading)
+//                    .frame(maxWidth: .infinity)
+//            }
+            CodeEditor(source: $text, language: .pgsql, theme: .atelierDuneLight, flags: [.selectable, .editable], autoscroll: false, wordWrap: .constant(true))
                 .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
         }
     }
