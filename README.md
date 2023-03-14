@@ -9,7 +9,7 @@ Macintora depends on a few other projects, some of which are required, and some 
 - [OCILIB](https://github.com/vrogier/ocilib). More on how to build the library below.  
 - [SwiftOracle](https://github.com/iliasaz/SwiftOracle).   
 - [CodeEditor](https://github.com/iliasaz/CodeEditor).   
-- [SourceCode Pro Font](https://github.com/adobe-fonts/source-code-pro.git)  
+- [SF Mono Font](https://devimages-cdn.apple.com/design/resources/download/SF-Mono.dmg)  
 - If you would like to have formatter capability, consider building a Graal executable as described in [Trivadis PL/SQL & SQL Formatter Settings](https://github.com/Trivadis/plsql-formatter-settings#plsql--sql-formatter-settings). 
 
 ## Installing the binary
