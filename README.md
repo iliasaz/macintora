@@ -18,7 +18,7 @@ Macintora binary is built for MacOS 12.3+, x86 platform. The binary needs the fo
 ### Dependencies
 - Oracle [Instant Client](https://www.oracle.com/database/technologies/instant-client/macos-intel-x86-downloads.html). Only x86 version is available for MacOS at the time of writing. Hence, we're limited with Rosetta version of Macintora.
 - [OCILIB](https://github.com/vrogier/ocilib). More on how to build the library below.
-- [SourceCode Pro Font](https://github.com/adobe-fonts/source-code-pro.git). Simply clone and install the font in your MacOS.      
+- [SF Mono Font](https://devimages-cdn.apple.com/design/resources/download/SF-Mono.dmg).     
 - If you would like to have formatter capability, consider building a Graal executable as described in [Trivadis PL/SQL & SQL Formatter Settings](https://github.com/Trivadis/plsql-formatter-settings#plsql--sql-formatter-settings). 
 
 ## Building OCILIB from sources
@@ -42,6 +42,5 @@ ls -la /usr/local/lib
 - [CodeEditor](https://github.com/iliasaz/CodeEditor)  
 - [Line Number Gutter Text View](https://github.com/raphaelhanneken/line-number-text-view)  
 - [SwiftUIWindow](https://github.com/mortenjust/SwiftUIWindow)  
-- [SourceCode Pro Font](https://github.com/adobe-fonts/source-code-pro.git)
 - [Trivadis PL/SQL & SQL Formatter Settings](https://github.com/Trivadis/plsql-formatter-settings#plsql--sql-formatter-settings)
 
