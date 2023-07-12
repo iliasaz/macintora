@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		4904C5BB28D6B145009F65BD /* Highlightr in Sources */ = {isa = PBXBuildFile; fileRef = 492ED2CF28D2B9A900FDF3A1 /* Highlightr */; };
 		4904C5BD28D6B15A009F65BD /* Highlightr in Frameworks */ = {isa = PBXBuildFile; productRef = 4904C5BC28D6B15A009F65BD /* Highlightr */; };
+		491588F72A53365400E873FB /* STTextView in Resources */ = {isa = PBXBuildFile; fileRef = 491588F62A53365400E873FB /* STTextView */; };
 		4919589D273757AD00423B95 /* SwiftOracle in Sources */ = {isa = PBXBuildFile; fileRef = 493A199A2718E19200803AC9 /* SwiftOracle */; };
 		4927FBF72746DFB4007EED5B /* TnsReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4927FBF62746DFB4007EED5B /* TnsReader.swift */; };
 		49438678273753A000D7D464 /* ResultViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49438677273753A000D7D464 /* ResultViewModel.swift */; };
@@ -59,6 +60,7 @@
 		4982890528B7EF5E00A28B04 /* ConnectionDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982890428B7EF5E00A28B04 /* ConnectionDetails.swift */; };
 		4982890D28B95BC100A28B04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982890C28B95BC100A28B04 /* SettingsView.swift */; };
 		4999469427E1777700C62AB7 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4999469327E1777700C62AB7 /* LogView.swift */; };
+		49AF890E2A43DA6800CD95E1 /* CodeEditTextView in Frameworks */ = {isa = PBXBuildFile; productRef = 49AF890D2A43DA6800CD95E1 /* CodeEditTextView */; };
 		49B55F32270ADD8B00CFB3C7 /* MacintoraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */; };
 		49B55F36270ADD8B00CFB3C7 /* MainDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */; };
 		49B55F38270ADD8D00CFB3C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49B55F37270ADD8D00CFB3C7 /* Assets.xcassets */; };
@@ -93,6 +95,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		491588F62A53365400E873FB /* STTextView */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = STTextView; path = ../STTextView; sourceTree = "<group>"; };
 		4927FBF62746DFB4007EED5B /* TnsReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsReader.swift; sourceTree = "<group>"; };
 		492ED2CF28D2B9A900FDF3A1 /* Highlightr */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Highlightr; path = ../Highlightr; sourceTree = "<group>"; };
 		49330ED2275416EC004EAA48 /* DBObjectsBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectsBrowser.swift; sourceTree = "<group>"; };
@@ -156,6 +159,7 @@
 		4996124C275C4E3100CBA849 /* DBCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCache.swift; sourceTree = "<group>"; };
 		4996124E2763F79800CBA849 /* DBObjectsListEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectsListEntry.swift; sourceTree = "<group>"; };
 		4999469327E1777700C62AB7 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
+		49AF890A2A43D92800CD95E1 /* CodeEditTextView */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = CodeEditTextView; path = ../CodeEditTextView; sourceTree = "<group>"; };
 		49B55F2E270ADD8B00CFB3C7 /* Macintora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Macintora.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MacintoraApp.swift; sourceTree = "<group>"; };
 		49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainDocumentView.swift; sourceTree = "<group>"; };
@@ -204,6 +208,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				49B6D1312733450800D9D788 /* CodeEditor in Frameworks */,
+				49AF890E2A43DA6800CD95E1 /* CodeEditTextView in Frameworks */,
 				4904C5BD28D6B15A009F65BD /* Highlightr in Frameworks */,
 				49C5A1DD2718F5E40044CF0F /* SwiftOracle in Frameworks */,
 			);
@@ -336,6 +341,7 @@
 		49B55F25270ADD8B00CFB3C7 = {
 			isa = PBXGroup;
 			children = (
+				491588F62A53365400E873FB /* STTextView */,
 				49B55F63270AF79000CFB3C7 /* Packages */,
 				49B55F30270ADD8B00CFB3C7 /* Macintora */,
 				4982889D28B41F3A00A28B04 /* MacintoraTests */,
@@ -384,6 +390,7 @@
 				493A199A2718E19200803AC9 /* SwiftOracle */,
 				49B6D12B2733439900D9D788 /* CodeEditor */,
 				492ED2CF28D2B9A900FDF3A1 /* Highlightr */,
+				49AF890A2A43D92800CD95E1 /* CodeEditTextView */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -442,6 +449,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				49AF890C2A43DA5C00CD95E1 /* PBXTargetDependency */,
 				492ED2D228D2D93C00FDF3A1 /* PBXTargetDependency */,
 				4919589F273757F100423B95 /* PBXTargetDependency */,
 				49B6D12D2733443E00D9D788 /* PBXTargetDependency */,
@@ -451,6 +459,7 @@
 				49C5A1DC2718F5E40044CF0F /* SwiftOracle */,
 				49B6D1302733450800D9D788 /* CodeEditor */,
 				4904C5BC28D6B15A009F65BD /* Highlightr */,
+				49AF890D2A43DA6800CD95E1 /* CodeEditTextView */,
 			);
 			productName = MacOra;
 			productReference = 49B55F2E270ADD8B00CFB3C7 /* Macintora.app */;
@@ -510,6 +519,7 @@
 			files = (
 				49B55F3B270ADD8D00CFB3C7 /* Preview Assets.xcassets in Resources */,
 				49B55F38270ADD8D00CFB3C7 /* Assets.xcassets in Resources */,
+				491588F72A53365400E873FB /* STTextView in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -613,6 +623,10 @@
 			isa = PBXTargetDependency;
 			target = 49B55F2D270ADD8B00CFB3C7 /* Macintora */;
 			targetProxy = 498288A028B41F3A00A28B04 /* PBXContainerItemProxy */;
+		};
+		49AF890C2A43DA5C00CD95E1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 49AF890B2A43DA5C00CD95E1 /* CodeEditTextView */;
 		};
 		49B6D12D2733443E00D9D788 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -901,6 +915,14 @@
 		492ED2D128D2D93C00FDF3A1 /* Highlightr */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Highlightr;
+		};
+		49AF890B2A43DA5C00CD95E1 /* CodeEditTextView */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CodeEditTextView;
+		};
+		49AF890D2A43DA6800CD95E1 /* CodeEditTextView */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CodeEditTextView;
 		};
 		49B6D12C2733443E00D9D788 /* CodeEditor */ = {
 			isa = XCSwiftPackageProductDependency;

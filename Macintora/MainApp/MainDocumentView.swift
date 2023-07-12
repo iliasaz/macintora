@@ -10,6 +10,7 @@ import CodeEditor
 import Logging
 import Combine
 import AppKit
+import CodeEditTextView
 
 public enum FocusedView: Int, Hashable {
     case codeEditor, grid, login, connectionList
@@ -26,6 +27,7 @@ struct MainDocumentView: View {
 
     @StateObject private var resultsController: ResultsController
     @State private var editorSelection: Range<String.Index> = "".startIndex..<"".endIndex
+    @State var cursorPosition = (0,0)
     
     var selectedObject: String {
         if editorSelection.isEmpty { return "" }
@@ -62,8 +64,20 @@ struct MainDocumentView: View {
                                inset: CGSize(width: 8, height: 8),
                                autoscroll: false, wordWrap: $wordWrapping
                     )
+
+//                    CodeEditTextView($document.model.text,
+//                                     language: .sql,
+//                                     theme: sqlTheme,
+//                                     font: sourceFont,
+//                                     tabWidth: tabWidth,
+//                                     lineHeight: lineHeight,
+//                                     wrapLines: true,
+//                                     editorOverscroll: editorOverscroll,
+//                                     cursorPosition: $cursorPosition,
+//                                     isEditable: true
+//                    )
                         .frame(maxWidth: .infinity, minHeight:100, maxHeight: .infinity)
-                        .focused($focusedView, equals: .codeEditor)
+//                        .focused($focusedView, equals: .codeEditor)
                         .layoutPriority(1)
                     
                     ResultViewWrapper(resultsController: resultsController)

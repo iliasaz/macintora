@@ -12,15 +12,13 @@ import SwiftOracle
 struct TableIndexListView: View {
     @Environment(\.managedObjectContext) var context
     @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
-//    @FetchRequest private var indexColumns: FetchedResults<DBCacheIndexColumn>
     private var dbObject: DBCacheObject
     @State private var selectedIndexRow: DBCacheIndex.ID?
     
     
     init(dbObject: DBCacheObject) {
         self.dbObject = dbObject
-        _indexes = FetchRequest<DBCacheIndex>(sortDescriptors: [], predicate: NSPredicate.init(format: "tableName_ = %@ and tableOwner_ = %@", dbObject.name, dbObject.owner))
-//        _indexColumns = FetchRequest<DBCacheIndexColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "indexName_ = %@", context.object(with: selectedIndexRow)))
+        _indexes = FetchRequest<DBCacheIndex>(sortDescriptors: [NSSortDescriptor(key: "name_", ascending: true)], predicate: NSPredicate.init(format: "tableName_ = %@ and tableOwner_ = %@", dbObject.name, dbObject.owner))
     }
     
     var body: some View {

@@ -12,17 +12,17 @@ import os
 
 struct DetailGridView: NSViewRepresentable {
     @Environment(\.colorScheme) var colorScheme
-    @Binding var rows: [NSManagedObject]
+    @State var rows: [NSManagedObject]
     var columnLabels: [String]
     var booleanColumnLabels: [String]
     var autoColWidth = true
     
-    init(rows: Binding<[NSManagedObject]>, columnLabels: [String], booleanColumnLabels: [String] = [], rowSortFn: (NSManagedObject, NSManagedObject) -> Bool) {
-        self._rows = rows
+    init(rows: [NSManagedObject], columnLabels: [String], booleanColumnLabels: [String] = [], rowSortFn: (NSManagedObject, NSManagedObject) -> Bool) {
+        self._rows = .init(wrappedValue: rows)
         self.columnLabels = columnLabels
         self.booleanColumnLabels = booleanColumnLabels
     }
-    
+
     mutating func sort(by colName: String?, ascending: Bool) {
         guard let colName = colName, rows.count > 0 else { return }
         let sampleValue = self.rows[0].value(forKey: colName)
@@ -61,7 +61,11 @@ struct DetailGridView: NSViewRepresentable {
             default:
                 sortFn = { (_, _) in return false }
         }
-        if ascending { rows.sort(by: sortFn) } else { rows.sort(by: sortFn); rows.reverse() }
+        if ascending {
+            rows.sort(by: sortFn)
+        } else {
+            rows.sort(by: sortFn); rows.reverse()
+        }
     }
     
     func makeCoordinator() -> DetailGridViewCoordinator {

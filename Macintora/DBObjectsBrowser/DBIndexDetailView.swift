@@ -53,7 +53,8 @@ struct DBIndexDetailView: View {
             tableHeader
             
             TabView(selection: $selectedTab) {
-                DetailGridView(rows: Binding(get: { Array(columns)}, set: { _ in }), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
+                DetailGridView(rows: Array(columns).sorted(by: columnSortFn), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
+                    .id(dbObject.id)
                     .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                     .tabItem {
                         Text("Columns")

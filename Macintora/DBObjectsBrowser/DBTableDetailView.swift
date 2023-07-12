@@ -7,7 +7,8 @@
 
 import SwiftUI
 import CoreData
-import CodeEditor
+//import CodeEditor
+import CodeEditTextView
 
 struct DBTableDetailView: View {
     @Environment(\.managedObjectContext) var context
@@ -15,6 +16,7 @@ struct DBTableDetailView: View {
     @FetchRequest private var tables: FetchedResults<DBCacheTable>
     @FetchRequest private var columns: FetchedResults<DBCacheTableColumn>
     @Binding var dbObject: DBCacheObject
+    @State var cursorPosition = (0,0)
     
     let columnLabels = ["columnID", "columnName", "dataType", "dataTypeMod", "dataTypeOwner", "length", "precision", "scale", "isNullable", "numNulls", "numDistinct", "isIdentity", "isHidden", "isVirtual", "isSysGen", "defaultValue","internalColumnID", ]
     let booleanColumnLabels = ["isNullable", "isHidden", "isIdentity", "isSysGen", "isVirtual"]
@@ -27,6 +29,7 @@ struct DBTableDetailView: View {
     }
     
     var sqlText: String { tables.first?.sqltext ?? "" }
+//    var text: Binding<String> = Binding(get: {sqlText}, set: {_ in})
     
     var tableHeader: some View {
         HStack {
@@ -79,7 +82,8 @@ struct DBTableDetailView: View {
             if tables.first?.isView ?? false { viewHeader } else { tableHeader }
             
             TabView(selection: $selectedTab) {
-                DetailGridView(rows: Binding(get: { Array(columns)}, set: { _ in }), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
+                DetailGridView(rows: Array(columns).sorted(by: columnSortFn), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
+                    .id(dbObject.id)
                     .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                     .tabItem {
                         Text("Columns")
@@ -116,14 +120,16 @@ struct DBTableDetailView: View {
                         } label: { Text("Format Source") }
                         
 //                        CodeEditor(source: .constant(tables.first?.sqltext ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false, wordWrap: .constant(true))
-                        ScrollView {
-                            Text("\(sqlText)")
-                                .monospaced()
-                                .textSelection(.enabled)
-                                .lineLimit(nil)
-                                .multilineTextAlignment(.leading)
-                                .frame(maxWidth: .infinity)
-                        }
+//                        ScrollView {
+//                            Text("\(sqlText)")
+//                                .monospaced()
+//                                .textSelection(.enabled)
+//                                .lineLimit(nil)
+//                                .multilineTextAlignment(.leading)
+//                                .frame(maxWidth: .infinity)
+//                        }
+
+                        CodeEditTextView( Binding<String>(get: { sqlText }, set: {_ in }), language: .sql, theme: sqlTheme, font: sourceFont, tabWidth: tabWidth, lineHeight: lineHeight, wrapLines: true, editorOverscroll: editorOverscroll, cursorPosition: $cursorPosition, isEditable: true)
                     }
                     .tabItem {
                         Text("SQL")
