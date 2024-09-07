@@ -20,6 +20,8 @@
 		4947FEA8286FA3E200AEBE60 /* ResultsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEA7286FA3E200AEBE60 /* ResultsController.swift */; };
 		4947FEAA286FA73B00AEBE60 /* RunnableSQL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEA9286FA73B00AEBE60 /* RunnableSQL.swift */; };
 		4947FEAC2870F8E400AEBE60 /* BindVarInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEAB2870F8E400AEBE60 /* BindVarInputView.swift */; };
+		496DE7EA2B5B28800073104E /* STTextView in Frameworks */ = {isa = PBXBuildFile; productRef = 496DE7E92B5B28800073104E /* STTextView */; };
+		496DE7EC2B5B288B0073104E /* STCompletion in Frameworks */ = {isa = PBXBuildFile; productRef = 496DE7EB2B5B288B0073104E /* STCompletion */; };
 		496FF1A12775259900CC0AD2 /* ResultViewWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496FF1A02775259900CC0AD2 /* ResultViewWrapper.swift */; };
 		4982889728B1C41700A28B04 /* Formatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982889628B1C41700A28B04 /* Formatter.swift */; };
 		4982889F28B41F3A00A28B04 /* MacintoraTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982889E28B41F3A00A28B04 /* MacintoraTests.swift */; };
@@ -60,7 +62,6 @@
 		4982890528B7EF5E00A28B04 /* ConnectionDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982890428B7EF5E00A28B04 /* ConnectionDetails.swift */; };
 		4982890D28B95BC100A28B04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982890C28B95BC100A28B04 /* SettingsView.swift */; };
 		4999469427E1777700C62AB7 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4999469327E1777700C62AB7 /* LogView.swift */; };
-		49AF890E2A43DA6800CD95E1 /* CodeEditTextView in Frameworks */ = {isa = PBXBuildFile; productRef = 49AF890D2A43DA6800CD95E1 /* CodeEditTextView */; };
 		49B55F32270ADD8B00CFB3C7 /* MacintoraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */; };
 		49B55F36270ADD8B00CFB3C7 /* MainDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */; };
 		49B55F38270ADD8D00CFB3C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49B55F37270ADD8D00CFB3C7 /* Assets.xcassets */; };
@@ -85,12 +86,26 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		4960421C2A6096DE005AEE2D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 496042182A6096DE005AEE2D /* EditorView.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 496042062A6096DD005AEE2D;
+			remoteInfo = EditorView;
+		};
 		498288A028B41F3A00A28B04 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 49B55F26270ADD8B00CFB3C7 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 49B55F2D270ADD8B00CFB3C7;
 			remoteInfo = Macintora;
+		};
+		49B06E002A6B3044004A4ED6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 49B06DFC2A6B3044004A4ED6 /* WaitChains.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 49B06DEA2A6B3043004A4ED6;
+			remoteInfo = WaitChains;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -111,6 +126,7 @@
 		4947FEAB2870F8E400AEBE60 /* BindVarInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BindVarInputView.swift; path = Macintora/Results/BindVarInputView.swift; sourceTree = SOURCE_ROOT; };
 		494E66D4276AA803000BC07A /* TableViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableViewModel.swift; sourceTree = "<group>"; };
 		494E66D6276AB5B3000BC07A /* TableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableView.swift; sourceTree = "<group>"; };
+		496042182A6096DE005AEE2D /* EditorView.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = EditorView.xcodeproj; path = EditorView/EditorView.xcodeproj; sourceTree = "<group>"; };
 		496D76E527C067C0009B8328 /* NOTUSED_Logo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NOTUSED_Logo.swift; sourceTree = "<group>"; };
 		496D76E727C06A49009B8328 /* NOTUSED_AppWelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NOTUSED_AppWelcomeView.swift; sourceTree = "<group>"; };
 		496FC8F527693FAA00B689F4 /* DBObjectSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectSearch.swift; sourceTree = "<group>"; };
@@ -159,7 +175,7 @@
 		4996124C275C4E3100CBA849 /* DBCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCache.swift; sourceTree = "<group>"; };
 		4996124E2763F79800CBA849 /* DBObjectsListEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectsListEntry.swift; sourceTree = "<group>"; };
 		4999469327E1777700C62AB7 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
-		49AF890A2A43D92800CD95E1 /* CodeEditTextView */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = CodeEditTextView; path = ../CodeEditTextView; sourceTree = "<group>"; };
+		49B06DFC2A6B3044004A4ED6 /* WaitChains.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = WaitChains.xcodeproj; path = WaitChains/WaitChains.xcodeproj; sourceTree = "<group>"; };
 		49B55F2E270ADD8B00CFB3C7 /* Macintora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Macintora.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MacintoraApp.swift; sourceTree = "<group>"; };
 		49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainDocumentView.swift; sourceTree = "<group>"; };
@@ -208,7 +224,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				49B6D1312733450800D9D788 /* CodeEditor in Frameworks */,
-				49AF890E2A43DA6800CD95E1 /* CodeEditTextView in Frameworks */,
+				496DE7EA2B5B28800073104E /* STTextView in Frameworks */,
+				496DE7EC2B5B288B0073104E /* STCompletion in Frameworks */,
 				4904C5BD28D6B15A009F65BD /* Highlightr in Frameworks */,
 				49C5A1DD2718F5E40044CF0F /* SwiftOracle in Frameworks */,
 			);
@@ -225,6 +242,14 @@
 				4944594D28D539D2007AB2BF /* SBVM.swift */,
 			);
 			path = SessionBrowser;
+			sourceTree = "<group>";
+		};
+		496042192A6096DE005AEE2D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4960421D2A6096DE005AEE2D /* EditorView.app */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		496FC8F7276AA5F900B689F4 /* DBObjectsBrowser */ = {
@@ -338,9 +363,19 @@
 			path = CoreData;
 			sourceTree = "<group>";
 		};
+		49B06DFD2A6B3044004A4ED6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				49B06E012A6B3044004A4ED6 /* WaitChains.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		49B55F25270ADD8B00CFB3C7 = {
 			isa = PBXGroup;
 			children = (
+				49B06DFC2A6B3044004A4ED6 /* WaitChains.xcodeproj */,
+				496042182A6096DE005AEE2D /* EditorView.xcodeproj */,
 				491588F62A53365400E873FB /* STTextView */,
 				49B55F63270AF79000CFB3C7 /* Packages */,
 				49B55F30270ADD8B00CFB3C7 /* Macintora */,
@@ -390,7 +425,6 @@
 				493A199A2718E19200803AC9 /* SwiftOracle */,
 				49B6D12B2733439900D9D788 /* CodeEditor */,
 				492ED2CF28D2B9A900FDF3A1 /* Highlightr */,
-				49AF890A2A43D92800CD95E1 /* CodeEditTextView */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -459,7 +493,8 @@
 				49C5A1DC2718F5E40044CF0F /* SwiftOracle */,
 				49B6D1302733450800D9D788 /* CodeEditor */,
 				4904C5BC28D6B15A009F65BD /* Highlightr */,
-				49AF890D2A43DA6800CD95E1 /* CodeEditTextView */,
+				496DE7E92B5B28800073104E /* STTextView */,
+				496DE7EB2B5B288B0073104E /* STCompletion */,
 			);
 			productName = MacOra;
 			productReference = 49B55F2E270ADD8B00CFB3C7 /* Macintora.app */;
@@ -497,6 +532,16 @@
 			);
 			productRefGroup = 49B55F2F270ADD8B00CFB3C7 /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 496042192A6096DE005AEE2D /* Products */;
+					ProjectRef = 496042182A6096DE005AEE2D /* EditorView.xcodeproj */;
+				},
+				{
+					ProductGroup = 49B06DFD2A6B3044004A4ED6 /* Products */;
+					ProjectRef = 49B06DFC2A6B3044004A4ED6 /* WaitChains.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				49B55F2D270ADD8B00CFB3C7 /* Macintora */,
@@ -504,6 +549,23 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		4960421D2A6096DE005AEE2D /* EditorView.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = EditorView.app;
+			remoteRef = 4960421C2A6096DE005AEE2D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		49B06E012A6B3044004A4ED6 /* WaitChains.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = WaitChains.app;
+			remoteRef = 49B06E002A6B3044004A4ED6 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		4982889A28B41F3A00A28B04 /* Resources */ = {
@@ -916,11 +978,15 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = Highlightr;
 		};
-		49AF890B2A43DA5C00CD95E1 /* CodeEditTextView */ = {
+		496DE7E92B5B28800073104E /* STTextView */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = CodeEditTextView;
+			productName = STTextView;
 		};
-		49AF890D2A43DA6800CD95E1 /* CodeEditTextView */ = {
+		496DE7EB2B5B288B0073104E /* STCompletion */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = STCompletion;
+		};
+		49AF890B2A43DA5C00CD95E1 /* CodeEditTextView */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = CodeEditTextView;
 		};

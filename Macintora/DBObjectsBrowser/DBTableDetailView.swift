@@ -7,8 +7,7 @@
 
 import SwiftUI
 import CoreData
-//import CodeEditor
-import CodeEditTextView
+import STTextViewUI
 
 struct DBTableDetailView: View {
     @Environment(\.managedObjectContext) var context
@@ -17,7 +16,8 @@ struct DBTableDetailView: View {
     @FetchRequest private var columns: FetchedResults<DBCacheTableColumn>
     @Binding var dbObject: DBCacheObject
     @State var cursorPosition = (0,0)
-    
+    @State private var selection: NSRange?
+
     let columnLabels = ["columnID", "columnName", "dataType", "dataTypeMod", "dataTypeOwner", "length", "precision", "scale", "isNullable", "numNulls", "numDistinct", "isIdentity", "isHidden", "isVirtual", "isSysGen", "defaultValue","internalColumnID", ]
     let booleanColumnLabels = ["isNullable", "isHidden", "isIdentity", "isSysGen", "isVirtual"]
     var columnSortFn = { (lhs: NSManagedObject, rhs: NSManagedObject) in (lhs as! DBCacheTableColumn).internalColumnID < (rhs as! DBCacheTableColumn).internalColumnID }
@@ -108,28 +108,37 @@ struct DBTableDetailView: View {
                         Button {
                             let formatter = Formatter()
                             formatter.formattedSource = "...formatting, please wait..."
-                            
+
                             SwiftUIWindow.open {window in
                                 let _ = (window.title = dbObject.name)
                                 FormattedView(formatter: formatter)
                             }
                             .closeOnEscape(true)
-                            
-                            formatter.formatSource(name: dbObject.name, text: tables.first?.sqltext)
-                            
-                        } label: { Text("Format Source") }
-                        
-//                        CodeEditor(source: .constant(tables.first?.sqltext ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false, wordWrap: .constant(true))
-//                        ScrollView {
-//                            Text("\(sqlText)")
-//                                .monospaced()
-//                                .textSelection(.enabled)
-//                                .lineLimit(nil)
-//                                .multilineTextAlignment(.leading)
-//                                .frame(maxWidth: .infinity)
-//                        }
 
-                        CodeEditTextView( Binding<String>(get: { sqlText }, set: {_ in }), language: .sql, theme: sqlTheme, font: sourceFont, tabWidth: tabWidth, lineHeight: lineHeight, wrapLines: true, editorOverscroll: editorOverscroll, cursorPosition: $cursorPosition, isEditable: true)
+                            formatter.formatSource(name: dbObject.name, text: tables.first?.sqltext)
+
+                        } label: { Text("Format Source") }
+
+                        //                        CodeEditor(source: .constant(tables.first?.sqltext ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false, wordWrap: .constant(true))
+                        //                        ScrollView {
+                        //                            Text("\(sqlText)")
+                        //                                .monospaced()
+                        //                                .textSelection(.enabled)
+                        //                                .lineLimit(nil)
+                        //                                .multilineTextAlignment(.leading)
+                        //                                .frame(maxWidth: .infinity)
+                        //                        }
+
+                        //                        CodeEditTextView( Binding<String>(get: { sqlText }, set: {_ in }), language: .sql, theme: sqlTheme, font: sourceFont, tabWidth: tabWidth, lineHeight: lineHeight, wrapLines: true, editorOverscroll: editorOverscroll, cursorPosition: $cursorPosition, isEditable: true)
+                        
+                        STTextViewUI.TextView(
+                                        text: Binding<AttributedString>(get: { AttributedString(sqlText) }, set: {_ in }),
+                                        selection: $selection,
+                                        options: [.wrapLines, .highlightSelectedLine]
+                                    )
+                                    .textViewFont(.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular))
+
+
                     }
                     .tabItem {
                         Text("SQL")

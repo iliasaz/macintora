@@ -7,26 +7,27 @@
 
 import SwiftUI
 import CodeEditor
-import CodeEditTextView
+import STTextViewUI
+//import CodeEditTextView
 
 
-let sqlTheme = EditorTheme.init(
-    text: .textColor.withAlphaComponent(0.7),
-    insertionPoint: .controlAccentColor ,
-    invisibles: .lightGray,
-    background: .textBackgroundColor,
-    lineHighlight: .unemphasizedSelectedContentBackgroundColor ,
-    selection: .selectedTextBackgroundColor,
-    keywords: keywordColor,
-    commands: .yellow,
-    types: .orange,
-    attributes: .brown,
-    variables: .textColor.withAlphaComponent(0.7),
-    values: .magenta,
-    numbers: numberColor,
-    strings: stringColor,
-    characters: .green,
-    comments: .lightGray)
+//let sqlTheme = EditorTheme.init(
+//    text: .textColor.withAlphaComponent(0.7),
+//    insertionPoint: .controlAccentColor ,
+//    invisibles: .lightGray,
+//    background: .textBackgroundColor,
+//    lineHighlight: .unemphasizedSelectedContentBackgroundColor ,
+//    selection: .selectedTextBackgroundColor,
+//    keywords: keywordColor,
+//    commands: .yellow,
+//    types: .orange,
+//    attributes: .brown,
+//    variables: .textColor.withAlphaComponent(0.7),
+//    values: .magenta,
+//    numbers: numberColor,
+//    strings: stringColor,
+//    characters: .green,
+//    comments: .lightGray)
 
 let sourceFont = NSFont(name: "SF Mono", size: 12.0)!
 let keywordColor = NSColor.fromHexString(hex: "#b854d4", alpha: 0.5)!
@@ -41,7 +42,8 @@ struct SourceView: View {
     @Binding var text: String
     @State var title: String
     @State var cursorPosition = (0,0)
-    
+    @State private var selection: NSRange?
+
     init(objName: Binding<String>, text: Binding<String>, title: String) {
         self._objName = objName
         self._text = text
@@ -92,8 +94,16 @@ struct SourceView: View {
 //            }
 //            CodeEditor(source: $text, language: .pgsql, theme: .atelierDuneLight, flags: [.selectable, .editable], autoscroll: false, wordWrap: .constant(true))
             
-            CodeEditTextView($text, language: .sql, theme: sqlTheme, font: sourceFont, tabWidth: tabWidth, lineHeight: lineHeight, wrapLines: true, editorOverscroll: editorOverscroll, cursorPosition: $cursorPosition, isEditable: true)
-                .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
+//            CodeEditTextView($text, language: .sql, theme: sqlTheme, font: sourceFont, tabWidth: tabWidth, lineHeight: lineHeight, wrapLines: true, editorOverscroll: editorOverscroll, cursorPosition: $cursorPosition, isEditable: true)
+            
+            STTextViewUI.TextView(
+                            text: Binding<AttributedString>(get: { AttributedString(text) }, set: {_ in }),
+                            selection: $selection,
+                            options: [.wrapLines, .highlightSelectedLine]
+                        )
+                        .textViewFont(.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular))
+
+//                .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 }

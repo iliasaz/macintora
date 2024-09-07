@@ -10,7 +10,7 @@ import CodeEditor
 import Logging
 import Combine
 import AppKit
-import CodeEditTextView
+//import CodeEditTextView
 
 public enum FocusedView: Int, Hashable {
     case codeEditor, grid, login, connectionList
