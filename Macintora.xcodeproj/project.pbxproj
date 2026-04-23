@@ -9,8 +9,20 @@
 /* Begin PBXBuildFile section */
 		4904C5BB28D6B145009F65BD /* Highlightr in Sources */ = {isa = PBXBuildFile; fileRef = 492ED2CF28D2B9A900FDF3A1 /* Highlightr */; };
 		4904C5BD28D6B15A009F65BD /* Highlightr in Frameworks */ = {isa = PBXBuildFile; productRef = 4904C5BC28D6B15A009F65BD /* Highlightr */; };
-		4919589D273757AD00423B95 /* SwiftOracle in Sources */ = {isa = PBXBuildFile; fileRef = 493A199A2718E19200803AC9 /* SwiftOracle */; };
 		4927FBF72746DFB4007EED5B /* TnsReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4927FBF62746DFB4007EED5B /* TnsReader.swift */; };
+		AA0000010000000000000000 /* OracleNIO in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000020000000000000000 /* OracleNIO */; };
+		AA0000030000000000000000 /* TnsParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000040000000000000000 /* TnsParser.swift */; };
+		AA0000050000000000000000 /* OracleEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000060000000000000000 /* OracleEndpoint.swift */; };
+		AA0000070000000000000000 /* AppDBError.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000080000000000000000 /* AppDBError.swift */; };
+		AA0000090000000000000000 /* DisplayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000A0000000000000000 /* DisplayRow.swift */; };
+		AA00000B0000000000000000 /* DBMSOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000C0000000000000000 /* DBMSOutput.swift */; };
+		AA00000D0000000000000000 /* TnsEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000E0000000000000000 /* TnsEntry.swift */; };
+		AA00000F0000000000000000 /* OracleEventLoopGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000000 /* OracleEventLoopGroup.swift */; };
+		AA0000110000000000000000 /* BindValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000120000000000000000 /* BindValue.swift */; };
+		AA0000130000000000000000 /* TnsParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000140000000000000000 /* TnsParserTests.swift */; };
+		AA0000150000000000000000 /* OracleEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000160000000000000000 /* OracleEndpointTests.swift */; };
+		AA0000170000000000000000 /* DisplayRowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000180000000000000000 /* DisplayRowTests.swift */; };
+		AA0000190000000000000000 /* AppDBErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001A0000000000000000 /* AppDBErrorTests.swift */; };
 		49438678273753A000D7D464 /* ResultViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49438677273753A000D7D464 /* ResultViewModel.swift */; };
 		4944594C28D51D31007AB2BF /* SBMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594B28D51D31007AB2BF /* SBMainView.swift */; };
 		4944594E28D539D2007AB2BF /* SBVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594D28D539D2007AB2BF /* SBVM.swift */; };
@@ -67,7 +79,6 @@
 		49B6D12F2733446B00D9D788 /* CodeEditor in Sources */ = {isa = PBXBuildFile; fileRef = 49B6D12B2733439900D9D788 /* CodeEditor */; };
 		49B6D1312733450800D9D788 /* CodeEditor in Frameworks */ = {isa = PBXBuildFile; productRef = 49B6D1302733450800D9D788 /* CodeEditor */; };
 		49B6D13327335FF400D9D788 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B6D13227335FF400D9D788 /* Utils.swift */; };
-		49C5A1DD2718F5E40044CF0F /* SwiftOracle in Frameworks */ = {isa = PBXBuildFile; productRef = 49C5A1DC2718F5E40044CF0F /* SwiftOracle */; };
 		49C62C1C27DD7BAF00DE69E4 /* MainDocumentVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */; };
 		49C62C2427E010AE00DE69E4 /* ConnectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */; };
 		49CE5FF027279F3A009C2A94 /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CE5FEF27279F3A009C2A94 /* ResultView.swift */; };
@@ -97,8 +108,19 @@
 		492ED2CF28D2B9A900FDF3A1 /* Highlightr */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Highlightr; path = ../Highlightr; sourceTree = "<group>"; };
 		49330ED2275416EC004EAA48 /* DBObjectsBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectsBrowser.swift; sourceTree = "<group>"; };
 		49330ED827570649004EAA48 /* FilteredList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilteredList.swift; sourceTree = "<group>"; };
-		493A199A2718E19200803AC9 /* SwiftOracle */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SwiftOracle; path = ../SwiftOracle; sourceTree = "<group>"; };
 		49438677273753A000D7D464 /* ResultViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResultViewModel.swift; sourceTree = "<group>"; };
+		AA0000040000000000000000 /* TnsParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsParser.swift; sourceTree = "<group>"; };
+		AA0000060000000000000000 /* OracleEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEndpoint.swift; sourceTree = "<group>"; };
+		AA0000080000000000000000 /* AppDBError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDBError.swift; sourceTree = "<group>"; };
+		AA00000A0000000000000000 /* DisplayRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRow.swift; sourceTree = "<group>"; };
+		AA00000C0000000000000000 /* DBMSOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMSOutput.swift; sourceTree = "<group>"; };
+		AA00000E0000000000000000 /* TnsEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsEntry.swift; sourceTree = "<group>"; };
+		AA0000100000000000000000 /* OracleEventLoopGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEventLoopGroup.swift; sourceTree = "<group>"; };
+		AA0000120000000000000000 /* BindValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindValue.swift; sourceTree = "<group>"; };
+		AA0000140000000000000000 /* TnsParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsParserTests.swift; sourceTree = "<group>"; };
+		AA0000160000000000000000 /* OracleEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEndpointTests.swift; sourceTree = "<group>"; };
+		AA0000180000000000000000 /* DisplayRowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRowTests.swift; sourceTree = "<group>"; };
+		AA00001A0000000000000000 /* AppDBErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDBErrorTests.swift; sourceTree = "<group>"; };
 		4944594B28D51D31007AB2BF /* SBMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBMainView.swift; sourceTree = "<group>"; };
 		4944594D28D539D2007AB2BF /* SBVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBVM.swift; sourceTree = "<group>"; };
 		4944594F28D68EFE007AB2BF /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
@@ -205,7 +227,7 @@
 			files = (
 				49B6D1312733450800D9D788 /* CodeEditor in Frameworks */,
 				4904C5BD28D6B15A009F65BD /* Highlightr in Frameworks */,
-				49C5A1DD2718F5E40044CF0F /* SwiftOracle in Frameworks */,
+				AA0000010000000000000000 /* OracleNIO in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -257,6 +279,10 @@
 			isa = PBXGroup;
 			children = (
 				4982889E28B41F3A00A28B04 /* MacintoraTests.swift */,
+				AA0000140000000000000000 /* TnsParserTests.swift */,
+				AA0000160000000000000000 /* OracleEndpointTests.swift */,
+				AA0000180000000000000000 /* DisplayRowTests.swift */,
+				AA00001A0000000000000000 /* AppDBErrorTests.swift */,
 			);
 			path = MacintoraTests;
 			sourceTree = "<group>";
@@ -273,8 +299,24 @@
 				4982889628B1C41700A28B04 /* Formatter.swift */,
 				49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */,
 				4982890C28B95BC100A28B04 /* SettingsView.swift */,
+				AA0000200000000000000000 /* DB */,
 			);
 			path = MainApp;
+			sourceTree = "<group>";
+		};
+		AA0000200000000000000000 /* DB */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000E0000000000000000 /* TnsEntry.swift */,
+				AA0000040000000000000000 /* TnsParser.swift */,
+				AA0000060000000000000000 /* OracleEndpoint.swift */,
+				AA0000080000000000000000 /* AppDBError.swift */,
+				AA00000A0000000000000000 /* DisplayRow.swift */,
+				AA00000C0000000000000000 /* DBMSOutput.swift */,
+				AA0000100000000000000000 /* OracleEventLoopGroup.swift */,
+				AA0000120000000000000000 /* BindValue.swift */,
+			);
+			path = DB;
 			sourceTree = "<group>";
 		};
 		498288A928B7DBAB00A28B04 /* NOTUSED */ = {
@@ -381,7 +423,6 @@
 		49B55F63270AF79000CFB3C7 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				493A199A2718E19200803AC9 /* SwiftOracle */,
 				49B6D12B2733439900D9D788 /* CodeEditor */,
 				492ED2CF28D2B9A900FDF3A1 /* Highlightr */,
 			);
@@ -443,14 +484,13 @@
 			);
 			dependencies = (
 				492ED2D228D2D93C00FDF3A1 /* PBXTargetDependency */,
-				4919589F273757F100423B95 /* PBXTargetDependency */,
 				49B6D12D2733443E00D9D788 /* PBXTargetDependency */,
 			);
 			name = Macintora;
 			packageProductDependencies = (
-				49C5A1DC2718F5E40044CF0F /* SwiftOracle */,
 				49B6D1302733450800D9D788 /* CodeEditor */,
 				4904C5BC28D6B15A009F65BD /* Highlightr */,
+				AA0000020000000000000000 /* OracleNIO */,
 			);
 			productName = MacOra;
 			productReference = 49B55F2E270ADD8B00CFB3C7 /* Macintora.app */;
@@ -485,6 +525,7 @@
 			);
 			mainGroup = 49B55F25270ADD8B00CFB3C7;
 			packageReferences = (
+				AA0000300000000000000000 /* XCRemoteSwiftPackageReference "oracle-nio" */,
 			);
 			productRefGroup = 49B55F2F270ADD8B00CFB3C7 /* Products */;
 			projectDirPath = "";
@@ -521,6 +562,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				4982889F28B41F3A00A28B04 /* MacintoraTests.swift in Sources */,
+				AA0000130000000000000000 /* TnsParserTests.swift in Sources */,
+				AA0000150000000000000000 /* OracleEndpointTests.swift in Sources */,
+				AA0000170000000000000000 /* DisplayRowTests.swift in Sources */,
+				AA0000190000000000000000 /* AppDBErrorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -545,7 +590,6 @@
 				4947FEAC2870F8E400AEBE60 /* BindVarInputView.swift in Sources */,
 				498288CD28B7DC5700A28B04 /* Item+CoreDataClass.swift in Sources */,
 				498288C428B7DC5700A28B04 /* DBCacheSource+CoreDataClass.swift in Sources */,
-				4919589D273757AD00423B95 /* SwiftOracle in Sources */,
 				498288F928B7DCB000A28B04 /* DBCacheVM.swift in Sources */,
 				4982890528B7EF5E00A28B04 /* ConnectionDetails.swift in Sources */,
 				49B6D12F2733446B00D9D788 /* CodeEditor in Sources */,
@@ -595,16 +639,20 @@
 				49EB5E0C29528995003A0E23 /* DBCacheMainView.swift in Sources */,
 				4927FBF72746DFB4007EED5B /* TnsReader.swift in Sources */,
 				49EAEFA528C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift in Sources */,
+				AA00000D0000000000000000 /* TnsEntry.swift in Sources */,
+				AA0000030000000000000000 /* TnsParser.swift in Sources */,
+				AA0000050000000000000000 /* OracleEndpoint.swift in Sources */,
+				AA0000070000000000000000 /* AppDBError.swift in Sources */,
+				AA0000090000000000000000 /* DisplayRow.swift in Sources */,
+				AA00000B0000000000000000 /* DBMSOutput.swift in Sources */,
+				AA00000F0000000000000000 /* OracleEventLoopGroup.swift in Sources */,
+				AA0000110000000000000000 /* BindValue.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		4919589F273757F100423B95 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 4919589E273757F100423B95 /* SwiftOracle */;
-		};
 		492ED2D228D2D93C00FDF3A1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			productRef = 492ED2D128D2D93C00FDF3A1 /* Highlightr */;
@@ -636,7 +684,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Macintora.app/Contents/MacOS/Macintora";
 			};
 			name = Debug;
@@ -656,7 +705,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Macintora.app/Contents/MacOS/Macintora";
 			};
 			name = Release;
@@ -699,7 +749,6 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
-				EXCLUDED_ARCHS = arm64;
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -714,8 +763,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LIBRARY_SEARCH_PATHS = /Users/ilia/instantclient_19_8;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -763,7 +811,6 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
-				EXCLUDED_ARCHS = arm64;
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -772,8 +819,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LIBRARY_SEARCH_PATHS = /Users/ilia/instantclient_19_8;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -808,15 +854,15 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
-					/Users/ilia/instantclient_19_8,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.macintora;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
 			};
 			name = Debug;
 		};
@@ -845,15 +891,15 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
-					/Users/ilia/instantclient_19_8,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.macintora;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
 			};
 			name = Release;
 		};
@@ -894,10 +940,6 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = Highlightr;
 		};
-		4919589E273757F100423B95 /* SwiftOracle */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = SwiftOracle;
-		};
 		492ED2D128D2D93C00FDF3A1 /* Highlightr */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Highlightr;
@@ -910,11 +952,23 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = CodeEditor;
 		};
-		49C5A1DC2718F5E40044CF0F /* SwiftOracle */ = {
+		AA0000020000000000000000 /* OracleNIO */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = SwiftOracle;
+			package = AA0000300000000000000000 /* XCRemoteSwiftPackageReference "oracle-nio" */;
+			productName = OracleNIO;
 		};
 /* End XCSwiftPackageProductDependency section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AA0000300000000000000000 /* XCRemoteSwiftPackageReference "oracle-nio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/lovetodream/oracle-nio.git";
+			requirement = {
+				kind = exactVersion;
+				version = 1.0.0-rc.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCVersionGroup section */
 		498288AA28B7DBE400A28B04 /* DatabaseCacheModel.xcdatamodeld */ = {

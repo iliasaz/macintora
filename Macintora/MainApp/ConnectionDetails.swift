@@ -7,11 +7,11 @@
 
 import Foundation
 
-enum ConnectionRole: String, Codable {
+nonisolated enum ConnectionRole: String, Codable, Sendable {
     case regular, sysDBA
 }
 
-struct ConnectionDetails: CustomStringConvertible, Codable, Hashable, Equatable {
+nonisolated struct ConnectionDetails: CustomStringConvertible, Codable, Hashable, Equatable, Sendable {
     var description: String { "username: \(username), tns: \(tns), connectionRole: \(connectionRole)" }
     
     var username: String
@@ -32,7 +32,7 @@ struct ConnectionDetails: CustomStringConvertible, Codable, Hashable, Equatable 
     }
 }
 
-struct OracleSession: CustomStringConvertible, Codable, Hashable, Equatable {
+nonisolated struct OracleSession: CustomStringConvertible, Codable, Hashable, Equatable, Sendable {
     var description: String { "sid: \(sid), serial#: \(serial), instance: \(instance), timezone: \(dbTimeZone.debugDescription)" }
     
     let sid: Int
@@ -45,7 +45,7 @@ struct OracleSession: CustomStringConvertible, Codable, Hashable, Equatable {
     }
 }
 
-struct MainConnection: CustomStringConvertible, Hashable, Codable, Equatable {
+nonisolated struct MainConnection: CustomStringConvertible, Hashable, Codable, Equatable, Sendable {
     var description: String { "mainConnDetails: \(mainConnDetails), mainSession: \(mainSession)" }
     
     static func == (lhs: MainConnection, rhs: MainConnection) -> Bool {

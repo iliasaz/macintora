@@ -91,6 +91,7 @@ struct SessionView: NSViewRepresentable {
 }
 
 
+@MainActor
 class SessionViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSource {
     var parent: SessionView
     

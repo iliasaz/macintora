@@ -8,9 +8,9 @@
 import SwiftUI
 import OSLog
 
-let store = try? OSLogStore(scope: .currentProcessIdentifier)
-let oneMinuteAgo = store?.position(timeIntervalSinceEnd: -60)
-let predicate = NSPredicate(format: "category == %@", argumentArray: ["generic"])
+nonisolated(unsafe) let store = try? OSLogStore(scope: .currentProcessIdentifier)
+nonisolated(unsafe) let oneMinuteAgo = store?.position(timeIntervalSinceEnd: -60)
+nonisolated(unsafe) let predicate = NSPredicate(format: "category == %@", argumentArray: ["generic"])
 
 func getEntries() -> String {
     var osLogEntries = try? store?.getEntries(with: [.reverse], at: oneMinuteAgo, matching: predicate)

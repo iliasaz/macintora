@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import CodeEditor
+@preconcurrency import CodeEditor
 
 struct SourceView: View {
     @Binding var objName: String
@@ -37,16 +37,18 @@ struct SourceView: View {
                         FormattedView(formatter: formatter)
                     }
                     .closeOnEscape(true)
-                    
-                    formatter.formatSource(name: objName, text: text)
+
+                    Task { [objName, text] in
+                        _ = await formatter.formatSource(name: objName, text: text)
+                    }
                 }
                 label: { Text("Format&View") }
                 
                 Button {
                     let formatter = Formatter()
                     formatter.formattedSource = "...formatting, please wait..."
-                    Task.detached(priority: .background) { [self, text] in
-                        formatter.formatSource(name: objName, text: text)
+                    Task { [self, text] in
+                        _ = await formatter.formatSource(name: objName, text: text)
                     }
                 }
                 label: { Text("Format&Save") }

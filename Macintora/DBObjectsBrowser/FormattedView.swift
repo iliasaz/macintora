@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import CodeEditor
+@preconcurrency import CodeEditor
 
 struct FormattedView: View {
     @ObservedObject var formatter: Formatter

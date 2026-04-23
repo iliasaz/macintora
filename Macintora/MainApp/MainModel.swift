@@ -6,9 +6,8 @@
 //
 
 import Foundation
-import SwiftOracle
 
-struct MainModel: Identifiable, Codable, CustomStringConvertible {
+nonisolated struct MainModel: Identifiable, Codable, CustomStringConvertible, Sendable {
     var description: String {
         "tns: \(connectionDetails.tns), username: \(connectionDetails.username), connection role: \(connectionDetails.connectionRole)"
     }

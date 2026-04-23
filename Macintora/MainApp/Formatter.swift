@@ -13,6 +13,7 @@ extension Logger {
     var formatter: Logger { Logger(subsystem: Logger.subsystem, category: "formatter") }
 }
 
+@MainActor
 class Formatter: ObservableObject {
     @Published var formattedSource: String = "... formatting, please wait ..."
     @AppStorage("formatterPath") private var formatterPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/Macintora/formatter"

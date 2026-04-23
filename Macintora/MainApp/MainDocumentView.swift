@@ -6,8 +6,7 @@
 //
 
 import SwiftUI
-import CodeEditor
-import Logging
+@preconcurrency import CodeEditor
 import Combine
 import AppKit
 

@@ -7,7 +7,6 @@
 
 import SwiftUI
 import CoreData
-import SwiftOracle
 
 struct TableTriggerListView: View {
     @Environment(\.managedObjectContext) var context

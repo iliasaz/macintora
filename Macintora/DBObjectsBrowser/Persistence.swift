@@ -20,9 +20,8 @@ import os
 //}
 
 // initialized data model
-let modelURL = Bundle.main.url(forResource: "DatabaseCacheModel", withExtension: "momd")!
-let dataModel = NSManagedObjectModel(contentsOf: modelURL)!
-//let name = "dmwoac"
+nonisolated(unsafe) let modelURL = Bundle.main.url(forResource: "DatabaseCacheModel", withExtension: "momd")!
+nonisolated(unsafe) let dataModel = NSManagedObjectModel(contentsOf: modelURL)!
 let defaultName = "preview"
 
 
