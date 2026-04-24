@@ -1,4 +1,4 @@
-@preconcurrency import SwiftUI
+import SwiftUI
 import UniformTypeIdentifiers
 import Combine
 import Logging
@@ -6,10 +6,7 @@ import Logging
 import Network
 import OracleNIO
 import NIOCore
-
-// MainDocumentVM is @MainActor because it drives the UI. SwiftUI's
-// ReferenceFileDocument and ObservableObject protocols access their witnesses
-// from nonisolated contexts, so we conform via @preconcurrency.
+import Synchronization
 
 extension UTType {
     static var macora: UTType {
@@ -17,8 +14,9 @@ extension UTType {
     }
 }
 
-// ReferenceFileDocument conformance lives outside the @MainActor class so the
-// nonisolated protocol methods can satisfy the protocol witnesses.
+// Conform to ReferenceFileDocument via an @preconcurrency extension so that the
+// @MainActor-isolated init/snapshot can satisfy the protocol witnesses. The
+// Sendable requirement is honoured via the thread-safe Mutex-backed save state.
 extension MainDocumentVM: @preconcurrency ReferenceFileDocument {}
 
 nonisolated public enum ConnectionStatus: Sendable {
@@ -29,20 +27,58 @@ nonisolated public enum ConnectionHealthStatus: Sendable {
     case ok, busy, lost, notConnected
 }
 
-@MainActor
-final class MainDocumentVM: nonisolated ObservableObject {
+/// `ReferenceFileDocument` requires its conforming type to be `Sendable`, which means
+/// the class itself cannot be `@MainActor` — SwiftUI's save machinery invokes
+/// `snapshot(contentType:)` and `fileWrapper(snapshot:configuration:)` from a
+/// file-coordination executor that isn't MainActor.
+///
+/// The document stores its save-able state (text, connection details, preferences)
+/// inside a `Mutex` so both UI code and the save path can read it from any isolation
+/// domain. UI-facing mutable state (`@Published` status fields) stays on the main
+/// actor via `@MainActor`-annotated helpers.
+final class MainDocumentVM: ObservableObject, @unchecked Sendable {
     typealias Snapshot = MainModel
-    static var readableContentTypes: [UTType] { [.macora] }
-    static var writableContentTypes: [UTType] { [.macora] }
+    nonisolated static var readableContentTypes: [UTType] { [.macora] }
+    nonisolated static var writableContentTypes: [UTType] { [.macora] }
 
-    private(set) var resultsController: ResultsController?
-    var model: MainModel
-    private(set) var conn: OracleConnection?
-    @Published var mainConnection: MainConnection
-    @Published var isConnected = ConnectionStatus.disconnected
-    @Published var connectionHealth = ConnectionHealthStatus.notConnected
-    @Published var dbName: String
-    private var pingTask: Task<Void, Never>?
+    // MARK: - Save-able state
+
+    /// Thread-safe backing store for the document's persisted data. Reads and writes
+    /// from any isolation; SwiftUI bindings expose it as a computed `model` property.
+    private let modelStorage: Mutex<MainModel>
+    private let connectionStorage: Mutex<MainConnection>
+
+    @MainActor
+    var model: MainModel {
+        get { modelStorage.withLock { $0 } }
+        set {
+            objectWillChange.send()
+            modelStorage.withLock { $0 = newValue }
+        }
+    }
+
+    @MainActor
+    var mainConnection: MainConnection {
+        get { connectionStorage.withLock { $0 } }
+        set {
+            objectWillChange.send()
+            connectionStorage.withLock { $0 = newValue }
+            mainConnectionSubject.send(newValue)
+        }
+    }
+
+    /// Drives `@ObservedObject`-style consumers that need change notifications for
+    /// `mainConnection`. Publishes on the main actor via `objectWillChange`.
+    private let mainConnectionSubject = PassthroughSubject<MainConnection, Never>()
+
+    // MARK: - UI state (MainActor)
+
+    @MainActor private(set) var resultsController: ResultsController?
+    @MainActor private(set) var conn: OracleConnection?
+    @MainActor @Published var isConnected = ConnectionStatus.disconnected
+    @MainActor @Published var connectionHealth = ConnectionHealthStatus.notConnected
+    @MainActor @Published var dbName: String
+    @MainActor private var pingTask: Task<Void, Never>?
 
     private let oracleLogger: Logging.Logger = {
         var logger = Logging.Logger(label: "com.iliasazonov.macintora.oracle")
@@ -50,23 +86,23 @@ final class MainDocumentVM: nonisolated ObservableObject {
         return logger
     }()
 
-    /// `ReferenceFileDocument.snapshot(contentType:)` is called by SwiftUI's document
-    /// framework from a nonisolated context (main thread, but not MainActor-tagged).
-    /// We're MainActor-isolated, so bridge via `MainActor.assumeIsolated` — NSDocument
-    /// always drives save/autosave on the main thread, so the runtime check holds.
+    // MARK: - ReferenceFileDocument
+
     nonisolated func snapshot(contentType: UTType) throws -> MainModel {
-        MainActor.assumeIsolated {
-            model.connectionDetails = mainConnection.mainConnDetails
-            return model
+        let connDetails = connectionStorage.withLock { $0.mainConnDetails }
+        return modelStorage.withLock { storage in
+            var snap = storage
+            snap.connectionDetails = connDetails
+            return snap
         }
     }
 
     nonisolated func fileWrapper(snapshot: MainModel, configuration: WriteConfiguration) throws -> FileWrapper {
         let data = try JSONEncoder().encode(snapshot)
-        let fileWrapper = FileWrapper(regularFileWithContents: data)
-        return fileWrapper
+        return FileWrapper(regularFileWithContents: data)
     }
 
+    @MainActor
     required init(text: String = """
 select user, systimestamp, sys_context('userenv','sid') sid, sys_context('userenv','con_name') pdb
   , sys_context('userenv','current_edition_name') edition, sys_context('userenv','instance') instance
@@ -74,28 +110,34 @@ from dual;\n\n
 """
     ) {
         let localModel = MainModel(text: text)
-        model = localModel
-        dbName = Constants.defaultDBName
-        mainConnection = MainConnection(mainConnDetails: localModel.connectionDetails)
-        resultsController = ResultsController(document: self)
+        let connection = MainConnection(mainConnDetails: localModel.connectionDetails)
+        self.modelStorage = Mutex(localModel)
+        self.connectionStorage = Mutex(connection)
+        self.dbName = Constants.defaultDBName
+        self.resultsController = nil
+        self.resultsController = ResultsController(document: self)
     }
 
+    @MainActor
     required init(configuration: ReadConfiguration) throws {
         guard let data = configuration.file.regularFileContents else {
             throw CocoaError(.fileReadCorruptFile)
         }
         let localModel = try JSONDecoder().decode(MainModel.self, from: data)
-        self.model = localModel
-        dbName = localModel.connectionDetails.tns
-        mainConnection = MainConnection(mainConnDetails: localModel.connectionDetails)
-        resultsController = ResultsController(document: self)
-        if model.autoConnect ?? false {
+        let connection = MainConnection(mainConnDetails: localModel.connectionDetails)
+        self.modelStorage = Mutex(localModel)
+        self.connectionStorage = Mutex(connection)
+        self.dbName = localModel.connectionDetails.tns
+        self.resultsController = nil
+        self.resultsController = ResultsController(document: self)
+        if localModel.autoConnect ?? false {
             connect()
         }
     }
 
     // MARK: - Intent functions
 
+    @MainActor
     func connect() {
         isConnected = .changing
         let details = mainConnection.mainConnDetails
@@ -106,6 +148,7 @@ from dual;\n\n
         }
     }
 
+    @MainActor
     private func performConnect(details: ConnectionDetails, aliases: [TnsEntry], logger: Logging.Logger) async {
         let configuration: OracleConnection.Configuration
         do {
@@ -144,6 +187,7 @@ from dual;\n\n
         }
     }
 
+    @MainActor
     func disconnect() {
         isConnected = .disconnected
         connectionHealth = .notConnected
@@ -160,7 +204,7 @@ from dual;\n\n
         }
     }
 
-    static func fetchOracleSession(on conn: OracleConnection, logger: Logging.Logger) async -> OracleSession {
+    nonisolated static func fetchOracleSession(on conn: OracleConnection, logger: Logging.Logger) async -> OracleSession {
         let sql: OracleStatement = """
             select sid, serial#, to_number(sys_context('userenv','instance')) instance, systimestamp as ts
             from v$session where sid = sys_context('userenv','sid')
@@ -178,6 +222,7 @@ from dual;\n\n
         return .preview()
     }
 
+    @MainActor
     private func startPingTimer() {
         pingTask?.cancel()
         let connRef = conn
@@ -215,6 +260,7 @@ from dual;\n\n
     }
 
     /// Here we determine the SQL under the current cursor position
+    @MainActor
     func getCurrentSql(for editorSelectionRange: Range<String.Index>) -> String? {
         let regexOptions: NSRegularExpression.Options = [.anchorsMatchLines]
         var ret: String = ""
@@ -271,11 +317,13 @@ from dual;\n\n
         return ret.isEmpty ? nil : ret
     }
 
+    @MainActor
     func runCurrentSQL(for editorSelectionRange: Range<String.Index>) {
         guard let sql = getCurrentSql(for: editorSelectionRange) else { resultsController?.isExecuting = false; return }
         resultsController?.runSQL(RunnableSQL(sql: sql))
     }
 
+    @MainActor
     func stopRunningSQL() {
         if !(resultsController?.isExecuting ?? false) {
             log.debug("nothing to stop")
@@ -294,6 +342,7 @@ from dual;\n\n
         _ = conn
     }
 
+    @MainActor
     func explainPlan(for editorSelectionRange: Range<String.Index>) {
         resultsController?.isExecuting = true
         guard let conn, !conn.isClosed else {
@@ -307,6 +356,7 @@ from dual;\n\n
         resultsController?.isExecuting = false
     }
 
+    @MainActor
     func compileSource(for editorSelectionRange: Range<String.Index>) {
         let sql: String
         if editorSelectionRange.isEmpty { sql = model.text } else { sql = String(model.text[editorSelectionRange]) }
@@ -322,6 +372,7 @@ from dual;\n\n
         resultsController?.isExecuting = false
     }
 
+    @MainActor
     func newDocument(from editorSelectionRange: Range<String.Index>) -> URL? {
         var text = ""
         if editorSelectionRange.lowerBound != editorSelectionRange.upperBound {
@@ -354,6 +405,7 @@ from dual;\n\n
         return temporaryFileURL
     }
 
+    @MainActor
     func ping() {
         guard let conn, isConnected == .connected else {
             connectionHealth = .notConnected
@@ -372,6 +424,7 @@ from dual;\n\n
         }
     }
 
+    @MainActor
     func format(of editorSelectionRange: Binding<Range<String.Index>>) {
         var text = ""
         if editorSelectionRange.wrappedValue.lowerBound != editorSelectionRange.wrappedValue.upperBound {
