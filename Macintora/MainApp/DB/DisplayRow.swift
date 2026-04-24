@@ -138,6 +138,10 @@ nonisolated enum DisplayRowBuilder {
         return String(d)
     }
 
+    /// Safety invariant for `nonisolated(unsafe)`: `ISO8601DateFormatter` is not
+    /// `Sendable`, but Apple documents it as thread-safe for read-only use once
+    /// configured. This formatter is immutable after init and only ever calls
+    /// `.string(from:)` — safe to share across isolations.
     private nonisolated(unsafe) static let dateFormatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [

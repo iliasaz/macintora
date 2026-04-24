@@ -20,9 +20,18 @@ struct RunningLogEntry: Sendable {
 
 /// State captured across `fetchMoreData` / `refreshData` calls.
 ///
-/// Holds the non-Sendable `OracleRowSequence.AsyncIterator`. Access is serialized by
-/// the view model (we always cancel the previous `currentTask` before starting a new one)
-/// so `@unchecked Sendable` is the right trade-off here.
+/// Safety invariant for `@unchecked Sendable`:
+/// - `OracleRowSequence.AsyncIterator` is not `Sendable`. It has value-type
+///   surface but reference-typed backing (shared with the underlying stream).
+/// - `ResultViewModel` guarantees a *single consumer* for any given
+///   `ActiveQuery`: every entry point (`populateData`, `fetchMoreData`,
+///   `refreshData`) cancels the prior `currentTask` before starting a new one,
+///   so `iterator.next()` is never called concurrently on the same instance.
+/// - Instances are only passed from the MainActor-bound view model into a
+///   single child task, and never shared further.
+///
+/// Follow-up: drop `@unchecked` once oracle-nio exposes a `Sendable` row
+/// sequence / iterator, or once we wrap the sequence in an actor.
 private final class ActiveQuery: @unchecked Sendable {
     let sql: String
     let columnLabels: [String]

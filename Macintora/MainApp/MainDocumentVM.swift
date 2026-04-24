@@ -36,6 +36,16 @@ nonisolated public enum ConnectionHealthStatus: Sendable {
 /// inside a `Mutex` so both UI code and the save path can read it from any isolation
 /// domain. UI-facing mutable state (`@Published` status fields) stays on the main
 /// actor via `@MainActor`-annotated helpers.
+/// - Safety invariant for `@unchecked Sendable`: the class has two kinds of
+///   stored properties, each safe to share across isolations for its own reason:
+///   1. `modelStorage` / `connectionStorage` (`Mutex<…>`) — lock-guarded, safe
+///      from any isolation. These are the only paths readable from `snapshot`.
+///   2. Everything else (`resultsController`, `conn`, `isConnected`, … and the
+///      `@Published` UI state) is `@MainActor`-isolated and only touched from
+///      the main actor. Other isolations cannot observe or mutate it.
+///   `@unchecked` is necessary only because Swift can't synthesize `Sendable`
+///   for a class containing mutable stored properties, even when each is
+///   protected. Revisit if we move everything behind a single actor.
 final class MainDocumentVM: ObservableObject, @unchecked Sendable {
     typealias Snapshot = MainModel
     nonisolated static var readableContentTypes: [UTType] { [.macora] }
@@ -63,13 +73,8 @@ final class MainDocumentVM: ObservableObject, @unchecked Sendable {
         set {
             objectWillChange.send()
             connectionStorage.withLock { $0 = newValue }
-            mainConnectionSubject.send(newValue)
         }
     }
-
-    /// Drives `@ObservedObject`-style consumers that need change notifications for
-    /// `mainConnection`. Publishes on the main actor via `objectWillChange`.
-    private let mainConnectionSubject = PassthroughSubject<MainConnection, Never>()
 
     // MARK: - UI state (MainActor)
 
@@ -436,8 +441,9 @@ from dual;\n\n
         }
         guard !text.isEmpty else { log.debug("text is empty"); return }
         let formatter = Formatter()
-        Task { [self, text] in
+        Task { [weak self, text] in
             let formattedText = await formatter.formatSource(name: UUID().uuidString, text: text)
+            guard let self else { return }
             self.objectWillChange.send()
             self.model.text = self.model.text.replacing(text, with: formattedText)
         }

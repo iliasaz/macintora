@@ -12,14 +12,14 @@ import UniformTypeIdentifiers
 import OracleNIO
 
 extension Logger {
-    nonisolated(unsafe) static let subsystem = Bundle.main.bundleIdentifier ?? "com.iliasazonov.macintora"
+    static let subsystem = Bundle.main.bundleIdentifier ?? "com.iliasazonov.macintora"
 
     /// Logs the view cycles like viewDidLoad.
     var viewCycle: Logger { Logger(subsystem: Logger.subsystem, category: "viewcycle") }
     var `default`: Logger { Logger(subsystem: Logger.subsystem, category: "default") }
 }
 
-nonisolated(unsafe) let log = Logger().default
+let log = Logger().default
 
 @main
 struct MacOraApp: App {

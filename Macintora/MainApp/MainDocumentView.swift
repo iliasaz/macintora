@@ -6,6 +6,10 @@
 //
 
 import SwiftUI
+// `@preconcurrency`: the CodeEditor package predates Swift 6 concurrency and
+// exposes static properties (`.pgsql`, `.atelierDuneLight`) that aren't declared
+// `Sendable`. Accesses are confined to the main actor; drop once the package
+// is updated for Swift 6.
 @preconcurrency import CodeEditor
 import Combine
 import AppKit

@@ -64,9 +64,13 @@ class Formatter: nonisolated ObservableObject {
     }
     
     func formatSource(name: String, text: String?) {
+        // Task.detached (rather than Task {}) keeps the shell-invoking work off
+        // the main actor. `safeShell` blocks on `Process` I/O, and under
+        // `NonisolatedNonsendingByDefault` an unstructured `Task {}` from a
+        // `@MainActor` caller would run the async function on the main actor.
         Task.detached(priority: .background) { [self] in
             let formattedText = await formatSource(name: name, text: text)
-            
+
             await MainActor.run {
                 self.formattedSource = formattedText
             }
