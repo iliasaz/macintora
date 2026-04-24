@@ -9,7 +9,7 @@ import Foundation
 import CoreData
 
 extension PersistenceController {
-    static var preview: PersistenceController = {
+    @MainActor static let preview: PersistenceController = {
         let result = PersistenceController(inMemory: true)
         let viewContext = result.container.viewContext
         for _ in 0..<10 {

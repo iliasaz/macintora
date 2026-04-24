@@ -76,7 +76,7 @@ extension DBCacheTrigger {
 }
 
 extension DBCacheTrigger {
-    static var example: DBCacheTrigger {
+    @MainActor static var example: DBCacheTrigger {
         let context = PersistenceController.preview.container.viewContext
         let request = DBCacheTrigger.fetchRequest()
         request.fetchLimit = 1

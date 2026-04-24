@@ -6,13 +6,14 @@
 //
 
 import SwiftUI
+import Combine
 import os
 import UniformTypeIdentifiers
-import SwiftOracle
+import OracleNIO
 
 extension Logger {
-    static var subsystem = Bundle.main.bundleIdentifier!
-    
+    static let subsystem = Bundle.main.bundleIdentifier ?? "com.iliasazonov.macintora"
+
     /// Logs the view cycles like viewDidLoad.
     var viewCycle: Logger { Logger(subsystem: Logger.subsystem, category: "viewcycle") }
     var `default`: Logger { Logger(subsystem: Logger.subsystem, category: "default") }
@@ -157,7 +158,8 @@ extension FocusedValues {
 
 
 
-class AppSettings: ObservableObject {
+@MainActor
+class AppSettings: nonisolated ObservableObject {
     static let shared = AppSettings()
     @AppStorage("currentTheme") var currentTheme: Theme = .unspecified
     
@@ -187,7 +189,8 @@ enum Theme: Int {
     }
 }
 
-class AppStateContainer: ObservableObject {
+@MainActor
+class AppStateContainer: nonisolated ObservableObject {
     public var tnsReader = TnsReader()
 }
 

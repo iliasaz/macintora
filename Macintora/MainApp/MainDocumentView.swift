@@ -6,11 +6,13 @@
 //
 
 import SwiftUI
-import CodeEditor
-import Logging
+// `@preconcurrency`: the CodeEditor package predates Swift 6 concurrency and
+// exposes static properties (`.pgsql`, `.atelierDuneLight`) that aren't declared
+// `Sendable`. Accesses are confined to the main actor; drop once the package
+// is updated for Swift 6.
+@preconcurrency import CodeEditor
 import Combine
 import AppKit
-//import CodeEditTextView
 
 public enum FocusedView: Int, Hashable {
     case codeEditor, grid, login, connectionList
@@ -20,25 +22,42 @@ struct MainDocumentView: View {
     @ObservedObject var document: MainDocumentVM
     @EnvironmentObject var appSettings: AppSettings
     @Environment(\.undoManager) var undoManager
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedTab: String = "queryResults"
     @FocusState private var focusedView: FocusedView?
     @Environment(\.openDocument) private var openDocument
     @AppStorage("wordWrap") private var wordWrapping = false
 
+    /// Pick a Highlightr theme whose foreground colors are legible against the
+    /// current NSWindow background. CodeEditor deliberately doesn't paint the
+    /// editor background (it lets the OS appearance win), so if we use a
+    /// light-background theme in dark mode the syntax colors come out dark and
+    /// text disappears against the dark window.
+    private var editorTheme: CodeEditor.ThemeName {
+        colorScheme == .dark ? .atelierDuneDark : .atelierDuneLight
+    }
+
     @StateObject private var resultsController: ResultsController
     @State private var editorSelection: Range<String.Index> = "".startIndex..<"".endIndex
-    @State var cursorPosition = (0,0)
-    
+
     var selectedObject: String {
         if editorSelection.isEmpty { return "" }
         let s = String(document.model.text[editorSelection])
         if s.count > 128 { return "" }
         return s
     }
-    
+
     init(document: MainDocumentVM) {
         self.document = document
-        _resultsController = StateObject(wrappedValue: document.resultsController!)
+        // `MainDocumentVM`'s init is nonisolated (to satisfy the
+        // ReferenceFileDocument protocol witness), so it doesn't create a
+        // ResultsController itself. We create it here on the main actor —
+        // SwiftUI guarantees this view initializer runs on MainActor — and
+        // hand the same instance back to the document so the VM's intent
+        // methods can drive it too.
+        let controller = document.resultsController ?? ResultsController(document: document)
+        document.attachResultsController(controller)
+        _resultsController = StateObject(wrappedValue: controller)
     }
     
     var body: some View {
@@ -58,26 +77,14 @@ struct MainDocumentView: View {
                     CodeEditor(source: $document.model.text,
                                selection: $editorSelection,
                                language: .pgsql,
-                               theme: .atelierDuneLight,
+                               theme: editorTheme,
                                indentStyle: .softTab(width: 2),
                                autoPairs: [ "{": "}", "(": ")" ],
                                inset: CGSize(width: 8, height: 8),
                                autoscroll: false, wordWrap: $wordWrapping
                     )
-
-//                    CodeEditTextView($document.model.text,
-//                                     language: .sql,
-//                                     theme: sqlTheme,
-//                                     font: sourceFont,
-//                                     tabWidth: tabWidth,
-//                                     lineHeight: lineHeight,
-//                                     wrapLines: true,
-//                                     editorOverscroll: editorOverscroll,
-//                                     cursorPosition: $cursorPosition,
-//                                     isEditable: true
-//                    )
                         .frame(maxWidth: .infinity, minHeight:100, maxHeight: .infinity)
-//                        .focused($focusedView, equals: .codeEditor)
+                        .focused($focusedView, equals: .codeEditor)
                         .layoutPriority(1)
                     
                     ResultViewWrapper(resultsController: resultsController)
@@ -89,6 +96,7 @@ struct MainDocumentView: View {
         .focusedSceneValue(\.mainConnection, document.mainConnection)
         .focusedSceneValue(\.selectedObjectName, selectedObject)
         .onAppear {
+            document.prepareOnAppear()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
                 self.focusedView = .codeEditor
             }
@@ -115,7 +123,9 @@ struct MainDocumentView: View {
                 }
                 .disabled(document.isConnected == .changing)
                 .help(document.isConnected == .disconnected ? "Connect" : "Disconnect")
-                
+                .accessibilityIdentifier(document.isConnected == .connected ? "toolbar.disconnect" : "toolbar.connect")
+                .accessibilityLabel(document.isConnected == .connected ? "Disconnect" : "Connect")
+
                 // execute/stop sql
                 Button {
                     if document.resultsController?.isExecuting ?? false {
@@ -136,6 +146,8 @@ struct MainDocumentView: View {
                 .disabled(document.isConnected != .connected)
                 .keyboardShortcut(document.resultsController?.isExecuting ?? false ? "b" : "r", modifiers: .command)
                 .help("Execute current statement")
+                .accessibilityIdentifier("toolbar.run")
+                .accessibilityLabel("Run")
                 
                 // explain plan
                 Button {

@@ -7,7 +7,6 @@
 
 import SwiftUI
 import CoreData
-import SwiftOracle
 
 struct TableIndexListView: View {
     @Environment(\.managedObjectContext) var context

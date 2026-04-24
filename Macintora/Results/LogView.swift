@@ -1,30 +1,30 @@
-//
-//  LogView.swift
-//  MacOra
-//
-//  Created by Ilia on 3/15/22.
-//
-
 import SwiftUI
 import OSLog
 
-let store = try? OSLogStore(scope: .currentProcessIdentifier)
-let oneMinuteAgo = store?.position(timeIntervalSinceEnd: -60)
-let predicate = NSPredicate(format: "category == %@", argumentArray: ["generic"])
-
-func getEntries() -> String {
-    var osLogEntries = try? store?.getEntries(with: [.reverse], at: oneMinuteAgo, matching: predicate)
-    let s = osLogEntries?.map { "\($0.composedMessage) \n" }.joined() ?? ""
-//    print(">>> \(s) <<<")
-    return s
-}
-
+/// Displays the most recent OSLog entries for the "generic" category.
+///
+/// The OSLogStore/OSLogPosition/NSPredicate values aren't `Sendable`, so we
+/// keep them as `@MainActor` statics on the view rather than module-level
+/// globals. Since the view only ever renders on the main actor, this avoids
+/// the need for `nonisolated(unsafe)` and keeps the concurrency story clean.
 struct LogView: View {
-    @State var entries = try? store?.getEntries(with: [], at: oneMinuteAgo, matching: nil)
+    @MainActor private static let store = try? OSLogStore(scope: .currentProcessIdentifier)
+    @MainActor private static let oneMinuteAgo = store?.position(timeIntervalSinceEnd: -60)
+    @MainActor private static let predicate = NSPredicate(format: "category == %@", argumentArray: ["generic"])
+
+    @State private var entries: String = ""
+
     var body: some View {
-        Text(getEntries())
+        Text(entries)
             .multilineTextAlignment(.leading)
             .lineLimit(10)
+            .onAppear { entries = Self.fetchEntries() }
+    }
+
+    @MainActor
+    private static func fetchEntries() -> String {
+        let osLogEntries = try? store?.getEntries(with: [.reverse], at: oneMinuteAgo, matching: predicate)
+        return osLogEntries?.map { "\($0.composedMessage) \n" }.joined() ?? ""
     }
 }
 

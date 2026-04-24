@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftOracle
 
 enum BindVarInputType: String, Hashable {
     case text = "Text", int = "Integer", decimal = "Decimal", date = "Datetime", null = "Null"

@@ -7,13 +7,15 @@
 
 import Foundation
 import SwiftUI
+import Combine
 import os
 
 extension Logger {
     var formatter: Logger { Logger(subsystem: Logger.subsystem, category: "formatter") }
 }
 
-class Formatter: ObservableObject {
+@MainActor
+class Formatter: nonisolated ObservableObject {
     @Published var formattedSource: String = "... formatting, please wait ..."
     @AppStorage("formatterPath") private var formatterPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/Macintora/formatter"
     @AppStorage("shellPath") static private var shellPath = "/bin/zsh"
@@ -41,9 +43,9 @@ class Formatter: ObservableObject {
         }
         
         do {
-            var output = await try Formatter.safeShell("\(formatterPath)/tvdformat \(temporaryFileURL.path) xml=\(formatterPath)/trivadis_advanced_format.xml arbori=\(formatterPath)/trivadis_custom_format.arbori")
+            var output = try await Formatter.safeShell("\(formatterPath)/tvdformat \(temporaryFileURL.path) xml=\(formatterPath)/trivadis_advanced_format.xml arbori=\(formatterPath)/trivadis_custom_format.arbori")
             log.formatter.debug("tvdformat first pass output received: \(output, privacy: .public)")
-            output = await try Formatter.safeShell("\(formatterPath)/tvdformat \(temporaryFileURL.path) xml=\(formatterPath)/trivadis_advanced_format.xml arbori=\(formatterPath)/trivadis_custom_format.arbori")
+            output = try await Formatter.safeShell("\(formatterPath)/tvdformat \(temporaryFileURL.path) xml=\(formatterPath)/trivadis_advanced_format.xml arbori=\(formatterPath)/trivadis_custom_format.arbori")
             log.formatter.debug("tvdformat final output received: \(output, privacy: .public)")
         }
         catch {
@@ -62,9 +64,13 @@ class Formatter: ObservableObject {
     }
     
     func formatSource(name: String, text: String?) {
+        // Task.detached (rather than Task {}) keeps the shell-invoking work off
+        // the main actor. `safeShell` blocks on `Process` I/O, and under
+        // `NonisolatedNonsendingByDefault` an unstructured `Task {}` from a
+        // `@MainActor` caller would run the async function on the main actor.
         Task.detached(priority: .background) { [self] in
             let formattedText = await formatSource(name: name, text: text)
-            
+
             await MainActor.run {
                 self.formattedSource = formattedText
             }

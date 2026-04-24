@@ -6,8 +6,7 @@
 //
 
 import Foundation
-import Logging
-import SwiftOracle
+import os
 import CoreData
 import SwiftUI
 import AppKit
@@ -74,7 +73,7 @@ extension Sequence {
 }
 
 extension Logger {
-    public func error(_ error: DatabaseError) {
+    func error(_ error: AppDBError) {
         self.error("\(error.description)")
     }
 }

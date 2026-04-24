@@ -21,8 +21,12 @@ import os
 
 // initialized data model
 let modelURL = Bundle.main.url(forResource: "DatabaseCacheModel", withExtension: "momd")!
-let dataModel = NSManagedObjectModel(contentsOf: modelURL)!
-//let name = "dmwoac"
+
+// Safety invariant for `nonisolated(unsafe)`: `NSManagedObjectModel` is not
+// declared `Sendable` but is documented as immutable after `loadPersistentStores`;
+// this one is loaded once at process start and never mutated, so it is safe to
+// share across isolations for the duration of the process.
+nonisolated(unsafe) let dataModel = NSManagedObjectModel(contentsOf: modelURL)!
 let defaultName = "preview"
 
 

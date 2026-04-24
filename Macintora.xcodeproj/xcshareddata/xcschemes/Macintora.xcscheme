@@ -66,6 +66,16 @@
                ReferencedContainer = "container:Macintora.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "BB0000060000000000000000"
+               BuildableName = "MacintoraUITests.xctest"
+               BlueprintName = "MacintoraUITests"
+               ReferencedContainer = "container:Macintora.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

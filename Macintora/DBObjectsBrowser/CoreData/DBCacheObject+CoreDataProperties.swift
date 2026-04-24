@@ -59,7 +59,7 @@ extension DBCacheObject {
 }
 
 extension DBCacheObject {
-    static var exampleTrigger: DBCacheObject {
+    @MainActor static var exampleTrigger: DBCacheObject {
         let context = PersistenceController.preview.container.viewContext
         let request = DBCacheObject.fetchRequest()
         request.fetchLimit = 1
@@ -68,7 +68,7 @@ extension DBCacheObject {
         return (results?.first!)!
     }
     
-    static var exampleTable: DBCacheObject {
+    @MainActor static var exampleTable: DBCacheObject {
         let context = PersistenceController.preview.container.viewContext
         let request = DBCacheObject.fetchRequest()
         request.fetchLimit = 1
@@ -77,7 +77,7 @@ extension DBCacheObject {
         return (results?.first!)!
     }
     
-    static var examplePackage: DBCacheObject {
+    @MainActor static var examplePackage: DBCacheObject {
         let context = PersistenceController.preview.container.viewContext
         let request = DBCacheObject.fetchRequest()
         request.fetchLimit = 1

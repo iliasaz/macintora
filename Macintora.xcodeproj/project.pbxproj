@@ -9,8 +9,6 @@
 /* Begin PBXBuildFile section */
 		4904C5BB28D6B145009F65BD /* Highlightr in Sources */ = {isa = PBXBuildFile; fileRef = 492ED2CF28D2B9A900FDF3A1 /* Highlightr */; };
 		4904C5BD28D6B15A009F65BD /* Highlightr in Frameworks */ = {isa = PBXBuildFile; productRef = 4904C5BC28D6B15A009F65BD /* Highlightr */; };
-		491588F72A53365400E873FB /* STTextView in Resources */ = {isa = PBXBuildFile; fileRef = 491588F62A53365400E873FB /* STTextView */; };
-		4919589D273757AD00423B95 /* SwiftOracle in Sources */ = {isa = PBXBuildFile; fileRef = 493A199A2718E19200803AC9 /* SwiftOracle */; };
 		4927FBF72746DFB4007EED5B /* TnsReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4927FBF62746DFB4007EED5B /* TnsReader.swift */; };
 		49438678273753A000D7D464 /* ResultViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49438677273753A000D7D464 /* ResultViewModel.swift */; };
 		4944594C28D51D31007AB2BF /* SBMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594B28D51D31007AB2BF /* SBMainView.swift */; };
@@ -20,8 +18,6 @@
 		4947FEA8286FA3E200AEBE60 /* ResultsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEA7286FA3E200AEBE60 /* ResultsController.swift */; };
 		4947FEAA286FA73B00AEBE60 /* RunnableSQL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEA9286FA73B00AEBE60 /* RunnableSQL.swift */; };
 		4947FEAC2870F8E400AEBE60 /* BindVarInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4947FEAB2870F8E400AEBE60 /* BindVarInputView.swift */; };
-		496DE7EA2B5B28800073104E /* STTextView in Frameworks */ = {isa = PBXBuildFile; productRef = 496DE7E92B5B28800073104E /* STTextView */; };
-		496DE7EC2B5B288B0073104E /* STCompletion in Frameworks */ = {isa = PBXBuildFile; productRef = 496DE7EB2B5B288B0073104E /* STCompletion */; };
 		496FF1A12775259900CC0AD2 /* ResultViewWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496FF1A02775259900CC0AD2 /* ResultViewWrapper.swift */; };
 		4982889728B1C41700A28B04 /* Formatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982889628B1C41700A28B04 /* Formatter.swift */; };
 		4982889F28B41F3A00A28B04 /* MacintoraTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982889E28B41F3A00A28B04 /* MacintoraTests.swift */; };
@@ -70,7 +66,6 @@
 		49B6D12F2733446B00D9D788 /* CodeEditor in Sources */ = {isa = PBXBuildFile; fileRef = 49B6D12B2733439900D9D788 /* CodeEditor */; };
 		49B6D1312733450800D9D788 /* CodeEditor in Frameworks */ = {isa = PBXBuildFile; productRef = 49B6D1302733450800D9D788 /* CodeEditor */; };
 		49B6D13327335FF400D9D788 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B6D13227335FF400D9D788 /* Utils.swift */; };
-		49C5A1DD2718F5E40044CF0F /* SwiftOracle in Frameworks */ = {isa = PBXBuildFile; productRef = 49C5A1DC2718F5E40044CF0F /* SwiftOracle */; };
 		49C62C1C27DD7BAF00DE69E4 /* MainDocumentVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */; };
 		49C62C2427E010AE00DE69E4 /* ConnectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */; };
 		49CE5FF027279F3A009C2A94 /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CE5FEF27279F3A009C2A94 /* ResultView.swift */; };
@@ -83,16 +78,25 @@
 		49EAEFC728CD5822008F0B80 /* TableTriggerListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */; };
 		49EB5E0C29528995003A0E23 /* DBCacheMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EB5E0B29528995003A0E23 /* DBCacheMainView.swift */; };
 		49F481F0294A84A1005DC77F /* PersistencePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49F481EF294A84A1005DC77F /* PersistencePreview.swift */; };
+		AA0000010000000000000000 /* OracleNIO in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000020000000000000000 /* OracleNIO */; };
+		AA0000030000000000000000 /* TnsParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000040000000000000000 /* TnsParser.swift */; };
+		AA0000050000000000000000 /* OracleEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000060000000000000000 /* OracleEndpoint.swift */; };
+		AA0000070000000000000000 /* AppDBError.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000080000000000000000 /* AppDBError.swift */; };
+		AA0000090000000000000000 /* DisplayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000A0000000000000000 /* DisplayRow.swift */; };
+		AA00000B0000000000000000 /* DBMSOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000C0000000000000000 /* DBMSOutput.swift */; };
+		AA00000D0000000000000000 /* TnsEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000E0000000000000000 /* TnsEntry.swift */; };
+		AA00000F0000000000000000 /* OracleEventLoopGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000000 /* OracleEventLoopGroup.swift */; };
+		AA0000110000000000000000 /* BindValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000120000000000000000 /* BindValue.swift */; };
+		AA0000130000000000000000 /* TnsParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000140000000000000000 /* TnsParserTests.swift */; };
+		AA0000150000000000000000 /* OracleEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000160000000000000000 /* OracleEndpointTests.swift */; };
+		AA0000170000000000000000 /* DisplayRowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000180000000000000000 /* DisplayRowTests.swift */; };
+		AA0000190000000000000000 /* AppDBErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001A0000000000000000 /* AppDBErrorTests.swift */; };
+		AA00001B0000000000000000 /* MainDocumentSaveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001C0000000000000000 /* MainDocumentSaveTests.swift */; };
+		AA00001D0000000000000000 /* DocumentFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001E0000000000000000 /* DocumentFlowTests.swift */; };
+		BB0000010000000000000000 /* MacintoraUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000000 /* MacintoraUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		4960421C2A6096DE005AEE2D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 496042182A6096DE005AEE2D /* EditorView.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 496042062A6096DD005AEE2D;
-			remoteInfo = EditorView;
-		};
 		498288A028B41F3A00A28B04 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 49B55F26270ADD8B00CFB3C7 /* Project object */;
@@ -100,22 +104,20 @@
 			remoteGlobalIDString = 49B55F2D270ADD8B00CFB3C7;
 			remoteInfo = Macintora;
 		};
-		49B06E002A6B3044004A4ED6 /* PBXContainerItemProxy */ = {
+		BB0000040000000000000000 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 49B06DFC2A6B3044004A4ED6 /* WaitChains.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 49B06DEA2A6B3043004A4ED6;
-			remoteInfo = WaitChains;
+			containerPortal = 49B55F26270ADD8B00CFB3C7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 49B55F2D270ADD8B00CFB3C7;
+			remoteInfo = Macintora;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		491588F62A53365400E873FB /* STTextView */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = STTextView; path = ../STTextView; sourceTree = "<group>"; };
 		4927FBF62746DFB4007EED5B /* TnsReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsReader.swift; sourceTree = "<group>"; };
 		492ED2CF28D2B9A900FDF3A1 /* Highlightr */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Highlightr; path = ../Highlightr; sourceTree = "<group>"; };
 		49330ED2275416EC004EAA48 /* DBObjectsBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectsBrowser.swift; sourceTree = "<group>"; };
 		49330ED827570649004EAA48 /* FilteredList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilteredList.swift; sourceTree = "<group>"; };
-		493A199A2718E19200803AC9 /* SwiftOracle */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SwiftOracle; path = ../SwiftOracle; sourceTree = "<group>"; };
 		49438677273753A000D7D464 /* ResultViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResultViewModel.swift; sourceTree = "<group>"; };
 		4944594B28D51D31007AB2BF /* SBMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBMainView.swift; sourceTree = "<group>"; };
 		4944594D28D539D2007AB2BF /* SBVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBVM.swift; sourceTree = "<group>"; };
@@ -126,7 +128,6 @@
 		4947FEAB2870F8E400AEBE60 /* BindVarInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BindVarInputView.swift; path = Macintora/Results/BindVarInputView.swift; sourceTree = SOURCE_ROOT; };
 		494E66D4276AA803000BC07A /* TableViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableViewModel.swift; sourceTree = "<group>"; };
 		494E66D6276AB5B3000BC07A /* TableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableView.swift; sourceTree = "<group>"; };
-		496042182A6096DE005AEE2D /* EditorView.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = EditorView.xcodeproj; path = EditorView/EditorView.xcodeproj; sourceTree = "<group>"; };
 		496D76E527C067C0009B8328 /* NOTUSED_Logo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NOTUSED_Logo.swift; sourceTree = "<group>"; };
 		496D76E727C06A49009B8328 /* NOTUSED_AppWelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NOTUSED_AppWelcomeView.swift; sourceTree = "<group>"; };
 		496FC8F527693FAA00B689F4 /* DBObjectSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectSearch.swift; sourceTree = "<group>"; };
@@ -175,7 +176,6 @@
 		4996124C275C4E3100CBA849 /* DBCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCache.swift; sourceTree = "<group>"; };
 		4996124E2763F79800CBA849 /* DBObjectsListEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectsListEntry.swift; sourceTree = "<group>"; };
 		4999469327E1777700C62AB7 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
-		49B06DFC2A6B3044004A4ED6 /* WaitChains.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = WaitChains.xcodeproj; path = WaitChains/WaitChains.xcodeproj; sourceTree = "<group>"; };
 		49B55F2E270ADD8B00CFB3C7 /* Macintora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Macintora.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MacintoraApp.swift; sourceTree = "<group>"; };
 		49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainDocumentView.swift; sourceTree = "<group>"; };
@@ -209,6 +209,22 @@
 		49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTriggerListView.swift; sourceTree = "<group>"; };
 		49EB5E0B29528995003A0E23 /* DBCacheMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheMainView.swift; sourceTree = "<group>"; };
 		49F481EF294A84A1005DC77F /* PersistencePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistencePreview.swift; sourceTree = "<group>"; };
+		AA0000040000000000000000 /* TnsParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsParser.swift; sourceTree = "<group>"; };
+		AA0000060000000000000000 /* OracleEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEndpoint.swift; sourceTree = "<group>"; };
+		AA0000080000000000000000 /* AppDBError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDBError.swift; sourceTree = "<group>"; };
+		AA00000A0000000000000000 /* DisplayRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRow.swift; sourceTree = "<group>"; };
+		AA00000C0000000000000000 /* DBMSOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMSOutput.swift; sourceTree = "<group>"; };
+		AA00000E0000000000000000 /* TnsEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsEntry.swift; sourceTree = "<group>"; };
+		AA0000100000000000000000 /* OracleEventLoopGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEventLoopGroup.swift; sourceTree = "<group>"; };
+		AA0000120000000000000000 /* BindValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindValue.swift; sourceTree = "<group>"; };
+		AA0000140000000000000000 /* TnsParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsParserTests.swift; sourceTree = "<group>"; };
+		AA0000160000000000000000 /* OracleEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEndpointTests.swift; sourceTree = "<group>"; };
+		AA0000180000000000000000 /* DisplayRowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRowTests.swift; sourceTree = "<group>"; };
+		AA00001A0000000000000000 /* AppDBErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDBErrorTests.swift; sourceTree = "<group>"; };
+		AA00001C0000000000000000 /* MainDocumentSaveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainDocumentSaveTests.swift; sourceTree = "<group>"; };
+		AA00001E0000000000000000 /* DocumentFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentFlowTests.swift; sourceTree = "<group>"; };
+		BB0000020000000000000000 /* MacintoraUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraUITests.swift; sourceTree = "<group>"; };
+		BB0000030000000000000000 /* MacintoraUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacintoraUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -224,10 +240,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				49B6D1312733450800D9D788 /* CodeEditor in Frameworks */,
-				496DE7EA2B5B28800073104E /* STTextView in Frameworks */,
-				496DE7EC2B5B288B0073104E /* STCompletion in Frameworks */,
 				4904C5BD28D6B15A009F65BD /* Highlightr in Frameworks */,
-				49C5A1DD2718F5E40044CF0F /* SwiftOracle in Frameworks */,
+				AA0000010000000000000000 /* OracleNIO in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB0000090000000000000000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,14 +263,6 @@
 				4944594D28D539D2007AB2BF /* SBVM.swift */,
 			);
 			path = SessionBrowser;
-			sourceTree = "<group>";
-		};
-		496042192A6096DE005AEE2D /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				4960421D2A6096DE005AEE2D /* EditorView.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 		496FC8F7276AA5F900B689F4 /* DBObjectsBrowser */ = {
@@ -287,6 +300,12 @@
 			isa = PBXGroup;
 			children = (
 				4982889E28B41F3A00A28B04 /* MacintoraTests.swift */,
+				AA0000140000000000000000 /* TnsParserTests.swift */,
+				AA0000160000000000000000 /* OracleEndpointTests.swift */,
+				AA0000180000000000000000 /* DisplayRowTests.swift */,
+				AA00001A0000000000000000 /* AppDBErrorTests.swift */,
+				AA00001C0000000000000000 /* MainDocumentSaveTests.swift */,
+				AA00001E0000000000000000 /* DocumentFlowTests.swift */,
 			);
 			path = MacintoraTests;
 			sourceTree = "<group>";
@@ -303,6 +322,7 @@
 				4982889628B1C41700A28B04 /* Formatter.swift */,
 				49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */,
 				4982890C28B95BC100A28B04 /* SettingsView.swift */,
+				AA0000200000000000000000 /* DB */,
 			);
 			path = MainApp;
 			sourceTree = "<group>";
@@ -363,23 +383,13 @@
 			path = CoreData;
 			sourceTree = "<group>";
 		};
-		49B06DFD2A6B3044004A4ED6 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				49B06E012A6B3044004A4ED6 /* WaitChains.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		49B55F25270ADD8B00CFB3C7 = {
 			isa = PBXGroup;
 			children = (
-				49B06DFC2A6B3044004A4ED6 /* WaitChains.xcodeproj */,
-				496042182A6096DE005AEE2D /* EditorView.xcodeproj */,
-				491588F62A53365400E873FB /* STTextView */,
 				49B55F63270AF79000CFB3C7 /* Packages */,
 				49B55F30270ADD8B00CFB3C7 /* Macintora */,
 				4982889D28B41F3A00A28B04 /* MacintoraTests */,
+				BB0000050000000000000000 /* MacintoraUITests */,
 				49B55F2F270ADD8B00CFB3C7 /* Products */,
 				49B55F65270AF8F900CFB3C7 /* Frameworks */,
 			);
@@ -390,6 +400,7 @@
 			children = (
 				49B55F2E270ADD8B00CFB3C7 /* Macintora.app */,
 				4982889C28B41F3A00A28B04 /* MacintoraTests.xctest */,
+				BB0000030000000000000000 /* MacintoraUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -422,7 +433,6 @@
 		49B55F63270AF79000CFB3C7 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				493A199A2718E19200803AC9 /* SwiftOracle */,
 				49B6D12B2733439900D9D788 /* CodeEditor */,
 				492ED2CF28D2B9A900FDF3A1 /* Highlightr */,
 			);
@@ -449,6 +459,29 @@
 				4947FEA9286FA73B00AEBE60 /* RunnableSQL.swift */,
 			);
 			path = Results;
+			sourceTree = "<group>";
+		};
+		AA0000200000000000000000 /* DB */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000E0000000000000000 /* TnsEntry.swift */,
+				AA0000040000000000000000 /* TnsParser.swift */,
+				AA0000060000000000000000 /* OracleEndpoint.swift */,
+				AA0000080000000000000000 /* AppDBError.swift */,
+				AA00000A0000000000000000 /* DisplayRow.swift */,
+				AA00000C0000000000000000 /* DBMSOutput.swift */,
+				AA0000100000000000000000 /* OracleEventLoopGroup.swift */,
+				AA0000120000000000000000 /* BindValue.swift */,
+			);
+			path = DB;
+			sourceTree = "<group>";
+		};
+		BB0000050000000000000000 /* MacintoraUITests */ = {
+			isa = PBXGroup;
+			children = (
+				BB0000020000000000000000 /* MacintoraUITests.swift */,
+			);
+			path = MacintoraUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -483,22 +516,36 @@
 			buildRules = (
 			);
 			dependencies = (
-				49AF890C2A43DA5C00CD95E1 /* PBXTargetDependency */,
 				492ED2D228D2D93C00FDF3A1 /* PBXTargetDependency */,
-				4919589F273757F100423B95 /* PBXTargetDependency */,
 				49B6D12D2733443E00D9D788 /* PBXTargetDependency */,
 			);
 			name = Macintora;
 			packageProductDependencies = (
-				49C5A1DC2718F5E40044CF0F /* SwiftOracle */,
 				49B6D1302733450800D9D788 /* CodeEditor */,
 				4904C5BC28D6B15A009F65BD /* Highlightr */,
-				496DE7E92B5B28800073104E /* STTextView */,
-				496DE7EB2B5B288B0073104E /* STCompletion */,
+				AA0000020000000000000000 /* OracleNIO */,
 			);
 			productName = MacOra;
 			productReference = 49B55F2E270ADD8B00CFB3C7 /* Macintora.app */;
 			productType = "com.apple.product-type.application";
+		};
+		BB0000060000000000000000 /* MacintoraUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB0000070000000000000000 /* Build configuration list for PBXNativeTarget "MacintoraUITests" */;
+			buildPhases = (
+				BB0000080000000000000000 /* Sources */,
+				BB0000090000000000000000 /* Frameworks */,
+				BB00000A0000000000000000 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BB00000B0000000000000000 /* PBXTargetDependency */,
+			);
+			name = MacintoraUITests;
+			productName = MacintoraUITests;
+			productReference = BB0000030000000000000000 /* MacintoraUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -517,6 +564,10 @@
 					49B55F2D270ADD8B00CFB3C7 = {
 						CreatedOnToolsVersion = 13.0;
 					};
+					BB0000060000000000000000 = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 49B55F2D270ADD8B00CFB3C7;
+					};
 				};
 			};
 			buildConfigurationList = 49B55F29270ADD8B00CFB3C7 /* Build configuration list for PBXProject "Macintora" */;
@@ -529,43 +580,18 @@
 			);
 			mainGroup = 49B55F25270ADD8B00CFB3C7;
 			packageReferences = (
+				AA0000300000000000000000 /* XCRemoteSwiftPackageReference "oracle-nio" */,
 			);
 			productRefGroup = 49B55F2F270ADD8B00CFB3C7 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 496042192A6096DE005AEE2D /* Products */;
-					ProjectRef = 496042182A6096DE005AEE2D /* EditorView.xcodeproj */;
-				},
-				{
-					ProductGroup = 49B06DFD2A6B3044004A4ED6 /* Products */;
-					ProjectRef = 49B06DFC2A6B3044004A4ED6 /* WaitChains.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				49B55F2D270ADD8B00CFB3C7 /* Macintora */,
 				4982889B28B41F3A00A28B04 /* MacintoraTests */,
+				BB0000060000000000000000 /* MacintoraUITests */,
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXReferenceProxy section */
-		4960421D2A6096DE005AEE2D /* EditorView.app */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.application;
-			path = EditorView.app;
-			remoteRef = 4960421C2A6096DE005AEE2D /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		49B06E012A6B3044004A4ED6 /* WaitChains.app */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.application;
-			path = WaitChains.app;
-			remoteRef = 49B06E002A6B3044004A4ED6 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		4982889A28B41F3A00A28B04 /* Resources */ = {
@@ -581,7 +607,13 @@
 			files = (
 				49B55F3B270ADD8D00CFB3C7 /* Preview Assets.xcassets in Resources */,
 				49B55F38270ADD8D00CFB3C7 /* Assets.xcassets in Resources */,
-				491588F72A53365400E873FB /* STTextView in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB00000A0000000000000000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -593,6 +625,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				4982889F28B41F3A00A28B04 /* MacintoraTests.swift in Sources */,
+				AA0000130000000000000000 /* TnsParserTests.swift in Sources */,
+				AA0000150000000000000000 /* OracleEndpointTests.swift in Sources */,
+				AA0000170000000000000000 /* DisplayRowTests.swift in Sources */,
+				AA0000190000000000000000 /* AppDBErrorTests.swift in Sources */,
+				AA00001B0000000000000000 /* MainDocumentSaveTests.swift in Sources */,
+				AA00001D0000000000000000 /* DocumentFlowTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -617,7 +655,6 @@
 				4947FEAC2870F8E400AEBE60 /* BindVarInputView.swift in Sources */,
 				498288CD28B7DC5700A28B04 /* Item+CoreDataClass.swift in Sources */,
 				498288C428B7DC5700A28B04 /* DBCacheSource+CoreDataClass.swift in Sources */,
-				4919589D273757AD00423B95 /* SwiftOracle in Sources */,
 				498288F928B7DCB000A28B04 /* DBCacheVM.swift in Sources */,
 				4982890528B7EF5E00A28B04 /* ConnectionDetails.swift in Sources */,
 				49B6D12F2733446B00D9D788 /* CodeEditor in Sources */,
@@ -667,16 +704,28 @@
 				49EB5E0C29528995003A0E23 /* DBCacheMainView.swift in Sources */,
 				4927FBF72746DFB4007EED5B /* TnsReader.swift in Sources */,
 				49EAEFA528C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift in Sources */,
+				AA00000D0000000000000000 /* TnsEntry.swift in Sources */,
+				AA0000030000000000000000 /* TnsParser.swift in Sources */,
+				AA0000050000000000000000 /* OracleEndpoint.swift in Sources */,
+				AA0000070000000000000000 /* AppDBError.swift in Sources */,
+				AA0000090000000000000000 /* DisplayRow.swift in Sources */,
+				AA00000B0000000000000000 /* DBMSOutput.swift in Sources */,
+				AA00000F0000000000000000 /* OracleEventLoopGroup.swift in Sources */,
+				AA0000110000000000000000 /* BindValue.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB0000080000000000000000 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000010000000000000000 /* MacintoraUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		4919589F273757F100423B95 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 4919589E273757F100423B95 /* SwiftOracle */;
-		};
 		492ED2D228D2D93C00FDF3A1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			productRef = 492ED2D128D2D93C00FDF3A1 /* Highlightr */;
@@ -686,13 +735,14 @@
 			target = 49B55F2D270ADD8B00CFB3C7 /* Macintora */;
 			targetProxy = 498288A028B41F3A00A28B04 /* PBXContainerItemProxy */;
 		};
-		49AF890C2A43DA5C00CD95E1 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 49AF890B2A43DA5C00CD95E1 /* CodeEditTextView */;
-		};
 		49B6D12D2733443E00D9D788 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			productRef = 49B6D12C2733443E00D9D788 /* CodeEditor */;
+		};
+		BB00000B0000000000000000 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 49B55F2D270ADD8B00CFB3C7 /* Macintora */;
+			targetProxy = BB0000040000000000000000 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -712,10 +762,55 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Macintora.app/Contents/MacOS/Macintora";
 			};
 			name = Debug;
+		};
+		BB00000C0000000000000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6CGNH3LTV7;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TEST_TARGET_NAME = Macintora;
+			};
+			name = Debug;
+		};
+		BB00000D0000000000000000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6CGNH3LTV7;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TEST_TARGET_NAME = Macintora;
+			};
+			name = Release;
 		};
 		498288A428B41F3A00A28B04 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -732,7 +827,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Macintora.app/Contents/MacOS/Macintora";
 			};
 			name = Release;
@@ -744,7 +840,6 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
-				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -775,7 +870,6 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
-				EXCLUDED_ARCHS = arm64;
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -790,9 +884,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LIBRARY_SEARCH_PATHS = /Users/ilia/instantclient_19_8;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -808,7 +900,6 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
-				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -839,7 +930,6 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
-				EXCLUDED_ARCHS = arm64;
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -848,9 +938,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LIBRARY_SEARCH_PATHS = /Users/ilia/instantclient_19_8;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MTL_ENABLE_DEBUG_INFO = NO;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -884,15 +972,22 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
-					/Users/ilia/instantclient_19_8,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.macintora;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_STRICT_MEMORY_SAFETY = YES;
+				SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_INFER_ISOLATED_CONFORMANCES = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_INTERNAL_IMPORTS_BY_DEFAULT = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_NONISOLATED_NONSENDING_BY_DEFAULT = MIGRATE;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -921,15 +1016,22 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
-					/Users/ilia/instantclient_19_8,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.macintora;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_STRICT_MEMORY_SAFETY = YES;
+				SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_INFER_ISOLATED_CONFORMANCES = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_INTERNAL_IMPORTS_BY_DEFAULT = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_NONISOLATED_NONSENDING_BY_DEFAULT = MIGRATE;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -963,32 +1065,36 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		BB0000070000000000000000 /* Build configuration list for PBXNativeTarget "MacintoraUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB00000C0000000000000000 /* Debug */,
+				BB00000D0000000000000000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AA0000300000000000000000 /* XCRemoteSwiftPackageReference "oracle-nio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/lovetodream/oracle-nio.git";
+			requirement = {
+				kind = exactVersion;
+				version = "1.0.0-rc.4";
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		4904C5BC28D6B15A009F65BD /* Highlightr */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Highlightr;
 		};
-		4919589E273757F100423B95 /* SwiftOracle */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = SwiftOracle;
-		};
 		492ED2D128D2D93C00FDF3A1 /* Highlightr */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Highlightr;
-		};
-		496DE7E92B5B28800073104E /* STTextView */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = STTextView;
-		};
-		496DE7EB2B5B288B0073104E /* STCompletion */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = STCompletion;
-		};
-		49AF890B2A43DA5C00CD95E1 /* CodeEditTextView */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = CodeEditTextView;
 		};
 		49B6D12C2733443E00D9D788 /* CodeEditor */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -998,9 +1104,10 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = CodeEditor;
 		};
-		49C5A1DC2718F5E40044CF0F /* SwiftOracle */ = {
+		AA0000020000000000000000 /* OracleNIO */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = SwiftOracle;
+			package = AA0000300000000000000000 /* XCRemoteSwiftPackageReference "oracle-nio" */;
+			productName = OracleNIO;
 		};
 /* End XCSwiftPackageProductDependency section */
 

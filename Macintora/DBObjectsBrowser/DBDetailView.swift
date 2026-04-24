@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import os
 
 struct DBDetailObjectMainView: View {
     @Binding var dbObject: DBCacheObject
@@ -126,7 +127,7 @@ struct DBDetailViewHeader: View {
         Task(priority: .background) {
             await MainActor.run { isRefreshing = true }
             do {
-                try cache.connectSvc()
+                try await cache.connectSvc()
                 await MainActor.run { cache.isConnected = .connected }
             } catch {
                 log.cache.error("not connected")
@@ -144,7 +145,7 @@ struct DBDetailViewHeader: View {
                 isValid: dbObject.isValid,
                 objectId: dbObject.objectId
             ))
-            cache.disconnectSvc()
+            await cache.disconnectSvc()
             await MainActor.run { isRefreshing = false}
         }
     }
