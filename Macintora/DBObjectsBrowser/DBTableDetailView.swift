@@ -7,7 +7,10 @@
 
 import SwiftUI
 import CoreData
-import STTextViewUI
+// STTextViewUI was an experimental dep on a parallel branch; oracle-nio's
+// pbxproj doesn't reference it. The SQL view below falls back to a plain
+// ScrollView + Text with monospaced font, which is what the migration
+// branch had in use.
 
 struct DBTableDetailView: View {
     @Environment(\.managedObjectContext) var context
@@ -131,12 +134,15 @@ struct DBTableDetailView: View {
 
                         //                        CodeEditTextView( Binding<String>(get: { sqlText }, set: {_ in }), language: .sql, theme: sqlTheme, font: sourceFont, tabWidth: tabWidth, lineHeight: lineHeight, wrapLines: true, editorOverscroll: editorOverscroll, cursorPosition: $cursorPosition, isEditable: true)
                         
-                        STTextViewUI.TextView(
-                                        text: Binding<AttributedString>(get: { AttributedString(sqlText) }, set: {_ in }),
-                                        selection: $selection,
-                                        options: [.wrapLines, .highlightSelectedLine]
-                                    )
-                                    .textViewFont(.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular))
+                        ScrollView {
+                            Text(sqlText)
+                                .monospaced()
+                                .textSelection(.enabled)
+                                .lineLimit(nil)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(8)
+                        }
 
 
                     }
