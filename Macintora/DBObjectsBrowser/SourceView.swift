@@ -6,13 +6,13 @@
 //
 
 import SwiftUI
-@preconcurrency import CodeEditor
 
 struct SourceView: View {
     @Binding var objName: String
     @Binding var text: String
     @State var title: String
-    
+    @State private var selection: Range<String.Index> = "".startIndex..<"".endIndex
+
     init(objName: Binding<String>, text: Binding<String>, title: String) {
         self._objName = objName
         self._text = text
@@ -62,8 +62,18 @@ struct SourceView: View {
 //                    .multilineTextAlignment(.leading)
 //                    .frame(maxWidth: .infinity)
 //            }
-            CodeEditor(source: $text, language: .pgsql, theme: .atelierDuneLight, flags: [.selectable, .editable], autoscroll: false, wordWrap: .constant(true))
-                .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
+            MacintoraEditor(
+                text: $text,
+                selection: $selection,
+                language: .plsql,
+                isEditable: true,
+                isSelectable: true,
+                wordWrap: .constant(true),
+                showsLineNumbers: false,
+                highlightsSelectedLine: false,
+                accessibilityIdentifier: "editor.db.source"
+            )
+            .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 }

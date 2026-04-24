@@ -15,11 +15,11 @@ struct SBInputValue: Hashable, Codable {
 
 
 struct SBMainView: View {
-    @ObservedObject private var vm: SBVM
+    @State private var vm: SBVM
     @State var theWindow: NSWindow?
-    
+
     init(inputValue: SBInputValue) {
-        vm = SBVM(mainConnection: inputValue.mainConnection)
+        _vm = State(wrappedValue: SBVM(mainConnection: inputValue.mainConnection))
     }
     
     var body: some View {

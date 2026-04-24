@@ -12,7 +12,7 @@ import os
 
 struct SessionView: NSViewRepresentable {
     @Environment(\.colorScheme) var colorScheme
-    @ObservedObject var model: SBVM
+    var model: SBVM
     var autoColWidth = true
     
     typealias Coordinator = SessionViewCoordinator

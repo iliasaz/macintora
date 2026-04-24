@@ -21,8 +21,9 @@ Oracle Database 12.1 or later is supported.
 
 ### Dependencies (all pulled automatically via SwiftPM)
 - [oracle-nio](https://github.com/lovetodream/oracle-nio) — pure-Swift Oracle driver (pinned to `v1.0.0-rc.4`)
-- [CodeEditor](https://github.com/iliasaz/CodeEditor)
-- [Highlightr](https://github.com/iliasaz/Highlightr)
+- [STTextView](https://github.com/krzyzanowskim/STTextView) — TextKit 2 code editor (local SPM at `../STTextView`)
+- [STTextView-Plugin-Neon](https://github.com/krzyzanowskim/STTextView-Plugin-Neon) — tree-sitter syntax highlighting plugin (local SPM at `../STTextView-Plugin-Neon`)
+- [STTextKitPlus](https://github.com/krzyzanowskim/STTextKitPlus) — TextKit 2 range/location helpers (local SPM at `../STTextKitPlus`)
 - [SF Mono Font](https://devimages-cdn.apple.com/design/resources/download/SF-Mono.dmg) (recommended for the result grid)
 
 Clone the repo and open `Macintora.xcodeproj` in Xcode. Build and run the `MacOra` scheme.

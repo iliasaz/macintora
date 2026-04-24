@@ -23,13 +23,9 @@ let log = Logger().default
 
 @main
 struct MacOraApp: App {
-    @StateObject var appStateContainer = AppStateContainer()
-    @ObservedObject var appSettings = AppSettings.shared
-    
     var body: some Scene {
         DocumentGroup(newDocument: { MainDocumentVM() }) { config in
                 MainDocumentView(document: config.document)
-                    .environmentObject(appSettings)
                     .frame(minWidth: 400, idealWidth: 1600, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
             
         }
@@ -37,7 +33,7 @@ struct MacOraApp: App {
         .commands {
             SidebarCommands()
             ToolbarCommands()
-            MainDocumentMenuCommands(appSettings: appSettings)
+            MainDocumentMenuCommands()
             TextEditingCommands()
             CommandGroup(after: .newItem) {
                 Button("New Tab") {
@@ -74,7 +70,6 @@ struct MainDocumentMenuCommands: Commands {
 //    @FocusedValue(\.cacheConnectionDetails) var cacheConnectionDetails: ConnectionDetails?
     @FocusedValue(\.selectedObjectName) var selectedObjectName: String?
     @FocusedValue(\.mainConnection) var mainConnection
-    @ObservedObject var appSettings: AppSettings
     @Environment(\.openWindow) var openWindow
 
     var body: some Commands {
@@ -158,21 +153,6 @@ extension FocusedValues {
 
 
 
-@MainActor
-class AppSettings: nonisolated ObservableObject {
-    static let shared = AppSettings()
-    @AppStorage("currentTheme") var currentTheme: Theme = .unspecified
-    
-    init() {
-        
-    }
-    
-    func setCurrentTheme() {
-        let currentTheme = AppSettings.shared.currentTheme
-        AppSettings.shared.currentTheme = currentTheme == .light ? .dark : .light
-    }
-}
-
 enum Theme: Int {
     case light
     case dark
@@ -187,11 +167,6 @@ enum Theme: Int {
         default: return nil
         }
     }
-}
-
-@MainActor
-class AppStateContainer: nonisolated ObservableObject {
-    public var tnsReader = TnsReader()
 }
 
 //public func toggleSidebar() {

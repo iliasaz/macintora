@@ -1,22 +1,22 @@
 import Foundation
 import AppKit
-import Combine
 import OracleNIO
 import NIOCore
 import Logging
 
 @MainActor
-final class SBVM: nonisolated ObservableObject {
+@Observable
+final class SBVM {
     var mainConnection: MainConnection
-    @Published var connStatus: ConnectionStatus = .disconnected
-    @Published var isExecuting = false
-    @Published var activeOnly: Bool = true {
+    var connStatus: ConnectionStatus = .disconnected
+    var isExecuting = false
+    var activeOnly: Bool = true {
         didSet { populateData() }
     }
-    @Published var userOnly: Bool = true {
+    var userOnly: Bool = true {
         didSet { populateData() }
     }
-    @Published var localInstanceOnly: Bool = true {
+    var localInstanceOnly: Bool = true {
         didSet { populateData() }
     }
 

@@ -10,7 +10,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import Combine
 import SwiftOracle
-import CodeEditor
+// import CodeEditor — removed with the STTextView migration; file is in NOTUSED/.
 
 
 //extension UTType {

@@ -7,7 +7,6 @@
 
 import SwiftUI
 import CoreData
-import CodeEditor
 
 struct DBSourceDetailView: View {
     @Environment(\.managedObjectContext) var context

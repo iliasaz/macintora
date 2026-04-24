@@ -201,6 +201,48 @@ final class MacintoraUITests: XCTestCase {
         window.typeKey("w", modifierFlags: .command)
     }
 
+    /// Typing a realistic multi-statement SQL script doesn't drop keystrokes
+    /// or hang the app. This is the Phase 3 regression test for the Neon
+    /// incremental tree-sitter parser: every edit triggers a highlight pass
+    /// and the wrapper's re-entrancy guard must keep the binding and view in
+    /// sync while typing.
+    ///
+    /// The timing budget is generous (30 s for 20 statements, ~840 chars): the
+    /// XCUITest keystroke path itself costs ~25 ms per character. The point
+    /// is to catch *severe* regressions (main-thread-blocking full re-parse),
+    /// not to benchmark the highlighter. The storage check below is the real
+    /// invariant — if keystrokes are dropped, the typed text won't be present.
+    @MainActor
+    func test_largeSqlDocumentTypesWithoutDroppingKeystrokes() throws {
+        let app = launchAppWithFixture()
+
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.waitForExistence(timeout: 10))
+        let textView = window.textViews.firstMatch
+        XCTAssertTrue(textView.waitForExistence(timeout: 5))
+
+        textView.click()
+        textView.typeKey("a", modifierFlags: .command)
+        textView.typeKey(.delete, modifierFlags: [])
+
+        let stmts = (0..<20)
+            .map { "SELECT \($0) FROM dual WHERE x = \($0);\n" }
+            .joined()
+        let start = Date()
+        textView.typeText(stmts)
+        let elapsed = Date().timeIntervalSince(start)
+
+        let contents = (textView.value as? String) ?? ""
+        XCTAssertTrue(
+            contents.contains("SELECT 0 FROM dual") && contents.contains("SELECT 19 FROM dual"),
+            "first and/or last statement missing from storage — keystrokes were dropped. value tail=\"\(contents.suffix(180))\""
+        )
+        XCTAssertLessThan(
+            elapsed, 30.0,
+            "typing took \(elapsed)s; normal XCUITest baseline is ~20 s, so a 30 s budget catches main-thread-blocking regressions"
+        )
+    }
+
     /// Baseline: a newline should still advance the line count. The user
     /// reported this works even while regular characters don't, so this test
     /// should pass independently of the typing fix.

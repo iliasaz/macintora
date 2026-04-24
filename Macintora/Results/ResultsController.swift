@@ -1,12 +1,12 @@
 import Foundation
-import Combine
 import OracleNIO
 
 @MainActor
-final class ResultsController: nonisolated ObservableObject {
+@Observable
+final class ResultsController {
     weak var document: MainDocumentVM?
     var results: [String: ResultViewModel]
-    @Published var isExecuting = false
+    var isExecuting = false
 
     init(document: MainDocumentVM) {
         self.document = document

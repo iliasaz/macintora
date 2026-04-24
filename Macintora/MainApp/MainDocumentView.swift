@@ -6,11 +6,6 @@
 //
 
 import SwiftUI
-// `@preconcurrency`: the CodeEditor package predates Swift 6 concurrency and
-// exposes static properties (`.pgsql`, `.atelierDuneLight`) that aren't declared
-// `Sendable`. Accesses are confined to the main actor; drop once the package
-// is updated for Swift 6.
-@preconcurrency import CodeEditor
 import Combine
 import AppKit
 
@@ -20,24 +15,13 @@ public enum FocusedView: Int, Hashable {
 
 struct MainDocumentView: View {
     @ObservedObject var document: MainDocumentVM
-    @EnvironmentObject var appSettings: AppSettings
     @Environment(\.undoManager) var undoManager
-    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedTab: String = "queryResults"
     @FocusState private var focusedView: FocusedView?
     @Environment(\.openDocument) private var openDocument
     @AppStorage("wordWrap") private var wordWrapping = false
 
-    /// Pick a Highlightr theme whose foreground colors are legible against the
-    /// current NSWindow background. CodeEditor deliberately doesn't paint the
-    /// editor background (it lets the OS appearance win), so if we use a
-    /// light-background theme in dark mode the syntax colors come out dark and
-    /// text disappears against the dark window.
-    private var editorTheme: CodeEditor.ThemeName {
-        colorScheme == .dark ? .atelierDuneDark : .atelierDuneLight
-    }
-
-    @StateObject private var resultsController: ResultsController
+    @State private var resultsController: ResultsController
     @State private var editorSelection: Range<String.Index> = "".startIndex..<"".endIndex
 
     var selectedObject: String {
@@ -57,7 +41,7 @@ struct MainDocumentView: View {
         // methods can drive it too.
         let controller = document.resultsController ?? ResultsController(document: document)
         document.attachResultsController(controller)
-        _resultsController = StateObject(wrappedValue: controller)
+        _resultsController = State(wrappedValue: controller)
     }
     
     var body: some View {
@@ -74,16 +58,17 @@ struct MainDocumentView: View {
         } detail: {
             VStack {
                 VSplitView {
-                    CodeEditor(source: $document.model.text,
-                               selection: $editorSelection,
-                               language: .pgsql,
-                               theme: editorTheme,
-                               indentStyle: .softTab(width: 2),
-                               autoPairs: [ "{": "}", "(": ")" ],
-                               inset: CGSize(width: 8, height: 8),
-                               autoscroll: false, wordWrap: $wordWrapping
+                    MacintoraEditor(
+                        text: $document.model.text,
+                        selection: $editorSelection,
+                        language: .sql,
+                        isEditable: true,
+                        isSelectable: true,
+                        wordWrap: $wordWrapping,
+                        showsLineNumbers: true,
+                        highlightsSelectedLine: true
                     )
-                        .frame(maxWidth: .infinity, minHeight:100, maxHeight: .infinity)
+                        .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity)
                         .focused($focusedView, equals: .codeEditor)
                         .layoutPriority(1)
                     
@@ -228,7 +213,6 @@ struct MacOraDocumentView_Previews: PreviewProvider {
     static var previews: some View {
         MainDocumentView(document: MainDocumentVM())
             .frame(width: 1000.0, height: 600.0, alignment: .center)
-            .environmentObject(AppSettings.shared)
     }
 }
 

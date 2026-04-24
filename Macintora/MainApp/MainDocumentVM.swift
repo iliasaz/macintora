@@ -2,7 +2,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 import Combine
 import Logging
-@preconcurrency import CodeEditor
 import Network
 import OracleNIO
 import NIOCore
@@ -73,8 +72,8 @@ final class MainDocumentVM: ObservableObject, @unchecked Sendable {
             // wants us to fire before the write, but SwiftUI's NSViewRepresentable
             // re-render can run synchronously in response to `send()`. If the
             // subscriber calls back into the getter while the write is still
-            // pending, CodeEditor reads stale source and overwrites the
-            // just-typed character in textView.string.
+            // pending, the editor reads stale source and overwrites the
+            // just-typed character in its NSTextContentStorage.
             modelStorage.withLock { $0 = newValue }
             objectWillChange.send()
         }

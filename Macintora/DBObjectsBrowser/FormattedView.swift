@@ -6,14 +6,24 @@
 //
 
 import SwiftUI
-@preconcurrency import CodeEditor
 
 struct FormattedView: View {
     @ObservedObject var formatter: Formatter
-    
+    @State private var selection: Range<String.Index> = "".startIndex..<"".endIndex
+
     var body: some View {
-        CodeEditor(source: $formatter.formattedSource, language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false, wordWrap: .constant(true))
-            .frame(minWidth: 400, idealWidth: 1000, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
+        MacintoraEditor(
+            text: $formatter.formattedSource,
+            selection: $selection,
+            language: .sql,
+            isEditable: false,
+            isSelectable: true,
+            wordWrap: .constant(true),
+            showsLineNumbers: false,
+            highlightsSelectedLine: false,
+            accessibilityIdentifier: "editor.db.formatted"
+        )
+        .frame(minWidth: 400, idealWidth: 1000, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
     }
 }
 
