@@ -123,7 +123,9 @@ struct MainDocumentView: View {
                 }
                 .disabled(document.isConnected == .changing)
                 .help(document.isConnected == .disconnected ? "Connect" : "Disconnect")
-                
+                .accessibilityIdentifier(document.isConnected == .connected ? "toolbar.disconnect" : "toolbar.connect")
+                .accessibilityLabel(document.isConnected == .connected ? "Disconnect" : "Connect")
+
                 // execute/stop sql
                 Button {
                     if document.resultsController?.isExecuting ?? false {
@@ -144,6 +146,8 @@ struct MainDocumentView: View {
                 .disabled(document.isConnected != .connected)
                 .keyboardShortcut(document.resultsController?.isExecuting ?? false ? "b" : "r", modifiers: .command)
                 .help("Execute current statement")
+                .accessibilityIdentifier("toolbar.run")
+                .accessibilityLabel("Run")
                 
                 // explain plan
                 Button {
