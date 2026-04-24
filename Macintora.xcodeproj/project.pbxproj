@@ -10,19 +10,6 @@
 		4904C5BB28D6B145009F65BD /* Highlightr in Sources */ = {isa = PBXBuildFile; fileRef = 492ED2CF28D2B9A900FDF3A1 /* Highlightr */; };
 		4904C5BD28D6B15A009F65BD /* Highlightr in Frameworks */ = {isa = PBXBuildFile; productRef = 4904C5BC28D6B15A009F65BD /* Highlightr */; };
 		4927FBF72746DFB4007EED5B /* TnsReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4927FBF62746DFB4007EED5B /* TnsReader.swift */; };
-		AA0000010000000000000000 /* OracleNIO in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000020000000000000000 /* OracleNIO */; };
-		AA0000030000000000000000 /* TnsParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000040000000000000000 /* TnsParser.swift */; };
-		AA0000050000000000000000 /* OracleEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000060000000000000000 /* OracleEndpoint.swift */; };
-		AA0000070000000000000000 /* AppDBError.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000080000000000000000 /* AppDBError.swift */; };
-		AA0000090000000000000000 /* DisplayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000A0000000000000000 /* DisplayRow.swift */; };
-		AA00000B0000000000000000 /* DBMSOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000C0000000000000000 /* DBMSOutput.swift */; };
-		AA00000D0000000000000000 /* TnsEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000E0000000000000000 /* TnsEntry.swift */; };
-		AA00000F0000000000000000 /* OracleEventLoopGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000000 /* OracleEventLoopGroup.swift */; };
-		AA0000110000000000000000 /* BindValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000120000000000000000 /* BindValue.swift */; };
-		AA0000130000000000000000 /* TnsParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000140000000000000000 /* TnsParserTests.swift */; };
-		AA0000150000000000000000 /* OracleEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000160000000000000000 /* OracleEndpointTests.swift */; };
-		AA0000170000000000000000 /* DisplayRowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000180000000000000000 /* DisplayRowTests.swift */; };
-		AA0000190000000000000000 /* AppDBErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001A0000000000000000 /* AppDBErrorTests.swift */; };
 		49438678273753A000D7D464 /* ResultViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49438677273753A000D7D464 /* ResultViewModel.swift */; };
 		4944594C28D51D31007AB2BF /* SBMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594B28D51D31007AB2BF /* SBMainView.swift */; };
 		4944594E28D539D2007AB2BF /* SBVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594D28D539D2007AB2BF /* SBVM.swift */; };
@@ -91,6 +78,19 @@
 		49EAEFC728CD5822008F0B80 /* TableTriggerListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */; };
 		49EB5E0C29528995003A0E23 /* DBCacheMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EB5E0B29528995003A0E23 /* DBCacheMainView.swift */; };
 		49F481F0294A84A1005DC77F /* PersistencePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49F481EF294A84A1005DC77F /* PersistencePreview.swift */; };
+		AA0000010000000000000000 /* OracleNIO in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000020000000000000000 /* OracleNIO */; };
+		AA0000030000000000000000 /* TnsParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000040000000000000000 /* TnsParser.swift */; };
+		AA0000050000000000000000 /* OracleEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000060000000000000000 /* OracleEndpoint.swift */; };
+		AA0000070000000000000000 /* AppDBError.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000080000000000000000 /* AppDBError.swift */; };
+		AA0000090000000000000000 /* DisplayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000A0000000000000000 /* DisplayRow.swift */; };
+		AA00000B0000000000000000 /* DBMSOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000C0000000000000000 /* DBMSOutput.swift */; };
+		AA00000D0000000000000000 /* TnsEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000E0000000000000000 /* TnsEntry.swift */; };
+		AA00000F0000000000000000 /* OracleEventLoopGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000100000000000000000 /* OracleEventLoopGroup.swift */; };
+		AA0000110000000000000000 /* BindValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000120000000000000000 /* BindValue.swift */; };
+		AA0000130000000000000000 /* TnsParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000140000000000000000 /* TnsParserTests.swift */; };
+		AA0000150000000000000000 /* OracleEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000160000000000000000 /* OracleEndpointTests.swift */; };
+		AA0000170000000000000000 /* DisplayRowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000180000000000000000 /* DisplayRowTests.swift */; };
+		AA0000190000000000000000 /* AppDBErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001A0000000000000000 /* AppDBErrorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -109,18 +109,6 @@
 		49330ED2275416EC004EAA48 /* DBObjectsBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBObjectsBrowser.swift; sourceTree = "<group>"; };
 		49330ED827570649004EAA48 /* FilteredList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilteredList.swift; sourceTree = "<group>"; };
 		49438677273753A000D7D464 /* ResultViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResultViewModel.swift; sourceTree = "<group>"; };
-		AA0000040000000000000000 /* TnsParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsParser.swift; sourceTree = "<group>"; };
-		AA0000060000000000000000 /* OracleEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEndpoint.swift; sourceTree = "<group>"; };
-		AA0000080000000000000000 /* AppDBError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDBError.swift; sourceTree = "<group>"; };
-		AA00000A0000000000000000 /* DisplayRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRow.swift; sourceTree = "<group>"; };
-		AA00000C0000000000000000 /* DBMSOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMSOutput.swift; sourceTree = "<group>"; };
-		AA00000E0000000000000000 /* TnsEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsEntry.swift; sourceTree = "<group>"; };
-		AA0000100000000000000000 /* OracleEventLoopGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEventLoopGroup.swift; sourceTree = "<group>"; };
-		AA0000120000000000000000 /* BindValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindValue.swift; sourceTree = "<group>"; };
-		AA0000140000000000000000 /* TnsParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsParserTests.swift; sourceTree = "<group>"; };
-		AA0000160000000000000000 /* OracleEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEndpointTests.swift; sourceTree = "<group>"; };
-		AA0000180000000000000000 /* DisplayRowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRowTests.swift; sourceTree = "<group>"; };
-		AA00001A0000000000000000 /* AppDBErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDBErrorTests.swift; sourceTree = "<group>"; };
 		4944594B28D51D31007AB2BF /* SBMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBMainView.swift; sourceTree = "<group>"; };
 		4944594D28D539D2007AB2BF /* SBVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBVM.swift; sourceTree = "<group>"; };
 		4944594F28D68EFE007AB2BF /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
@@ -211,6 +199,18 @@
 		49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTriggerListView.swift; sourceTree = "<group>"; };
 		49EB5E0B29528995003A0E23 /* DBCacheMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheMainView.swift; sourceTree = "<group>"; };
 		49F481EF294A84A1005DC77F /* PersistencePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistencePreview.swift; sourceTree = "<group>"; };
+		AA0000040000000000000000 /* TnsParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsParser.swift; sourceTree = "<group>"; };
+		AA0000060000000000000000 /* OracleEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEndpoint.swift; sourceTree = "<group>"; };
+		AA0000080000000000000000 /* AppDBError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDBError.swift; sourceTree = "<group>"; };
+		AA00000A0000000000000000 /* DisplayRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRow.swift; sourceTree = "<group>"; };
+		AA00000C0000000000000000 /* DBMSOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMSOutput.swift; sourceTree = "<group>"; };
+		AA00000E0000000000000000 /* TnsEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsEntry.swift; sourceTree = "<group>"; };
+		AA0000100000000000000000 /* OracleEventLoopGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEventLoopGroup.swift; sourceTree = "<group>"; };
+		AA0000120000000000000000 /* BindValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindValue.swift; sourceTree = "<group>"; };
+		AA0000140000000000000000 /* TnsParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsParserTests.swift; sourceTree = "<group>"; };
+		AA0000160000000000000000 /* OracleEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleEndpointTests.swift; sourceTree = "<group>"; };
+		AA0000180000000000000000 /* DisplayRowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRowTests.swift; sourceTree = "<group>"; };
+		AA00001A0000000000000000 /* AppDBErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDBErrorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -302,21 +302,6 @@
 				AA0000200000000000000000 /* DB */,
 			);
 			path = MainApp;
-			sourceTree = "<group>";
-		};
-		AA0000200000000000000000 /* DB */ = {
-			isa = PBXGroup;
-			children = (
-				AA00000E0000000000000000 /* TnsEntry.swift */,
-				AA0000040000000000000000 /* TnsParser.swift */,
-				AA0000060000000000000000 /* OracleEndpoint.swift */,
-				AA0000080000000000000000 /* AppDBError.swift */,
-				AA00000A0000000000000000 /* DisplayRow.swift */,
-				AA00000C0000000000000000 /* DBMSOutput.swift */,
-				AA0000100000000000000000 /* OracleEventLoopGroup.swift */,
-				AA0000120000000000000000 /* BindValue.swift */,
-			);
-			path = DB;
 			sourceTree = "<group>";
 		};
 		498288A928B7DBAB00A28B04 /* NOTUSED */ = {
@@ -449,6 +434,21 @@
 				4947FEA9286FA73B00AEBE60 /* RunnableSQL.swift */,
 			);
 			path = Results;
+			sourceTree = "<group>";
+		};
+		AA0000200000000000000000 /* DB */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000E0000000000000000 /* TnsEntry.swift */,
+				AA0000040000000000000000 /* TnsParser.swift */,
+				AA0000060000000000000000 /* OracleEndpoint.swift */,
+				AA0000080000000000000000 /* AppDBError.swift */,
+				AA00000A0000000000000000 /* DisplayRow.swift */,
+				AA00000C0000000000000000 /* DBMSOutput.swift */,
+				AA0000100000000000000000 /* OracleEventLoopGroup.swift */,
+				AA0000120000000000000000 /* BindValue.swift */,
+			);
+			path = DB;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -684,8 +684,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 6.0;
 				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Macintora.app/Contents/MacOS/Macintora";
 			};
 			name = Debug;
@@ -705,8 +705,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 6.0;
 				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Macintora.app/Contents/MacOS/Macintora";
 			};
 			name = Release;
@@ -718,7 +718,6 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
-				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -763,8 +762,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -780,7 +778,6 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
-				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -819,8 +816,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MTL_ENABLE_DEBUG_INFO = NO;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -855,14 +851,21 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.macintora;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 6.0;
 				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_STRICT_MEMORY_SAFETY = YES;
+				SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_INFER_ISOLATED_CONFORMANCES = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_INTERNAL_IMPORTS_BY_DEFAULT = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_NONISOLATED_NONSENDING_BY_DEFAULT = MIGRATE;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -892,14 +895,21 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.macintora;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 6.0;
 				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_STRICT_MEMORY_SAFETY = YES;
+				SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_INFER_ISOLATED_CONFORMANCES = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_INTERNAL_IMPORTS_BY_DEFAULT = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = MIGRATE;
+				SWIFT_UPCOMING_FEATURE_NONISOLATED_NONSENDING_BY_DEFAULT = MIGRATE;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -935,6 +945,17 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		AA0000300000000000000000 /* XCRemoteSwiftPackageReference "oracle-nio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/lovetodream/oracle-nio.git";
+			requirement = {
+				kind = exactVersion;
+				version = "1.0.0-rc.4";
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		4904C5BC28D6B15A009F65BD /* Highlightr */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -958,17 +979,6 @@
 			productName = OracleNIO;
 		};
 /* End XCSwiftPackageProductDependency section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		AA0000300000000000000000 /* XCRemoteSwiftPackageReference "oracle-nio" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/lovetodream/oracle-nio.git";
-			requirement = {
-				kind = exactVersion;
-				version = 1.0.0-rc.4;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCVersionGroup section */
 		498288AA28B7DBE400A28B04 /* DatabaseCacheModel.xcdatamodeld */ = {

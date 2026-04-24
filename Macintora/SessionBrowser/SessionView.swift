@@ -92,7 +92,7 @@ struct SessionView: NSViewRepresentable {
 
 
 @MainActor
-class SessionViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSource {
+class SessionViewCoordinator: NSObject, nonisolated NSTableViewDelegate, nonisolated NSTableViewDataSource {
     var parent: SessionView
     
     weak var tableView: TableViewWithPasteboard?

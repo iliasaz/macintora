@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Combine
 @preconcurrency import CoreData
 import os
 import OracleNIO
@@ -190,7 +191,7 @@ extension OracleRandomAccessRow {
 // MARK: - DBCacheVM
 
 @MainActor
-final class DBCacheVM: ObservableObject {
+final class DBCacheVM: nonisolated ObservableObject {
     @Published var isConnected = ConnectionStatus.disconnected
     @Published var dbVersionFull: String?
     @Published var lastUpdate: Date?

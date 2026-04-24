@@ -4,6 +4,10 @@ import OracleNIO
 import SwiftUI
 import Logging
 
+// Mark the ObservableObject conformance as preconcurrency: ResultViewModel is
+// @MainActor-isolated but SwiftUI needs to access `objectWillChange` from any
+// isolation domain. Same pattern used for every other @MainActor view model.
+
 enum RunningLogEntryType: Sendable {
     case info, error
 }
@@ -48,7 +52,7 @@ private final class ActiveQuery: @unchecked Sendable {
 }
 
 @MainActor
-public final class ResultViewModel: ObservableObject {
+public final class ResultViewModel: nonisolated ObservableObject {
     @AppStorage("rowFetchLimit") var rowFetchLimit: Int = 200
     @AppStorage("queryPrefetchSize") private var queryPrefetchSize: Int = 200
 

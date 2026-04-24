@@ -8,7 +8,7 @@
 import Foundation
 import AppKit
 
-class TableViewWithPasteboard: NSTableView, NSMenuItemValidation {
+class TableViewWithPasteboard: NSTableView, nonisolated NSMenuItemValidation {
 
     // this is needed to teach our table view respond to Cmd-C
     override var acceptsFirstResponder: Bool { true }

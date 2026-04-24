@@ -1,11 +1,12 @@
 import Foundation
 import AppKit
+import Combine
 import OracleNIO
 import NIOCore
 import Logging
 
 @MainActor
-final class SBVM: ObservableObject {
+final class SBVM: nonisolated ObservableObject {
     var mainConnection: MainConnection
     @Published var connStatus: ConnectionStatus = .disconnected
     @Published var isExecuting = false

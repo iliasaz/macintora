@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Combine
 import os
 
 extension Logger {
@@ -7,7 +8,8 @@ extension Logger {
 }
 
 /// Reads and parses `tnsnames.ora`, exposing the parsed entries and alias list to the UI.
-final class TnsReader: ObservableObject {
+@MainActor
+final class TnsReader: nonisolated ObservableObject {
     @AppStorage("tnsnamesPath") var tnsnamesPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/.oracle/tnsnames.ora"
 
     @Published private(set) var entries: [TnsEntry] = []

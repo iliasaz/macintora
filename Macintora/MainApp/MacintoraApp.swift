@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 import os
 import UniformTypeIdentifiers
 import OracleNIO
@@ -158,7 +159,7 @@ extension FocusedValues {
 
 
 @MainActor
-class AppSettings: ObservableObject {
+class AppSettings: nonisolated ObservableObject {
     static let shared = AppSettings()
     @AppStorage("currentTheme") var currentTheme: Theme = .unspecified
     
@@ -188,7 +189,8 @@ enum Theme: Int {
     }
 }
 
-class AppStateContainer: ObservableObject {
+@MainActor
+class AppStateContainer: nonisolated ObservableObject {
     public var tnsReader = TnsReader()
 }
 

@@ -76,7 +76,7 @@ struct ResultView: NSViewRepresentable {
 }
 
 @MainActor
-class ResultViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSource {
+class ResultViewCoordinator: NSObject, nonisolated NSTableViewDelegate, nonisolated NSTableViewDataSource {
     var parent: ResultView
     weak var tableView: TableViewWithPasteboard?
     

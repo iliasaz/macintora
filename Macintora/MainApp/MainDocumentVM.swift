@@ -7,6 +7,10 @@ import Network
 import OracleNIO
 import NIOCore
 
+// MainDocumentVM is @MainActor because it drives the UI. SwiftUI's
+// ReferenceFileDocument and ObservableObject protocols access their witnesses
+// from nonisolated contexts, so we conform via @preconcurrency.
+
 extension UTType {
     static var macora: UTType {
         UTType(importedAs: "com.iliasazonov.macintora")
@@ -26,7 +30,7 @@ nonisolated public enum ConnectionHealthStatus: Sendable {
 }
 
 @MainActor
-final class MainDocumentVM: ObservableObject {
+final class MainDocumentVM: nonisolated ObservableObject {
     typealias Snapshot = MainModel
     static var readableContentTypes: [UTType] { [.macora] }
     static var writableContentTypes: [UTType] { [.macora] }
@@ -46,9 +50,15 @@ final class MainDocumentVM: ObservableObject {
         return logger
     }()
 
-    func snapshot(contentType: UTType) throws -> MainModel {
-        model.connectionDetails = mainConnection.mainConnDetails
-        return model
+    /// `ReferenceFileDocument.snapshot(contentType:)` is called by SwiftUI's document
+    /// framework from a nonisolated context (main thread, but not MainActor-tagged).
+    /// We're MainActor-isolated, so bridge via `MainActor.assumeIsolated` — NSDocument
+    /// always drives save/autosave on the main thread, so the runtime check holds.
+    nonisolated func snapshot(contentType: UTType) throws -> MainModel {
+        MainActor.assumeIsolated {
+            model.connectionDetails = mainConnection.mainConnDetails
+            return model
+        }
     }
 
     nonisolated func fileWrapper(snapshot: MainModel, configuration: WriteConfiguration) throws -> FileWrapper {

@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import Combine
 import os
 
 extension Logger {
@@ -14,7 +15,7 @@ extension Logger {
 }
 
 @MainActor
-class Formatter: ObservableObject {
+class Formatter: nonisolated ObservableObject {
     @Published var formattedSource: String = "... formatting, please wait ..."
     @AppStorage("formatterPath") private var formatterPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/Macintora/formatter"
     @AppStorage("shellPath") static private var shellPath = "/bin/zsh"
@@ -42,9 +43,9 @@ class Formatter: ObservableObject {
         }
         
         do {
-            var output = await try Formatter.safeShell("\(formatterPath)/tvdformat \(temporaryFileURL.path) xml=\(formatterPath)/trivadis_advanced_format.xml arbori=\(formatterPath)/trivadis_custom_format.arbori")
+            var output = try await Formatter.safeShell("\(formatterPath)/tvdformat \(temporaryFileURL.path) xml=\(formatterPath)/trivadis_advanced_format.xml arbori=\(formatterPath)/trivadis_custom_format.arbori")
             log.formatter.debug("tvdformat first pass output received: \(output, privacy: .public)")
-            output = await try Formatter.safeShell("\(formatterPath)/tvdformat \(temporaryFileURL.path) xml=\(formatterPath)/trivadis_advanced_format.xml arbori=\(formatterPath)/trivadis_custom_format.arbori")
+            output = try await Formatter.safeShell("\(formatterPath)/tvdformat \(temporaryFileURL.path) xml=\(formatterPath)/trivadis_advanced_format.xml arbori=\(formatterPath)/trivadis_custom_format.arbori")
             log.formatter.debug("tvdformat final output received: \(output, privacy: .public)")
         }
         catch {
