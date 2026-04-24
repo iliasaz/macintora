@@ -93,10 +93,18 @@
 		AA0000190000000000000000 /* AppDBErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001A0000000000000000 /* AppDBErrorTests.swift */; };
 		AA00001B0000000000000000 /* MainDocumentSaveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001C0000000000000000 /* MainDocumentSaveTests.swift */; };
 		AA00001D0000000000000000 /* DocumentFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001E0000000000000000 /* DocumentFlowTests.swift */; };
+		BB0000010000000000000000 /* MacintoraUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000000 /* MacintoraUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
 		498288A028B41F3A00A28B04 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 49B55F26270ADD8B00CFB3C7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 49B55F2D270ADD8B00CFB3C7;
+			remoteInfo = Macintora;
+		};
+		BB0000040000000000000000 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 49B55F26270ADD8B00CFB3C7 /* Project object */;
 			proxyType = 1;
@@ -215,6 +223,8 @@
 		AA00001A0000000000000000 /* AppDBErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDBErrorTests.swift; sourceTree = "<group>"; };
 		AA00001C0000000000000000 /* MainDocumentSaveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainDocumentSaveTests.swift; sourceTree = "<group>"; };
 		AA00001E0000000000000000 /* DocumentFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentFlowTests.swift; sourceTree = "<group>"; };
+		BB0000020000000000000000 /* MacintoraUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraUITests.swift; sourceTree = "<group>"; };
+		BB0000030000000000000000 /* MacintoraUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacintoraUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -232,6 +242,13 @@
 				49B6D1312733450800D9D788 /* CodeEditor in Frameworks */,
 				4904C5BD28D6B15A009F65BD /* Highlightr in Frameworks */,
 				AA0000010000000000000000 /* OracleNIO in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB0000090000000000000000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -372,6 +389,7 @@
 				49B55F63270AF79000CFB3C7 /* Packages */,
 				49B55F30270ADD8B00CFB3C7 /* Macintora */,
 				4982889D28B41F3A00A28B04 /* MacintoraTests */,
+				BB0000050000000000000000 /* MacintoraUITests */,
 				49B55F2F270ADD8B00CFB3C7 /* Products */,
 				49B55F65270AF8F900CFB3C7 /* Frameworks */,
 			);
@@ -382,6 +400,7 @@
 			children = (
 				49B55F2E270ADD8B00CFB3C7 /* Macintora.app */,
 				4982889C28B41F3A00A28B04 /* MacintoraTests.xctest */,
+				BB0000030000000000000000 /* MacintoraUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -457,6 +476,14 @@
 			path = DB;
 			sourceTree = "<group>";
 		};
+		BB0000050000000000000000 /* MacintoraUITests */ = {
+			isa = PBXGroup;
+			children = (
+				BB0000020000000000000000 /* MacintoraUITests.swift */,
+			);
+			path = MacintoraUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -502,6 +529,24 @@
 			productReference = 49B55F2E270ADD8B00CFB3C7 /* Macintora.app */;
 			productType = "com.apple.product-type.application";
 		};
+		BB0000060000000000000000 /* MacintoraUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB0000070000000000000000 /* Build configuration list for PBXNativeTarget "MacintoraUITests" */;
+			buildPhases = (
+				BB0000080000000000000000 /* Sources */,
+				BB0000090000000000000000 /* Frameworks */,
+				BB00000A0000000000000000 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BB00000B0000000000000000 /* PBXTargetDependency */,
+			);
+			name = MacintoraUITests;
+			productName = MacintoraUITests;
+			productReference = BB0000030000000000000000 /* MacintoraUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -518,6 +563,10 @@
 					};
 					49B55F2D270ADD8B00CFB3C7 = {
 						CreatedOnToolsVersion = 13.0;
+					};
+					BB0000060000000000000000 = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 49B55F2D270ADD8B00CFB3C7;
 					};
 				};
 			};
@@ -539,6 +588,7 @@
 			targets = (
 				49B55F2D270ADD8B00CFB3C7 /* Macintora */,
 				4982889B28B41F3A00A28B04 /* MacintoraTests */,
+				BB0000060000000000000000 /* MacintoraUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -557,6 +607,13 @@
 			files = (
 				49B55F3B270ADD8D00CFB3C7 /* Preview Assets.xcassets in Resources */,
 				49B55F38270ADD8D00CFB3C7 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB00000A0000000000000000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -658,6 +715,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BB0000080000000000000000 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000010000000000000000 /* MacintoraUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -673,6 +738,11 @@
 		49B6D12D2733443E00D9D788 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			productRef = 49B6D12C2733443E00D9D788 /* CodeEditor */;
+		};
+		BB00000B0000000000000000 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 49B55F2D270ADD8B00CFB3C7 /* Macintora */;
+			targetProxy = BB0000040000000000000000 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -697,6 +767,50 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Macintora.app/Contents/MacOS/Macintora";
 			};
 			name = Debug;
+		};
+		BB00000C0000000000000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6CGNH3LTV7;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TEST_TARGET_NAME = Macintora;
+			};
+			name = Debug;
+		};
+		BB00000D0000000000000000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6CGNH3LTV7;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.iliasazonov.MacintoraUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TEST_TARGET_NAME = Macintora;
+			};
+			name = Release;
 		};
 		498288A428B41F3A00A28B04 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -947,6 +1061,15 @@
 			buildConfigurations = (
 				49B55F57270ADD8D00CFB3C7 /* Debug */,
 				49B55F58270ADD8D00CFB3C7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB0000070000000000000000 /* Build configuration list for PBXNativeTarget "MacintoraUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB00000C0000000000000000 /* Debug */,
+				BB00000D0000000000000000 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
