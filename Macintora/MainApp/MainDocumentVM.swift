@@ -69,16 +69,22 @@ final class MainDocumentVM: ObservableObject, @unchecked Sendable {
     var model: MainModel {
         get { modelStorage.withLock { $0 } }
         set {
-            objectWillChange.send()
+            // Write first, THEN publish. The "will change" contract technically
+            // wants us to fire before the write, but SwiftUI's NSViewRepresentable
+            // re-render can run synchronously in response to `send()`. If the
+            // subscriber calls back into the getter while the write is still
+            // pending, CodeEditor reads stale source and overwrites the
+            // just-typed character in textView.string.
             modelStorage.withLock { $0 = newValue }
+            objectWillChange.send()
         }
     }
 
     var mainConnection: MainConnection {
         get { connectionStorage.withLock { $0 } }
         set {
-            objectWillChange.send()
             connectionStorage.withLock { $0 = newValue }
+            objectWillChange.send()
         }
     }
 
