@@ -54,11 +54,18 @@ final class MainDocumentVM: ObservableObject, @unchecked Sendable {
     // MARK: - Save-able state
 
     /// Thread-safe backing store for the document's persisted data. Reads and writes
-    /// from any isolation; SwiftUI bindings expose it as a computed `model` property.
+    /// are safe from any isolation; SwiftUI bindings expose them as computed
+    /// properties.
+    ///
+    /// The accessors are deliberately **not** `@MainActor`-isolated. SwiftUI's
+    /// dynamic-member binding (`$document.model.text`) invokes the setter
+    /// synchronously from the NSTextView delegate callback, which is nonisolated
+    /// main-thread code. Requiring MainActor isolation here turned those writes
+    /// into cross-actor hops, which under the new concurrency rules dropped
+    /// keystrokes (except `insertNewline`, which takes a different code path).
     private let modelStorage: Mutex<MainModel>
     private let connectionStorage: Mutex<MainConnection>
 
-    @MainActor
     var model: MainModel {
         get { modelStorage.withLock { $0 } }
         set {
@@ -67,7 +74,6 @@ final class MainDocumentVM: ObservableObject, @unchecked Sendable {
         }
     }
 
-    @MainActor
     var mainConnection: MainConnection {
         get { connectionStorage.withLock { $0 } }
         set {
