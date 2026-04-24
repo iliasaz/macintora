@@ -22,10 +22,20 @@ struct MainDocumentView: View {
     @ObservedObject var document: MainDocumentVM
     @EnvironmentObject var appSettings: AppSettings
     @Environment(\.undoManager) var undoManager
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedTab: String = "queryResults"
     @FocusState private var focusedView: FocusedView?
     @Environment(\.openDocument) private var openDocument
     @AppStorage("wordWrap") private var wordWrapping = false
+
+    /// Pick a Highlightr theme whose foreground colors are legible against the
+    /// current NSWindow background. CodeEditor deliberately doesn't paint the
+    /// editor background (it lets the OS appearance win), so if we use a
+    /// light-background theme in dark mode the syntax colors come out dark and
+    /// text disappears against the dark window.
+    private var editorTheme: CodeEditor.ThemeName {
+        colorScheme == .dark ? .atelierDuneDark : .atelierDuneLight
+    }
 
     @StateObject private var resultsController: ResultsController
     @State private var editorSelection: Range<String.Index> = "".startIndex..<"".endIndex
@@ -67,7 +77,7 @@ struct MainDocumentView: View {
                     CodeEditor(source: $document.model.text,
                                selection: $editorSelection,
                                language: .pgsql,
-                               theme: .atelierDuneLight,
+                               theme: editorTheme,
                                indentStyle: .softTab(width: 2),
                                autoPairs: [ "{": "}", "(": ")" ],
                                inset: CGSize(width: 8, height: 8),
