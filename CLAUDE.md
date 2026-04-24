@@ -1,0 +1,121 @@
+# Agent guide for Swift and SwiftUI
+
+This repository contains an Xcode project written with Swift and SwiftUI. Please follow the guidelines below so that the development experience is built on modern, safe API usage.
+
+# Project Description
+Macintora is a SQL IDE tool for Oracle databases. It is written for Developers by Developers. It offers the following main areas of functionality:
+- SQL worksheet where a user can write and execute SQL, data grid, DBMS_OUTPUT results.
+- Database Browser tool to browse and cache database objects like tables, packages, and etc.
+- Connections manager where a user may choose a database connection, connect and disconnect from the database.
+
+## Dependencies
+- STTextView
+- STTextView-Plugin-Neon
+- STTextKitPlus
+The dependencies are Swift SPM repositories that live next to the project directory. For example, STTextView repository is located in /Users/ilia/Developer/STTextView
+
+## Role
+
+You are a **Senior iOS Engineer**, specializing in SwiftUI, SQLite persistence, and related frameworks. Your code must always adhere to Apple's Human Interface Guidelines and App Review guidelines.
+
+Use the following skills:
+- swiftui-expert-skill
+- swiftui-pro
+- swift-concurrency
+- swift-concurrency-pro
+- swift-focusengine-pro
+- swift-format-style
+- swift-testing-pro
+
+Use sosumi MCP to retrieve Apple Documentation.
+
+## Core instructions
+
+- Target macOS 26.0 or later. (Yes, it definitely exists.)
+- Swift 6.2 or later, using modern Swift concurrency.
+- SwiftUI backed up by `@Observable` classes for shared data.
+- Do not introduce third-party frameworks without asking first.
+
+
+## Swift instructions
+
+### Approachable concurrency
+
+This project uses Swift 6.2 approachable concurrency, which means:
+
+- Code runs on the main actor by default (single-threaded).
+- Nonisolated async functions run on the caller's actor by default, not the global executor.
+- Use `@concurrent` to explicitly run async functions on the concurrent thread pool when parallelism is needed.
+- Do not manually mark classes with `@MainActor` unless they need to be isolated from default main actor context.
+- Rely on the compiler's automatic `@Sendable` inference from captures.
+
+### General Swift guidelines
+
+- Prefer Swift-native alternatives to Foundation methods where they exist, such as using `replacing("hello", with: "world")` with strings rather than `replacingOccurrences(of: "hello", with: "world")`.
+- Prefer modern Foundation API, for example `URL.documentsDirectory` to find the app's documents directory, and `appending(path:)` to append strings to a URL.
+- Never use C-style number formatting such as `Text(String(format: "%.2f", abs(myNumber)))`; always use `Text(abs(change), format: .number.precision(.fractionLength(2)))` instead.
+- Prefer static member lookup to struct instances where possible, such as `.circle` rather than `Circle()`, and `.borderedProminent` rather than `BorderedProminentButtonStyle()`.
+- Never use old-style Grand Central Dispatch concurrency such as `DispatchQueue.main.async()`. If behavior like this is needed, always use modern Swift concurrency.
+- Filtering text based on user-input must be done using `localizedStandardContains()` as opposed to `contains()`.
+- Avoid force unwraps and force `try` unless it is unrecoverable.
+
+
+## SwiftUI instructions
+
+- Always use `foregroundStyle()` instead of `foregroundColor()`.
+- Always use `clipShape(.rect(cornerRadius:))` instead of `cornerRadius()`.
+- Always use the `Tab` API instead of `tabItem()`.
+- Never use `ObservableObject`; always prefer `@Observable` classes instead.
+- Never use the `onChange()` modifier in its 1-parameter variant; either use the variant that accepts two parameters or accepts none.
+- Never use `onTapGesture()` unless you specifically need to know a tap's location or the number of taps. All other usages should use `Button`.
+- Never use `Task.sleep(nanoseconds:)`; always use `Task.sleep(for:)` instead.
+- Never use `UIScreen.main.bounds` to read the size of the available space.
+- Do not break views up using computed properties; place them into new `View` structs instead.
+- Do not force specific font sizes; prefer using Dynamic Type instead.
+- Use the `navigationDestination(for:)` modifier to specify navigation, and always use `NavigationStack` instead of the old `NavigationView`.
+- If using an image for a button label, always specify text alongside like this: `Button("Tap me", systemImage: "plus", action: myButtonAction)`.
+- When rendering SwiftUI views, always prefer using `ImageRenderer` to `UIGraphicsImageRenderer`.
+- Don't apply the `fontWeight()` modifier unless there is good reason. If you want to make some text bold, always use `bold()` instead of `fontWeight(.bold)`.
+- Do not use `GeometryReader` if a newer alternative would work as well, such as `containerRelativeFrame()` or `visualEffect()`.
+- When making a `ForEach` out of an `enumerated` sequence, do not convert it to an array first. So, prefer `ForEach(x.enumerated(), id: \.element.id)` instead of `ForEach(Array(x.enumerated()), id: \.element.id)`.
+- When hiding scroll view indicators, use the `.scrollIndicators(.hidden)` modifier rather than using `showsIndicators: false` in the scroll view initializer.
+- Place view logic into view models or similar, so it can be tested.
+- Avoid `AnyView` unless it is absolutely required.
+- Avoid specifying hard-coded values for padding and stack spacing unless requested.
+- Avoid using UIKit colors in SwiftUI code.
+
+
+
+## Logging instructions
+
+- For iOS/macOS applications, always use Apple's unified logging system with `OSLog`:
+  - Import `OSLog` (not `os.log`)
+  - Create loggers with `Logger(subsystem:category:)`
+  - Use appropriate log levels: `.debug`, `.info`, `.notice`, `.error`, `.fault`
+  - Example: `private let logger = Logger(subsystem: "com.newscomb.app", category: "networking")`
+- For cross-platform or server-side Swift applications, use [apple/swift-log](https://github.com/apple/swift-log) instead
+- Never use `print()` statements for logging in production code
+- Include relevant context in log messages but avoid logging sensitive data
+
+
+## Testing instructions
+
+- **Always** write unit tests for logic changes (services, view models, algorithms, models). No task is complete without tests.
+- **Always** write and execute tests for any functional change before declaring it done. Do not skip this step — code that compiles but isn't tested is not finished.
+- **Always** write UI tests when unit tests are not possible for UI-specific behavior.
+- **Always** run the relevant test suite after writing tests and verify all tests pass before declaring any task complete.
+- Run tests with: `xcodebuild test -scheme NewsCombApp -destination 'platform=macOS'`
+- Place test files in the `NewsCombAppTests/` directory, matching the source file structure.
+- Use `XCTest` for all tests. Do not use third-party test frameworks without asking first.
+- Test pure logic in isolation — avoid depending on the live database or network in unit tests.
+- For database operations, create an in-memory `DatabaseQueue` in tests to avoid depending on the live database.
+- SQLite functions differ from other databases. Always verify SQL compatibility (e.g., SQLite lacks `LOG()`, `POWER()`, and many aggregate functions). Prefer computing in Swift when in doubt.
+
+
+## Git workflow
+
+- When creating releases, always use `gh release list` to determine the latest version number. Never use `git tag` for this purpose, as tags from dependency packages or other conventions may produce incorrect results.
+
+## PR instructions
+
+- If installed, make sure SwiftLint returns no warnings or errors before committing.
