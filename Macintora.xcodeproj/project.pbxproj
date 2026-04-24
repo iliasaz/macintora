@@ -92,6 +92,7 @@
 		AA0000170000000000000000 /* DisplayRowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000180000000000000000 /* DisplayRowTests.swift */; };
 		AA0000190000000000000000 /* AppDBErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001A0000000000000000 /* AppDBErrorTests.swift */; };
 		AA00001B0000000000000000 /* MainDocumentSaveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001C0000000000000000 /* MainDocumentSaveTests.swift */; };
+		AA00001D0000000000000000 /* DocumentFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001E0000000000000000 /* DocumentFlowTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -213,6 +214,7 @@
 		AA0000180000000000000000 /* DisplayRowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRowTests.swift; sourceTree = "<group>"; };
 		AA00001A0000000000000000 /* AppDBErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDBErrorTests.swift; sourceTree = "<group>"; };
 		AA00001C0000000000000000 /* MainDocumentSaveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainDocumentSaveTests.swift; sourceTree = "<group>"; };
+		AA00001E0000000000000000 /* DocumentFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentFlowTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -286,6 +288,7 @@
 				AA0000180000000000000000 /* DisplayRowTests.swift */,
 				AA00001A0000000000000000 /* AppDBErrorTests.swift */,
 				AA00001C0000000000000000 /* MainDocumentSaveTests.swift */,
+				AA00001E0000000000000000 /* DocumentFlowTests.swift */,
 			);
 			path = MacintoraTests;
 			sourceTree = "<group>";
@@ -570,6 +573,7 @@
 				AA0000170000000000000000 /* DisplayRowTests.swift in Sources */,
 				AA0000190000000000000000 /* AppDBErrorTests.swift in Sources */,
 				AA00001B0000000000000000 /* MainDocumentSaveTests.swift in Sources */,
+				AA00001D0000000000000000 /* DocumentFlowTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

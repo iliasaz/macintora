@@ -29,17 +29,25 @@ struct MainDocumentView: View {
 
     @StateObject private var resultsController: ResultsController
     @State private var editorSelection: Range<String.Index> = "".startIndex..<"".endIndex
-    
+
     var selectedObject: String {
         if editorSelection.isEmpty { return "" }
         let s = String(document.model.text[editorSelection])
         if s.count > 128 { return "" }
         return s
     }
-    
+
     init(document: MainDocumentVM) {
         self.document = document
-        _resultsController = StateObject(wrappedValue: document.resultsController!)
+        // `MainDocumentVM`'s init is nonisolated (to satisfy the
+        // ReferenceFileDocument protocol witness), so it doesn't create a
+        // ResultsController itself. We create it here on the main actor —
+        // SwiftUI guarantees this view initializer runs on MainActor — and
+        // hand the same instance back to the document so the VM's intent
+        // methods can drive it too.
+        let controller = document.resultsController ?? ResultsController(document: document)
+        document.attachResultsController(controller)
+        _resultsController = StateObject(wrappedValue: controller)
     }
     
     var body: some View {
@@ -78,6 +86,7 @@ struct MainDocumentView: View {
         .focusedSceneValue(\.mainConnection, document.mainConnection)
         .focusedSceneValue(\.selectedObjectName, selectedObject)
         .onAppear {
+            document.prepareOnAppear()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
                 self.focusedView = .codeEditor
             }

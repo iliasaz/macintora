@@ -82,14 +82,21 @@ final class MainDocumentVM: ObservableObject, @unchecked Sendable {
         }
     }
 
-    // MARK: - UI state (MainActor)
-
-    @MainActor private(set) var resultsController: ResultsController?
-    @MainActor private(set) var conn: OracleConnection?
-    @MainActor @Published var isConnected = ConnectionStatus.disconnected
-    @MainActor @Published var connectionHealth = ConnectionHealthStatus.notConnected
-    @MainActor @Published var dbName: String
-    @MainActor private var pingTask: Task<Void, Never>?
+    // MARK: - UI state
+    //
+    // These properties aren't `@MainActor`-isolated: SwiftUI's `ReferenceFileDocument`
+    // invokes `init(configuration:)` from a nonisolated context, and that init needs
+    // to initialize them. Isolation is carried by:
+    //   - `ResultsController` (an `@MainActor` class — its methods enforce isolation).
+    //   - `OracleConnection` (fully `Sendable`).
+    //   - `@Published` wrappers (Combine publishers; safe from any thread).
+    // Mutations happen exclusively from `@MainActor` methods below.
+    private(set) var resultsController: ResultsController?
+    private(set) var conn: OracleConnection?
+    @Published var isConnected = ConnectionStatus.disconnected
+    @Published var connectionHealth = ConnectionHealthStatus.notConnected
+    let dbName: String
+    private var pingTask: Task<Void, Never>?
 
     private let oracleLogger: Logging.Logger = {
         var logger = Logging.Logger(label: "com.iliasazonov.macintora.oracle")
@@ -113,7 +120,17 @@ final class MainDocumentVM: ObservableObject, @unchecked Sendable {
         return FileWrapper(regularFileWithContents: data)
     }
 
-    @MainActor
+    /// Whether to auto-connect once the view finishes hydrating.
+    ///
+    /// Set by `init(configuration:)` when the loaded document requested
+    /// auto-connect. `MainDocumentView` consumes this on first appear.
+    let shouldAutoConnectOnAppear: Bool
+
+    /// `ReferenceFileDocument.init(configuration:)` is nonisolated per the
+    /// protocol and invoked by SwiftUI off the MainActor executor. Both inits
+    /// stay nonisolated to satisfy the witness. `@MainActor` collaborators
+    /// (`ResultsController`, auto-connect) are wired up by `MainDocumentView`
+    /// via `prepareOnAppear()`, which runs on the main actor.
     required init(text: String = """
 select user, systimestamp, sys_context('userenv','sid') sid, sys_context('userenv','con_name') pdb
   , sys_context('userenv','current_edition_name') edition, sys_context('userenv','instance') instance
@@ -125,23 +142,46 @@ from dual;\n\n
         self.modelStorage = Mutex(localModel)
         self.connectionStorage = Mutex(connection)
         self.dbName = Constants.defaultDBName
-        self.resultsController = nil
-        self.resultsController = ResultsController(document: self)
+        self.shouldAutoConnectOnAppear = false
     }
 
-    @MainActor
-    required init(configuration: ReadConfiguration) throws {
+    required convenience init(configuration: ReadConfiguration) throws {
         guard let data = configuration.file.regularFileContents else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        let localModel = try JSONDecoder().decode(MainModel.self, from: data)
+        try self.init(documentData: data)
+    }
+
+    /// Load path factored out so tests can construct the document from plain
+    /// data without having to mock SwiftUI's opaque `ReadConfiguration`.
+    init(documentData: Data) throws {
+        let localModel = try JSONDecoder().decode(MainModel.self, from: documentData)
         let connection = MainConnection(mainConnDetails: localModel.connectionDetails)
         self.modelStorage = Mutex(localModel)
         self.connectionStorage = Mutex(connection)
         self.dbName = localModel.connectionDetails.tns
-        self.resultsController = nil
-        self.resultsController = ResultsController(document: self)
-        if localModel.autoConnect ?? false {
+        self.shouldAutoConnectOnAppear = localModel.autoConnect ?? false
+    }
+
+    /// The view creates the `ResultsController` on the main actor and hands it
+    /// back via this method so the VM's intent methods share the same instance.
+    @MainActor
+    func attachResultsController(_ controller: ResultsController) {
+        if resultsController == nil {
+            resultsController = controller
+        }
+    }
+
+    /// Called by `MainDocumentView.onAppear` to trigger any main-actor setup
+    /// that couldn't run in the nonisolated init — primarily auto-connect, and
+    /// a fallback ResultsController creation for environments (e.g. tests) that
+    /// don't route through `MainDocumentView.init`.
+    @MainActor
+    func prepareOnAppear() {
+        if resultsController == nil {
+            resultsController = ResultsController(document: self)
+        }
+        if shouldAutoConnectOnAppear, isConnected == .disconnected {
             connect()
         }
     }
