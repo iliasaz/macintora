@@ -9,16 +9,6 @@ import Foundation
 import CoreData
 import os
 
-//public extension NSManagedObject {
-//
-//    convenience init(context: NSManagedObjectContext) {
-//        let name = String(describing: type(of: self))
-//        let entity = NSEntityDescription.entity(forEntityName: name, in: context)!
-//        self.init(entity: entity, insertInto: context)
-//    }
-//
-//}
-
 // initialized data model
 let modelURL = Bundle.main.url(forResource: "DatabaseCacheModel", withExtension: "momd")!
 
@@ -35,7 +25,7 @@ struct PersistenceController {
     var container: NSPersistentContainer
     
     init(name: String) {
-        container = NSPersistentContainer(name: name, managedObjectModel: dataModel)
+        container = NSPersistentContainer(name: name, managedObjectModel: unsafe dataModel)
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.name = name
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
@@ -62,7 +52,7 @@ struct PersistenceController {
 
     init(inMemory: Bool = false) {
 //        container = NSPersistentContainer(name: "DBObjectsBrowser")
-        container = NSPersistentContainer(name: defaultName, managedObjectModel: dataModel)
+        container = NSPersistentContainer(name: defaultName, managedObjectModel: unsafe dataModel)
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }

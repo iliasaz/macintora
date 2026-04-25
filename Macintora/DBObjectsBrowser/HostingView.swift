@@ -14,7 +14,7 @@ class HostingView<Content> : NSHostingView<Content> where Content : View {
     
     override public func mouseDown(with event: NSEvent) {
         guard mouseMovesWindow else { return }
-        window?.performDrag(with: event)
+        unsafe window?.performDrag(with: event)
     }
 }
 

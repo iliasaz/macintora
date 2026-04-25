@@ -11,18 +11,13 @@ import AppKit
 import SwiftUI
 import STTextView
 
-extension MacintoraEditor {
-    /// `STTextViewDelegate` predates Swift Concurrency and isn't annotated;
-    /// the methods touch `@MainActor`-isolated `STTextView` API at runtime
-    /// (always called on main by AppKit) but the protocol witness is treated
-    /// as nonisolated, so Swift 6.2 emits warnings about each main-actor
-    /// access. The combinations that actually compile under approachable
-    /// concurrency leave at least one of those warnings — `@preconcurrency`,
-    /// `@MainActor`-on-class, and `@MainActor`-on-method all conflict with
-    /// the nonisolated protocol requirement. Leaving the warnings in place
-    /// with this comment documents the upstream limitation. Drop the warnings
-    /// when STTextView adopts Swift Concurrency.
-    final class Coordinator: NSObject, @preconcurrency STTextViewDelegate {
+extension MacintoraEditorRepresentable {
+    /// `STTextViewDelegate` predates Swift Concurrency and isn't annotated, so
+    /// its protocol requirements are nonisolated. AppKit always invokes these
+    /// callbacks on the main thread, so the `STTextView` reads inside are
+    /// scoped with `MainActor.assumeIsolated { }` — that gives the compiler
+    /// the main-actor access it needs while keeping the witness nonisolated.
+    final class Coordinator: NSObject, STTextViewDelegate {
         @Binding var text: String
         @Binding var selection: Range<String.Index>
 
@@ -43,7 +38,7 @@ extension MacintoraEditor {
             guard !isApplyingExternalUpdate,
                   let textView = notification.object as? STTextView
             else { return }
-            let newText = textView.text ?? ""
+            let newText = MainActor.assumeIsolated { textView.text ?? "" }
             if text != newText {
                 text = newText
             }
@@ -53,11 +48,12 @@ extension MacintoraEditor {
             guard !isApplyingExternalUpdate,
                   let textView = notification.object as? STTextView
             else { return }
-            let nsRange = textView.selectedRange()
             // Read the upstream text from the view, not the binding: the binding may
             // still be catching up after a keystroke, which would leave the NSRange
             // out of bounds for the old value.
-            let source = textView.text ?? ""
+            let (nsRange, source) = MainActor.assumeIsolated {
+                (textView.selectedRange(), textView.text ?? "")
+            }
             let bridged = EditorSelectionBridge.range(for: nsRange, in: source)
                 ?? EditorSelectionBridge.emptyRange(in: source)
             if bridged != selection {

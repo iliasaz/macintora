@@ -124,8 +124,12 @@ nonisolated enum DisplayRowBuilder {
         if let s = try? cell.decode(String.self) {
             return (s, .text(s))
         }
+        // Fall back to a hex dump for binary types (RAW, BLOB, etc.): cap at 32 bytes to keep the display readable.
         if let bytes = cell.bytes {
-            let hex = bytes.readableBytesView.prefix(32).map { String(format: "%02x", $0) }.joined()
+            let hex = bytes.readableBytesView.prefix(32).map { byte in
+                let s = String(byte, radix: 16, uppercase: false)
+                return s.count < 2 ? "0\(s)" : s
+            }.joined()
             return (hex, .text(hex))
         }
         return (nullPlaceholder, .null)
@@ -153,6 +157,6 @@ nonisolated enum DisplayRowBuilder {
     }()
 
     private static func formatDate(_ d: Date) -> String {
-        dateFormatter.string(from: d)
+        unsafe dateFormatter.string(from: d)
     }
 }

@@ -139,10 +139,10 @@ public func md5Hash(_ source: String) -> String {
     // `String.data(using: .utf8)` never returns nil for a valid String, so the
     // coalesce to empty Data is just defensive programming for the type system.
     let data = source.data(using: .utf8) ?? Data()
-    // `String(format:_:)` uses C variadic argument passing — `@unsafe` in
-    // Swift 6.2's strict-memory-safety mode. The format string is a literal,
-    // so misuse is impossible.
-    return unsafe Insecure.MD5.hash(data: data).map { String(format: "%02hhx", $0) }.joined()
+    return Insecure.MD5.hash(data: data).map { byte in
+        let s = String(byte, radix: 16, uppercase: false)
+        return s.count < 2 ? "0\(s)" : s
+    }.joined()
 }
 
 

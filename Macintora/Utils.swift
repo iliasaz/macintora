@@ -65,7 +65,7 @@ extension Sequence {
     /// serialise every iteration on the UI thread.
     @concurrent
     func asyncMap<T>(
-        _ transform: (Element) async throws -> T
+        _ transform: @concurrent (Element) async throws -> T
     ) async rethrows -> [T] {
         var values = [T]()
         
@@ -139,6 +139,7 @@ extension Animation {
     }
 }
 
+@MainActor
 public func showSavePanel(defaultName: String, defaultExtensions: [UTType] = []) -> URL? {
     let savePanel = NSSavePanel()
     if !defaultExtensions.isEmpty {

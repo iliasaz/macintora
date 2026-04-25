@@ -282,7 +282,7 @@ final class DBCacheVM: nonisolated ObservableObject {
         isReloading = true
         Task.init(priority: .background) { [weak self] in
             guard let self else { return }
-            if await self.isConnected == .disconnected {
+            if self.isConnected == .disconnected {
                 do {
                     try await self.connectSvc()
                     await MainActor.run { self.isConnected = .connected }
@@ -299,8 +299,8 @@ final class DBCacheVM: nonisolated ObservableObject {
             if !cleanupOnly {
                 await withTaskGroup(of: Void.self) { taskGroup in
                     await self.cacheState.startEnqueuing()
-                    taskGroup.addTask { await self.populateObjectQueues(ignoreLastUpdate: ignoreLastUpdate) }
-                    taskGroup.addTask { await self.processObjectQueues() }
+                    taskGroup.addTask { @concurrent in await self.populateObjectQueues(ignoreLastUpdate: ignoreLastUpdate) }
+                    taskGroup.addTask { @concurrent in await self.processObjectQueues() }
                 }
             }
             await self.disconnectSvc()
@@ -374,7 +374,7 @@ final class DBCacheVM: nonisolated ObservableObject {
     }
 
     private func withClient<T: Sendable>(
-        _ body: (inout sending OracleClient.PooledConnection) async throws -> sending T
+        _ body: @concurrent (inout sending OracleClient.PooledConnection) async throws -> sending T
     ) async throws -> T {
         guard let client else { throw AppDBError(kind: .connection, message: "No database client available") }
         return try await client.withConnection { conn in
@@ -481,7 +481,7 @@ from dba_objects o
         let updateDate = Date.now
         await withTaskGroup(of: Void.self) { taskGroup in
             for (key, _) in objectQueues {
-                taskGroup.addTask {
+                taskGroup.addTask { @concurrent in
                     await self.processObjectQueue(for: key)
                 }
             }
@@ -1110,7 +1110,7 @@ from dba_objects o
 
     nonisolated func deleteIndexColumns(for table: DBCacheIndex?, in context: NSManagedObjectContext) throws {
         guard let table else { return }
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "DBCacheIndexColumn")
+        let fetchRequest: NSFetchRequest<any NSFetchRequestResult> = NSFetchRequest(entityName: "DBCacheIndexColumn")
         fetchRequest.predicate = NSPredicate(format: "owner_ = %@ and indexName_ = %@", table.owner, table.name)
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
         deleteRequest.resultType = .resultTypeObjectIDs

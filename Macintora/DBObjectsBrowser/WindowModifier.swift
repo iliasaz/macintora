@@ -9,6 +9,7 @@ import Foundation
 import AppKit
 import SwiftUI
 
+@MainActor
 public struct WindowModifier<Content> where Content: View {
     public let window : SwiftUIWindow<Content>
     

@@ -189,8 +189,8 @@ class SessionViewCoordinator: NSObject, nonisolated NSTableViewDelegate, nonisol
             let colName = tableView.tableColumns[column].identifier.rawValue
             var width = tableView.tableColumns[column].width
             for row in parent.model.rows {
-                view.textField?.objectValue = row[colName]?.valueString
-                let size = view.textField?.fittingSize ?? CGSize(width: 0.0, height: 0.0)
+                unsafe view.textField?.objectValue = row[colName]?.valueString
+                let size = unsafe view.textField?.fittingSize ?? CGSize(width: 0.0, height: 0.0)
                 width = max(width, size.width)
             }
             tableView.tableColumns[column].width = width
@@ -215,14 +215,14 @@ class SessionViewCoordinator: NSObject, nonisolated NSTableViewDelegate, nonisol
         text.preferredMaxLayoutWidth = 400
         
         let cell = NSTableCellView()
-        cell.textField = text
+        unsafe cell.textField = text
         cell.addSubview(text)
         cell.autoresizingMask = .width
         cell.identifier = identifier
-        
+
         // bind text field to cell's objectValue, which is auto-magically populated
         // by tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? (see below)
-        cell.textField?.bind(.value , to: cell, withKeyPath: "objectValue", options: nil)
+        unsafe cell.textField?.bind(.value , to: cell, withKeyPath: "objectValue", options: nil)
         
         cell.addConstraint(NSLayoutConstraint(item: text, attribute: .centerY, relatedBy: .equal, toItem: cell, attribute: .centerY, multiplier: 1, constant: 0))
         cell.addConstraint(NSLayoutConstraint(item: text, attribute: .leading, relatedBy: .equal, toItem: cell, attribute: .leading, multiplier: 1, constant: 0))
@@ -253,7 +253,7 @@ class SessionViewCoordinator: NSObject, nonisolated NSTableViewDelegate, nonisol
         }
         // make the row number not selectable so it's easier to click
         if tableColumn?.identifier.rawValue == "#" {
-            cell.textField?.isSelectable = false
+            unsafe cell.textField?.isSelectable = false
         }
         // set the value; this can be commented out if using bindings
         return cell

@@ -54,7 +54,7 @@ class Formatter: nonisolated ObservableObject {
         
         do {
             //            self.objectWillChange.send()
-            text = try String.init(contentsOfFile: temporaryFileURL.path)
+            text = try String(contentsOfFile: temporaryFileURL.path, encoding: .utf8)
         }
         catch {
             log.formatter.error("file read failed: \(error.localizedDescription, privacy: .public)") //handle or silence the error here
@@ -68,7 +68,7 @@ class Formatter: nonisolated ObservableObject {
         // the main actor. `safeShell` blocks on `Process` I/O, and under
         // `NonisolatedNonsendingByDefault` an unstructured `Task {}` from a
         // `@MainActor` caller would run the async function on the main actor.
-        Task.detached(priority: .background) { [self] in
+        Task.detached(priority: .background) { @concurrent [self] in
             let formattedText = await formatSource(name: name, text: text)
 
             await MainActor.run {

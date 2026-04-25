@@ -40,7 +40,9 @@ nonisolated struct AppDBError: Error, LocalizedError, Sendable, CustomStringConv
             return app
         }
         if let sqlError = error as? OracleSQLError {
-            let code = sqlError.serverInfo.map { "ORA-\(String(format: "%05d", $0.number))" }
+            let code = sqlError.serverInfo.map {
+                "ORA-\($0.number.formatted(.number.precision(.integerLength(5)).grouping(.never)))"
+            }
             let message = sqlError.serverInfo?.message ?? String(describing: sqlError.code)
             return AppDBError(kind: .sql, message: message, code: code)
         }
