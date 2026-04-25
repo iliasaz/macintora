@@ -48,10 +48,7 @@ struct MainDocumentView: View {
         NavigationSplitView {
             ConnectionListView(
                 connectionStatus: $document.isConnected,
-                username: $document.mainConnection.mainConnDetails.username,
-                password: $document.mainConnection.mainConnDetails.password,
-                selectedTns: Binding<String> ( get: { document.mainConnection.mainConnDetails.tns }, set: {document.mainConnection.mainConnDetails.tns = $0} ),
-                connectionRole: $document.mainConnection.mainConnDetails.connectionRole,
+                details: $document.mainConnection.mainConnDetails,
                 connect: document.connect,
                 disconnect: document.disconnect
             )

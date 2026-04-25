@@ -50,10 +50,15 @@ final class MacintoraAppDelegate: NSObject, NSApplicationDelegate {
 struct MacOraApp: App {
     @NSApplicationDelegateAdaptor(MacintoraAppDelegate.self) var appDelegate
 
+    @State private var connectionStore = ConnectionStore()
+    private let keychainService = KeychainService()
+
     var body: some Scene {
         DocumentGroup(newDocument: { MainDocumentVM() }) { config in
-                MainDocumentView(document: config.document)
-                    .frame(minWidth: 600, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
+            MainDocumentView(document: config.document)
+                .frame(minWidth: 600, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
+                .environment(\.connectionStore, connectionStore)
+                .environment(\.keychainService, keychainService)
         }
         .defaultSize(width: 1100, height: 700)
         .handlesExternalEvents(matching: ["file"])
@@ -73,22 +78,26 @@ struct MacOraApp: App {
                     .keyboardShortcut("t", modifiers: [.command])
             }
         }
-        
+
         WindowGroup(for: DBCacheInputValue.self) { $value in
-//            DBCacheBrowserMainView(input: value ?? .preview())
-//            DBCacheMainView(input: value ?? .preview())
             let v = value ?? .preview()
             let cache = DBCacheVM(connDetails: v.mainConnection.mainConnDetails, selectedObjectName: v.selectedObjectName)
             DBCacheMainView(cache: cache)
                 .environment(\.managedObjectContext, cache.persistenceController.container.viewContext)
+                .environment(\.connectionStore, connectionStore)
+                .environment(\.keychainService, keychainService)
         }
-        
+
         WindowGroup(for: SBInputValue.self) { $value in
             SBMainView(inputValue: value ?? .preview())
+                .environment(\.connectionStore, connectionStore)
+                .environment(\.keychainService, keychainService)
         }
-        
+
         Settings {
             SettingsView()
+                .environment(\.connectionStore, connectionStore)
+                .environment(\.keychainService, keychainService)
         }
     }
 }
@@ -99,30 +108,23 @@ struct MainDocumentMenuCommands: Commands {
     @FocusedValue(\.mainConnection) var mainConnection
     @Environment(\.openWindow) var openWindow
 
+    @Environment(\.openSettings) private var openSettings
+
     var body: some Commands {
         CommandMenu("Database") {
-//            NavigationLink("DB Browser", destination: DBCacheBrowserMainView(connDetails: cacheConnectionDetails ?? ConnectionDetails(), selectedObjectName: selectedObjectName)
-//                .environmentObject(appSettings)
-//                .frame(minWidth: 400, idealWidth: 1200, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
-//            )
-//                .disabled(cacheConnectionDetails == nil)
-//                .presentedWindowStyle(TitleBarWindowStyle())
-//                .keyboardShortcut("d", modifiers: [.command])
+            Button("Manage Connections…") {
+                openSettings()
+            }
+            .keyboardShortcut("k", modifiers: [.command, .shift])
+
+            Divider()
+
             Button("Database Browser") {
                 openWindow(value: DBCacheInputValue(mainConnection: mainConnection ?? .preview(), selectedObjectName: selectedObjectName))
             }
             .disabled(mainConnection?.mainConnDetails == nil)
                 .presentedWindowStyle(TitleBarWindowStyle())
                 .keyboardShortcut("d", modifiers: [.command])
-            
-            
-//            NavigationLink("Session Browser", destination: SBMainView(connDetails: sbConnDetails ?? .preview())
-//                .environmentObject(appSettings)
-//                .frame(minWidth: 400, idealWidth: 1200, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
-//            )
-//                .disabled(cacheConnectionDetails == nil)
-//                .presentedWindowStyle(TitleBarWindowStyle())
-//                .keyboardShortcut("s", modifiers: [.command, .control, .shift])
 
             Button("Session Browser") {
                 log.viewCycle.debug("Opening SB with mainConnection: \(mainConnection?.description ?? "no main connection")")
