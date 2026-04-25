@@ -35,7 +35,7 @@ nonisolated struct AppDBError: Error, LocalizedError, Sendable, CustomStringConv
 
     // MARK: - Mapping
 
-    static func from(_ error: Error) -> AppDBError {
+    static func from(_ error: any Error) -> AppDBError {
         if let app = error as? AppDBError {
             return app
         }

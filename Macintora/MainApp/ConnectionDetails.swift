@@ -46,7 +46,9 @@ nonisolated struct OracleSession: CustomStringConvertible, Codable, Hashable, Eq
 }
 
 nonisolated struct MainConnection: CustomStringConvertible, Hashable, Codable, Equatable, Sendable {
-    var description: String { "mainConnDetails: \(mainConnDetails), mainSession: \(mainSession)" }
+    var description: String {
+        "mainConnDetails: \(mainConnDetails), mainSession: \(mainSession.map(String.init(describing:)) ?? "nil")"
+    }
     
     static func == (lhs: MainConnection, rhs: MainConnection) -> Bool {
         lhs.mainConnDetails == rhs.mainConnDetails && (lhs.mainSession ?? .preview() == rhs.mainSession ?? .preview())

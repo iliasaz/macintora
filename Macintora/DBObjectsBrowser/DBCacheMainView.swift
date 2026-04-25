@@ -62,7 +62,7 @@ struct DBCacheMainView: View {
             }
         }
         .searchable(text: query, placement: .sidebar, prompt: "type something")
-        .onChange(of: cache.searchCriteria.predicate) { value in
+        .onChange(of: cache.searchCriteria.predicate) { _, value in
             listSelection = nil
             items.nsPredicate = value
         }

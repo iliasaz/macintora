@@ -8,6 +8,7 @@
 import SwiftUI
 import AppKit
 import Combine
+import os
 
 struct ResultViewWrapper: View {
     @ObservedObject var queryResults: ResultViewModel
@@ -189,7 +190,7 @@ struct ResultViewWrapper: View {
             }
                 .toggleStyle(.button)
                 .labelStyle(.titleAndIcon)
-                .onChange(of: isDbTimerRunning) { newValue in
+                .onChange(of: isDbTimerRunning) { _, newValue in
                     log.viewCycle.debug("onChange of isDbTimerRunning: \(newValue)")
                     if newValue { startDBTimer(); updateTimerDisplay(with: .now) }
                     else { stopDBTimer() }

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import os
 
 enum BindVarInputType: String, Hashable {
     case text = "Text", int = "Integer", decimal = "Decimal", date = "Datetime", null = "Null"
@@ -14,7 +15,10 @@ enum BindVarInputType: String, Hashable {
 struct BindVarModel: Identifiable, Equatable, CustomStringConvertible {
     var description: String {
         get {
-            "id: \(id), name: \(name), type: \(type), textValue: \(textValue), dateValue: \(dateValue?.ISO8601Format()), intValue: \(intValue), decValue: \(decValue)"
+            let date = dateValue?.ISO8601Format() ?? "nil"
+            let int = intValue?.description ?? "nil"
+            let dec = decValue?.description ?? "nil"
+            return "id: \(id), name: \(name), type: \(type), textValue: \(textValue), dateValue: \(date), intValue: \(int), decValue: \(dec)"
         }
     }
     
@@ -155,7 +159,7 @@ struct BindVarField: View {
                         .disableAutocorrection(true)
                         .textFieldStyle(.roundedBorder)
                         .frame(minWidth: 150, maxWidth: .infinity)
-                        .onChange(of: $bindVar.textValue.wrappedValue, perform: { val in
+                        .onChange(of: $bindVar.textValue.wrappedValue) { _, val in
                             log.viewCycle.debug("new value: \(val), converted date: \(dateFormatter.date(from: val)?.debugDescription ?? "---")")
                             
                             if let dt = dateFormatter.date(from: val) {
@@ -165,7 +169,7 @@ struct BindVarField: View {
                             } else {
                                 isValidDate = false
                             }
-                        })
+                        }
                         .border(isValidDate ? Color.primary : .red, width: isValidDate ? 0 : 3)
 
                 case .text:

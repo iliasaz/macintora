@@ -59,6 +59,11 @@ extension Sequence where Iterator.Element == NSAttributedString {
 }
 
 extension Sequence {
+    /// `@concurrent` keeps the awaited transforms off the caller's actor under
+    /// Swift 6.2's `NonisolatedNonsendingByDefault` rule — without it the
+    /// closure would inherit the caller's actor (typically MainActor) and
+    /// serialise every iteration on the UI thread.
+    @concurrent
     func asyncMap<T>(
         _ transform: (Element) async throws -> T
     ) async rethrows -> [T] {
@@ -99,28 +104,12 @@ func ~=<T: Equatable>(pattern: [T], value: T) -> Bool {
 }
 
 
-// support for Codable in @Appstorage
-extension Array: RawRepresentable where Element: Codable {
-    public init?(rawValue: String) {
-        guard let data = rawValue.data(using: .utf8),
-            let result = try? JSONDecoder().decode([Element].self, from: data)
-        else {
-            return nil
-        }
-        self = result
-    }
-
-    public var rawValue: String {
-        guard let data = try? JSONEncoder().encode(self),
-            let result = String(data: data, encoding: .utf8)
-        else {
-            return "[]"
-        }
-        return result
-    }
-}
-
-extension Dictionary: RawRepresentable where Key: Codable, Value: Codable {
+// Support `[Key: Value]` (Key/Value: Codable) in `@AppStorage`. `@retroactive`
+// acknowledges that this is a retroactive conformance on a stdlib type — if
+// Apple later ships their own `Dictionary: RawRepresentable` we'd lose this
+// definition, but that conflict is loud at build time, not silent. The
+// (unused) `Array: RawRepresentable` companion was removed.
+extension Dictionary: @retroactive RawRepresentable where Key: Codable, Value: Codable {
     public init?(rawValue: String) {
         guard let data = rawValue.data(using: .utf8),
               let result = try? JSONDecoder().decode([Key: Value].self, from: data)
@@ -195,9 +184,10 @@ extension NSColor {
         // Ensure it only contains valid hex characters 0
         let validHexPattern = "[a-fA-F0-9]+"
         if cleanedString.conformsTo(pattern: validHexPattern) {
-            var theInt: UInt32 = 0
-            let scanner = Scanner(string: cleanedString)
-            scanner.scanHexInt32(&theInt)
+            // Modern replacement for the deprecated `Scanner.scanHexInt32(_:)`:
+            // parse the hex string straight into a UInt64. The 24-bit colour
+            // value still fits comfortably.
+            guard let theInt = UInt64(cleanedString, radix: 16) else { return nil }
             let red = CGFloat((theInt & 0xFF0000) >> 16) / 255.0
             let green = CGFloat((theInt & 0xFF00) >> 8) / 255.0
             let blue = CGFloat((theInt & 0xFF)) / 255.0

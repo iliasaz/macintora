@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
-@preconcurrency import CoreData
+import CoreData
 import os
 import OracleNIO
 import NIOCore
@@ -1096,7 +1096,7 @@ from dba_objects o
 
     nonisolated func deleteTableColumns(for table: DBCacheTable?, in context: NSManagedObjectContext) throws {
         guard let table else { return }
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "DBCacheTableColumn")
+        let fetchRequest: NSFetchRequest<any NSFetchRequestResult> = NSFetchRequest(entityName: "DBCacheTableColumn")
         fetchRequest.predicate = NSPredicate(format: "owner_ = %@ and tableName_ = %@", table.owner, table.name)
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
         deleteRequest.resultType = .resultTypeObjectIDs
@@ -1378,11 +1378,15 @@ from dba_objects o
     // MARK: - Misc
 
     func deleteAll(from entityName: String) async throws {
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: entityName)
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-        deleteRequest.resultType = .resultTypeObjectIDs
+        // Construct the request *inside* the background closure: NSBatchDeleteRequest
+        // isn't Sendable in the post-`@preconcurrency` CoreData import, so capturing
+        // one across the actor hop fails the Sendable check. Building it on the
+        // background context's thread is also the documented CoreData pattern.
         try await self.backgroundPerformThrowing { context in
             context.automaticallyMergesChangesFromParent = true
+            let fetchRequest: NSFetchRequest<any NSFetchRequestResult> = NSFetchRequest(entityName: entityName)
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+            deleteRequest.resultType = .resultTypeObjectIDs
             let batchDelete = try context.execute(deleteRequest) as? NSBatchDeleteResult
             guard let deleteResult = batchDelete?.result else { return }
             let changes: [AnyHashable: Any] = [NSDeletedObjectsKey: deleteResult as! [NSManagedObjectID]]
