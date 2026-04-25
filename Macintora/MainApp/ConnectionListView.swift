@@ -24,12 +24,17 @@ struct ConnectionListView: View {
             Text("Connection").font(.title)
             HStack {
                 Picker("", selection: $selectedTns) {
-                    ForEach(tnsReader.tnsAliases, id: \.self) {alias in
-                        Text(alias)
+                    // Tagged empty placeholder so a fresh doc whose `tns`
+                    // field hasn't been picked yet (e.g. the "preview"
+                    // default from ConnectionDetails) maps to a valid tag
+                    // while we wait for the alias list to load.
+                    Text("").tag("")
+                    ForEach(tnsReader.tnsAliases, id: \.self) { alias in
+                        Text(alias).tag(alias)
                     }
                 }
                 .labelsHidden()
-                
+
                 Button {
                     tnsReader.load()
                 } label: {
@@ -38,6 +43,8 @@ struct ConnectionListView: View {
             }
             .frame(minWidth: 200, alignment: .leading)
             .disabled(connectionStatus == .connected)
+            .onAppear { reconcileSelectedTns() }
+            .onChange(of: tnsReader.tnsAliases) { _, _ in reconcileSelectedTns() }
             
             TextField("username", text: $username)
                 .textFieldStyle(.roundedBorder)
@@ -77,6 +84,17 @@ struct ConnectionListView: View {
             Spacer()
         }
         .padding()
+    }
+
+    /// Keeps `selectedTns` in sync with the available aliases. New documents
+    /// start with the placeholder `"preview"` (the default in
+    /// `ConnectionDetails`), which never appears in a real `tnsnames.ora` —
+    /// without this, SwiftUI's `Picker` logs "selection is invalid and does
+    /// not have an associated tag" on launch.
+    private func reconcileSelectedTns() {
+        let aliases = tnsReader.tnsAliases
+        if aliases.contains(selectedTns) { return }
+        selectedTns = ""
     }
 }
 

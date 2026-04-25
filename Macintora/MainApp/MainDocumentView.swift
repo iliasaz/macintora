@@ -55,6 +55,7 @@ struct MainDocumentView: View {
                 connect: document.connect,
                 disconnect: document.disconnect
             )
+            .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 420)
         } detail: {
             VStack {
                 VSplitView {
@@ -68,16 +69,22 @@ struct MainDocumentView: View {
                         showsLineNumbers: true,
                         highlightsSelectedLine: true
                     )
-                        .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity)
+                        .frame(maxWidth: .infinity, minHeight: 120, idealHeight: 320, maxHeight: .infinity)
                         .focused($focusedView, equals: .codeEditor)
-                        .layoutPriority(1)
-                    
+
                     ResultViewWrapper(resultsController: resultsController)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(maxWidth: .infinity, minHeight: 200, idealHeight: 280, maxHeight: .infinity)
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            WindowLayoutPersister(
+                windowAutosaveName: "Macintora.MainDocument",
+                splitAutosavePrefix: "Macintora.MainDocument.split"
+            )
+            .frame(width: 0, height: 0)
+        )
         .focusedSceneValue(\.mainConnection, document.mainConnection)
         .focusedSceneValue(\.selectedObjectName, selectedObject)
         .onAppear {
@@ -196,9 +203,11 @@ struct MainDocumentView: View {
                     }
                 }
                 .help("Ping")
-                
+              Spacer()
+
                 Toggle("Word Wrap", isOn: $wordWrapping)
                     .toggleStyle(.switch)
+                    .controlSize(.small)
                     .help("Word Wrap")
             }
         }

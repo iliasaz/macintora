@@ -53,9 +53,9 @@ struct MacOraApp: App {
     var body: some Scene {
         DocumentGroup(newDocument: { MainDocumentVM() }) { config in
                 MainDocumentView(document: config.document)
-                    .frame(minWidth: 400, idealWidth: 1600, maxWidth: .infinity, minHeight: 400, idealHeight: 1000, maxHeight: .infinity)
-            
+                    .frame(minWidth: 600, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
         }
+        .defaultSize(width: 1100, height: 700)
         .handlesExternalEvents(matching: ["file"])
         .commands {
             SidebarCommands()

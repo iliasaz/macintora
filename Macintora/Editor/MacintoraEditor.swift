@@ -8,8 +8,11 @@
 //  for the selection so downstream features (`getCurrentSql(for:)`, `format(of:)`,
 //  `runCurrentSQL(for:)`, etc.) keep their existing signatures.
 //
-//  Phase 1 intentionally installs no plugins; NeonPlugin / syntax highlighting
-//  is added in Phase 3.
+//  `MacintoraEditor` is a thin SwiftUI `View` that reads the user's color theme
+//  from `@AppStorage` and forwards it to `MacintoraEditorRepresentable`, the
+//  underlying `NSViewRepresentable`. The `.id(editorTheme)` modifier forces a
+//  full rebuild when the theme changes — required because `NeonPlugin` captures
+//  its `Theme` once at setup and STTextView exposes no `removePlugin` hook.
 //
 
 import AppKit
@@ -17,7 +20,7 @@ import SwiftUI
 import STTextView
 import STPluginNeon
 
-struct MacintoraEditor: NSViewRepresentable {
+struct MacintoraEditor: View {
     @Binding var text: String
     @Binding var selection: Range<String.Index>
     let language: EditorLanguage
@@ -27,6 +30,8 @@ struct MacintoraEditor: NSViewRepresentable {
     let showsLineNumbers: Bool
     let highlightsSelectedLine: Bool
     let accessibilityIdentifier: String
+
+    @AppStorage("editorTheme") private var editorThemeRaw: String = EditorTheme.default.rawValue
 
     init(
         text: Binding<String>,
@@ -50,6 +55,39 @@ struct MacintoraEditor: NSViewRepresentable {
         self.accessibilityIdentifier = accessibilityIdentifier
     }
 
+    private var editorTheme: EditorTheme {
+        EditorTheme(rawValue: editorThemeRaw) ?? .default
+    }
+
+    var body: some View {
+        MacintoraEditorRepresentable(
+            text: $text,
+            selection: $selection,
+            language: language,
+            isEditable: isEditable,
+            isSelectable: isSelectable,
+            wordWrap: $wordWrap,
+            showsLineNumbers: showsLineNumbers,
+            highlightsSelectedLine: highlightsSelectedLine,
+            accessibilityIdentifier: accessibilityIdentifier,
+            theme: editorTheme
+        )
+        .id(editorTheme)
+    }
+}
+
+struct MacintoraEditorRepresentable: NSViewRepresentable {
+    @Binding var text: String
+    @Binding var selection: Range<String.Index>
+    let language: EditorLanguage
+    let isEditable: Bool
+    let isSelectable: Bool
+    @Binding var wordWrap: Bool
+    let showsLineNumbers: Bool
+    let highlightsSelectedLine: Bool
+    let accessibilityIdentifier: String
+    let theme: EditorTheme
+
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, selection: $selection)
     }
@@ -72,7 +110,7 @@ struct MacintoraEditor: NSViewRepresentable {
 
         // Install the Neon syntax-highlighting plugin before the first text
         // assignment so the initial parse fires on the seeded content.
-        textView.addPlugin(language.neonPlugin())
+        textView.addPlugin(language.neonPlugin(theme: theme.neonTheme()))
 
         // Seed initial content without echoing the change back into the binding.
         context.coordinator.isApplyingExternalUpdate = true

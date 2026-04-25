@@ -37,6 +37,14 @@ struct EditorSettings: View {
     @AppStorage("queryPrefetchSize") private var queryPrefetchSize: Int = 200
     @AppStorage("serverTimeSeconds") private var serverTimeSeconds = false
     @AppStorage("wordWrap") private var wordWrap = false
+    @AppStorage("editorTheme") private var editorThemeRaw: String = EditorTheme.default.rawValue
+
+    private var editorThemeBinding: Binding<EditorTheme> {
+        Binding(
+            get: { EditorTheme(rawValue: editorThemeRaw) ?? .default },
+            set: { editorThemeRaw = $0.rawValue }
+        )
+    }
 
     var body: some View {
         VStack {
@@ -62,8 +70,14 @@ struct EditorSettings: View {
                     .textFieldStyle(.roundedBorder)
                 
                 Toggle("Show seconds in server time", isOn: $serverTimeSeconds)
-                
+
                 Toggle("Word Wrapping", isOn: $wordWrap)
+
+                Picker("Color Theme", selection: editorThemeBinding) {
+                    ForEach(EditorTheme.allCases) { theme in
+                        Text(theme.displayName).tag(theme)
+                    }
+                }
                 
             }
             Spacer()

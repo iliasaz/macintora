@@ -20,7 +20,7 @@ nonisolated struct ConnectionDetails: CustomStringConvertible, Codable, Hashable
     var connectionRole: ConnectionRole
 //    private var shortStrings: [String]? = [String]()
     
-    init(username: String = "", password: String = "", tns: String = "preview", connectionRole: ConnectionRole = .regular) {
+    init(username: String = "", password: String = "", tns: String = "", connectionRole: ConnectionRole = .regular) {
         self.username = username
         self.password = password
         self.tns = tns
