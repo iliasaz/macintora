@@ -49,9 +49,9 @@ struct ConnectionsManagerView: View {
     var body: some View {
         HSplitView {
             sidebar
-                .frame(minWidth: 200, idealWidth: 240, maxWidth: 320)
+                .frame(minWidth: 200, idealWidth: 240, maxWidth: 320, maxHeight: .infinity)
             detail
-                .frame(minWidth: 480)
+                .frame(minWidth: 480, maxHeight: .infinity)
         }
         .frame(minWidth: 760, minHeight: 500)
         .onAppear { selectInitialConnection() }
@@ -104,7 +104,8 @@ struct ConnectionsManagerView: View {
                             }
                     }
                 }
-                .listStyle(.sidebar)
+                .listStyle(.inset)
+                .scrollContentBackground(.hidden)
 
                 if store.connections.isEmpty {
                     Text("No connections yet.\nClick + to add one or use the … menu to import.")
@@ -115,16 +116,18 @@ struct ConnectionsManagerView: View {
                         .allowsHitTesting(false)
                 }
             }
-            .frame(maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Divider()
             sidebarBottomBar
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .textBackgroundColor))
     }
 
     @ViewBuilder
     private var sidebarBottomBar: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 2) {
             Button(action: addConnection) {
                 Image(systemName: "plus")
                     .frame(width: 22, height: 22)
@@ -139,8 +142,6 @@ struct ConnectionsManagerView: View {
             .disabled(selectedID == nil)
             .help("Delete the selected connection")
             .accessibilityLabel("Delete Connection")
-
-            Divider().frame(height: 16)
 
             Menu {
                 Button("Duplicate Selected") { duplicateSelected() }
@@ -164,9 +165,8 @@ struct ConnectionsManagerView: View {
         }
         .buttonStyle(.borderless)
         .controlSize(.small)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(.bar)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder
