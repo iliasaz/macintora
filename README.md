@@ -47,6 +47,20 @@ ORCL =
 
 As an alternative, you can type a manual endpoint in the TNS field in the format `host:port/service` (port defaults to 1521 if omitted). `host/service` and `host:port/service` are both accepted.
 
+## Documentation
+
+Architecture and roadmap docs live under [`docs/`](./docs).
+
+- [Tree-sitter SQL/PL-SQL parsing architecture](./docs/parsing-architecture.md) — how the three-repo grammar/plugin/app integration is wired, how to reach the parse tree from Swift, and a node/field reference for everything the grammar produces.
+
+Future-feature roadmaps (designed, not yet implemented):
+
+- [Outline view](./docs/roadmap-outline.md) — sidebar listing top-level symbols and package members; click to jump.
+- [Jump-to-symbol (and back)](./docs/roadmap-jump-to-symbol.md) — Cmd-click navigation, in-buffer first, then cross-file, then DBCache; with a back/forward stack.
+- [Code completion](./docs/roadmap-code-completion.md) — context-aware suggestions for keywords, schema objects, package members, and in-scope PL/SQL variables.
+- [Basic formatter](./docs/roadmap-basic-formatter.md) — native Swift Wadler-style pretty-printer for SQL and PL/SQL; format-on-save / `⌘-Shift-I`.
+- [Advanced formatter with user-defined patterns](./docs/roadmap-advanced-formatter.md) — second-stage formatter that accepts `.scm` rule files, ships a curated default rule set, and adds column-anchored alignment.
+
 ## Other projects used
 - [oracle-nio](https://github.com/lovetodream/oracle-nio) — pure-Swift Oracle driver (replaces SwiftOracle/OCILIB).
 - [CodeEditor](https://github.com/iliasaz/CodeEditor)
