@@ -429,27 +429,122 @@ struct ConnectionsManagerView: View {
         walletPassword: String?,
         sysDBA: Bool
     ) async -> TestStatus {
+        // Build the configuration up front so a synchronous error (bad
+        // wallet path, malformed config) is reported immediately and
+        // doesn't get masked by the timeout below.
+        let config: OracleConnection.Configuration
         do {
-            let config = try OracleEndpoint.makeConfiguration(
+            var built = try OracleEndpoint.makeConfiguration(
                 saved: snapshot,
                 username: username,
                 password: password,
                 walletPassword: walletPassword,
                 sysDBA: sysDBA
             )
-            var logger = Logging.Logger(label: "com.iliasazonov.macintora.test")
-            logger.logLevel = .error
-            let conn = try await OracleConnection.connect(
-                on: OracleEventLoopGroup.shared.next(),
-                configuration: config,
-                id: Int.random(in: 1...Int.max),
-                logger: logger
-            )
-            try? await conn.close()
-            return .success
+            built.options.connectTimeout = .seconds(10)
+            config = built
         } catch {
             return .failure(error.localizedDescription)
         }
+
+        // Capture oracle-nio's log output during the test so we can surface
+        // *what* stalled, not just "20 seconds elapsed". Lines are appended
+        // by a custom LogHandler shared between the test and the timeout
+        // task; the UI shows them in the failure message.
+        let captured = TestLogCollector()
+        var logger = Logging.Logger(label: "com.iliasazonov.macintora.test") { _ in
+            TestLogHandler(collector: captured)
+        }
+        logger.logLevel = .debug
+        let testLogger = logger
+
+        return await withTaskGroup(of: TestStatus?.self) { group in
+            group.addTask {
+                do {
+                    let conn = try await OracleConnection.connect(
+                        on: OracleEventLoopGroup.shared.next(),
+                        configuration: config,
+                        id: Int.random(in: 1...Int.max),
+                        logger: testLogger
+                    )
+                    try? await conn.close()
+                    return .success
+                } catch is CancellationError {
+                    return nil
+                } catch {
+                    let trace = await captured.tail(lines: 6)
+                    let body = trace.isEmpty
+                        ? error.localizedDescription
+                        : "\(error.localizedDescription)\n\nLast log lines:\n\(trace)"
+                    return .failure(body)
+                }
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(20))
+                if Task.isCancelled { return nil }
+                let trace = await captured.tail(lines: 6)
+                let body = trace.isEmpty
+                    ? "Connection timed out after 20 seconds."
+                    : "Connection timed out after 20 seconds.\n\nLast log lines (the connect was probably stuck here):\n\(trace)"
+                return .failure(body)
+            }
+            for await result in group {
+                if let result {
+                    group.cancelAll()
+                    return result
+                }
+            }
+            return .failure("Test ended without a result.")
+        }
+    }
+}
+
+/// In-memory log sink that captures messages emitted during a Test run so
+/// the UI can show the last few lines alongside a timeout / failure
+/// message. Actor-isolated so concurrent log calls from oracle-nio's
+/// internal tasks don't race.
+private actor TestLogCollector {
+    private var lines: [String] = []
+    private let max: Int = 200
+
+    func append(_ line: String) {
+        lines.append(line)
+        if lines.count > max { lines.removeFirst(lines.count - max) }
+    }
+
+    func tail(lines count: Int) -> String {
+        lines.suffix(count).joined(separator: "\n")
+    }
+}
+
+private struct TestLogHandler: Logging.LogHandler {
+    let collector: TestLogCollector
+    var metadata: Logging.Logger.Metadata = [:]
+    var logLevel: Logging.Logger.Level = .debug
+
+    subscript(metadataKey key: String) -> Logging.Logger.Metadata.Value? {
+        get { metadata[key] }
+        set { metadata[key] = newValue }
+    }
+
+    func log(event: Logging.LogEvent) {
+        let text = "[\(event.level)] \(event.message.description)"
+        let collector = self.collector
+        Task { await collector.append(text) }
+    }
+
+    func log(
+        level: Logging.Logger.Level,
+        message: Logging.Logger.Message,
+        metadata: Logging.Logger.Metadata?,
+        source: String,
+        file: String,
+        function: String,
+        line: UInt
+    ) {
+        let text = "[\(level)] \(message.description)"
+        let collector = self.collector
+        Task { await collector.append(text) }
     }
 }
 
