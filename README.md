@@ -63,6 +63,6 @@ Future-feature roadmaps (designed, not yet implemented):
 
 ## Other projects used
 - [oracle-nio](https://github.com/lovetodream/oracle-nio) — pure-Swift Oracle driver (replaces SwiftOracle/OCILIB).
-- [CodeEditor](https://github.com/iliasaz/CodeEditor)
+- [STTextView](https://github.com/krzyzanowskim/STTextView) — TextKit 2 source editor (replaces CodeEditor).
 - [SwiftUIWindow](https://github.com/mortenjust/SwiftUIWindow) (inspiration)
 - [Trivadis PL/SQL & SQL Formatter Settings](https://github.com/Trivadis/plsql-formatter-settings#plsql--sql-formatter-settings)
