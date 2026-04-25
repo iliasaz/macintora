@@ -57,6 +57,11 @@ final class ConnectionStore {
 
     /// Inserts a new connection or replaces one with the same `id`. Updates
     /// `updatedAt` automatically.
+    ///
+    /// Updates replace in-place — we *don't* re-sort on every edit because
+    /// the editor binds to the store live; sorting on each keystroke would
+    /// make the row jitter under the user's cursor as they retyped a name.
+    /// New entries do get sorted in.
     func upsert(_ connection: SavedConnection) {
         var copy = connection
         copy.updatedAt = .now
@@ -64,8 +69,8 @@ final class ConnectionStore {
             connections[idx] = copy
         } else {
             connections.append(copy)
+            sortConnections()
         }
-        sortConnections()
         scheduleSave()
     }
 

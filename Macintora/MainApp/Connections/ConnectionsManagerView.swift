@@ -1,29 +1,43 @@
 import SwiftUI
 import AppKit
+import Logging
+import OracleNIO
 import os
 
-extension Logger {
-    fileprivate static let connMgr = Logger(subsystem: Logger.subsystem, category: "connmgr")
+extension os.Logger {
+    fileprivate static let connMgr = os.Logger(subsystem: os.Logger.subsystem, category: "connmgr")
 }
 
 /// Two-pane editor for the app-wide connection list.
 ///
+/// All fields edit the store *live* — there is no Save/Revert dance. The
+/// binding into the editor flows directly to ``ConnectionStore/upsert(_:)``,
+/// which writes-through to the backing JSON file on a 100ms debounce.
+/// Passwords are the one exception: they commit to the Keychain only when
+/// the user moves focus out of the password field or presses Enter, so a
+/// keystroke doesn't fire a `SecItemUpdate` on every character.
+///
 /// macOS Settings tabs render their content directly under the title bar;
 /// any `.toolbar` modifier on inner views bleeds into the window's title bar
-/// alongside the tab strip — which gave us a row of icons sitting next to
-/// the Settings tabs. So +/- and Import live in a `safeAreaInset(.bottom)`
+/// alongside the tab strip. So +/- and Import live in a `safeAreaInset(.bottom)`
 /// strip on the sidebar, mirroring the macOS Network / Mail Accounts panes.
 struct ConnectionsManagerView: View {
     @Environment(\.connectionStore) private var injectedStore
     @Environment(\.keychainService) private var keychain
 
     @State private var selectedID: SavedConnection.ID?
-    @State private var draft: SavedConnection?
     @State private var draftDatabasePassword: String = ""
     @State private var draftWalletPassword: String = ""
-    @State private var hasUnsavedChanges: Bool = false
     @State private var importResultMessage: String?
     @State private var deleteAllConfirmation = false
+    @State private var testStatus: TestStatus = .idle
+
+    enum TestStatus: Equatable {
+        case idle
+        case testing
+        case success
+        case failure(String)
+    }
 
     private var store: ConnectionStore {
         guard let injectedStore else {
@@ -41,8 +55,13 @@ struct ConnectionsManagerView: View {
         }
         .frame(minWidth: 760, minHeight: 500)
         .onAppear { selectInitialConnection() }
-        .onChange(of: selectedID) { _, newID in loadDraft(for: newID) }
-        .onChange(of: draft) { _, _ in hasUnsavedChanges = draft != nil && draftDiffers() }
+        .onChange(of: selectedID) { previousID, newID in
+            // Commit any in-flight password edits for the previous selection
+            // so they aren't lost when the user clicks away.
+            if let previousID { flushPasswords(for: previousID) }
+            loadPasswords(for: newID)
+            testStatus = .idle
+        }
         .alert(
             importResultMessage ?? "",
             isPresented: importAlertBinding
@@ -138,23 +157,17 @@ struct ConnectionsManagerView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if let draftConnection = Binding($draft) {
+        if let id = selectedID, store.connection(id: id) != nil {
             VStack(spacing: 0) {
                 ConnectionEditorForm(
-                    connection: draftConnection,
+                    connection: liveBinding(for: id),
                     databasePassword: $draftDatabasePassword,
-                    walletPassword: $draftWalletPassword
+                    walletPassword: $draftWalletPassword,
+                    onCommitDatabasePassword: { commitDatabasePassword(for: id) },
+                    onCommitWalletPassword: { commitWalletPassword(for: id) }
                 )
                 Divider()
-                HStack {
-                    Spacer()
-                    Button("Revert", action: revertDraft)
-                        .disabled(!hasUnsavedChanges)
-                    Button("Save", action: saveDraft)
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(!canSave)
-                }
-                .padding(12)
+                detailFooter(connectionID: id)
             }
         } else {
             ContentUnavailableView(
@@ -165,14 +178,41 @@ struct ConnectionsManagerView: View {
         }
     }
 
-    // MARK: - Actions
-
-    private var canSave: Bool {
-        guard let draft else { return false }
-        return !draft.name.trimmingCharacters(in: .whitespaces).isEmpty
-            && !draft.host.trimmingCharacters(in: .whitespaces).isEmpty
-            && !draft.service.rawValue.trimmingCharacters(in: .whitespaces).isEmpty
+    @ViewBuilder
+    private func detailFooter(connectionID: SavedConnection.ID) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            TestStatusBadge(status: testStatus)
+            Spacer()
+            Button {
+                Task { await runTest(for: connectionID) }
+            } label: {
+                if case .testing = testStatus {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text("Testing…")
+                    }
+                } else {
+                    Text("Test Connection")
+                }
+            }
+            .disabled(!canTest(connectionID: connectionID) || testStatus == .testing)
+            .help("Open a connection with the values above to verify host, credentials, and wallet.")
+        }
+        .padding(12)
     }
+
+    // MARK: - Live binding
+
+    private func liveBinding(for id: SavedConnection.ID) -> Binding<SavedConnection> {
+        Binding(
+            get: { store.connection(id: id) ?? SavedConnection(name: "", host: "", service: .serviceName("")) },
+            set: { newValue in
+                store.upsert(newValue)
+            }
+        )
+    }
+
+    // MARK: - Sidebar actions
 
     private var importAlertBinding: Binding<Bool> {
         Binding(
@@ -184,8 +224,7 @@ struct ConnectionsManagerView: View {
     private func selectInitialConnection() {
         if selectedID == nil {
             selectedID = store.connections.first?.id
-        } else {
-            loadDraft(for: selectedID)
+            loadPasswords(for: selectedID)
         }
     }
 
@@ -239,7 +278,6 @@ struct ConnectionsManagerView: View {
             store.delete(id: id, keychain: keychain)
         }
         selectedID = nil
-        draft = nil
     }
 
     private func importTnsnames() {
@@ -250,7 +288,7 @@ struct ConnectionsManagerView: View {
         panel.prompt = "Import"
         if panel.runModal() == .OK, let url = panel.url {
             let count = store.importFromTnsnames(at: url.path)
-            Logger.connMgr.notice("imported \(count, privacy: .public) entries from \(url.path, privacy: .public)")
+            os.Logger.connMgr.notice("imported \(count, privacy: .public) entries from \(url.path, privacy: .public)")
             importResultMessage = "Imported \(count) \(count == 1 ? "connection" : "connections") from \(url.lastPathComponent)."
             if selectedID == nil, let first = store.connections.first {
                 selectedID = first.id
@@ -258,53 +296,41 @@ struct ConnectionsManagerView: View {
         }
     }
 
-    private func loadDraft(for id: SavedConnection.ID?) {
-        guard let id, let conn = store.connection(id: id) else {
-            draft = nil
+    // MARK: - Password handling
+
+    private func loadPasswords(for id: SavedConnection.ID?) {
+        guard let id else {
             draftDatabasePassword = ""
             draftWalletPassword = ""
-            hasUnsavedChanges = false
             return
         }
-        draft = conn
         draftDatabasePassword = (try? keychain.password(for: id, kind: .databasePassword)) ?? ""
         draftWalletPassword = (try? keychain.password(for: id, kind: .walletPassword)) ?? ""
-        hasUnsavedChanges = false
     }
 
-    private func revertDraft() {
-        loadDraft(for: selectedID)
-    }
-
-    private func saveDraft() {
-        guard var draftCopy = draft else { return }
-        draftCopy.name = draftCopy.name.trimmingCharacters(in: .whitespaces)
-        draftCopy.host = draftCopy.host.trimmingCharacters(in: .whitespaces)
-        store.upsert(draftCopy)
-
-        if draftCopy.savePasswordInKeychain {
-            try? keychain.setPassword(draftDatabasePassword, for: draftCopy.id, kind: .databasePassword)
+    private func commitDatabasePassword(for id: SavedConnection.ID) {
+        guard let conn = store.connection(id: id) else { return }
+        if conn.savePasswordInKeychain {
+            try? keychain.setPassword(draftDatabasePassword, for: id, kind: .databasePassword)
         } else {
-            try? keychain.deletePassword(for: draftCopy.id, kind: .databasePassword)
+            try? keychain.deletePassword(for: id, kind: .databasePassword)
         }
-        if case .wallet = draftCopy.tls {
-            try? keychain.setPassword(draftWalletPassword, for: draftCopy.id, kind: .walletPassword)
-        } else {
-            try? keychain.deletePassword(for: draftCopy.id, kind: .walletPassword)
-        }
-
-        if let stored = store.connection(id: draftCopy.id) {
-            draft = stored
-        }
-        hasUnsavedChanges = false
     }
 
-    private func draftDiffers() -> Bool {
-        guard let draft, let stored = store.connection(id: draft.id) else { return true }
-        var lhs = draft
-        var rhs = stored
-        lhs.updatedAt = rhs.updatedAt
-        return lhs != rhs
+    private func commitWalletPassword(for id: SavedConnection.ID) {
+        guard let conn = store.connection(id: id) else { return }
+        if case .wallet = conn.tls {
+            try? keychain.setPassword(draftWalletPassword, for: id, kind: .walletPassword)
+        } else {
+            try? keychain.deletePassword(for: id, kind: .walletPassword)
+        }
+    }
+
+    /// Called when the user picks a different row. Force-write any pending
+    /// password edits on the connection we're leaving.
+    private func flushPasswords(for id: SavedConnection.ID) {
+        commitDatabasePassword(for: id)
+        commitWalletPassword(for: id)
     }
 
     private func uniqueName(base: String) -> String {
@@ -316,6 +342,81 @@ struct ConnectionsManagerView: View {
             candidate = "\(base) \(n)"
         }
         return candidate
+    }
+
+    // MARK: - Test
+
+    private func canTest(connectionID: SavedConnection.ID) -> Bool {
+        guard let conn = store.connection(id: connectionID) else { return false }
+        return !conn.host.trimmingCharacters(in: .whitespaces).isEmpty
+            && !conn.service.rawValue.trimmingCharacters(in: .whitespaces).isEmpty
+            && !conn.defaultUsername.trimmingCharacters(in: .whitespaces).isEmpty
+            && !draftDatabasePassword.isEmpty
+    }
+
+    @MainActor
+    private func runTest(for id: SavedConnection.ID) async {
+        guard let conn = store.connection(id: id) else { return }
+        // Make sure the password just typed is what we test, not the stale
+        // Keychain value — the user might still be inside the password field
+        // when they hit Test.
+        commitDatabasePassword(for: id)
+        commitWalletPassword(for: id)
+
+        testStatus = .testing
+        let username = conn.defaultUsername
+        let password = draftDatabasePassword
+        let walletPassword: String? = {
+            if case .wallet = conn.tls { return draftWalletPassword }
+            return nil
+        }()
+        let role = conn.defaultRole
+        let snapshot = conn
+
+        let result: TestStatus = await Task.detached { @concurrent in
+            await Self.attemptConnect(
+                snapshot: snapshot,
+                username: username,
+                password: password,
+                walletPassword: walletPassword,
+                sysDBA: role == .sysDBA
+            )
+        }.value
+        // The user might have moved on while we were connecting.
+        if selectedID == id {
+            testStatus = result
+        }
+    }
+
+    @concurrent
+    private nonisolated static func attemptConnect(
+        snapshot: SavedConnection,
+        username: String,
+        password: String,
+        walletPassword: String?,
+        sysDBA: Bool
+    ) async -> TestStatus {
+        do {
+            let config = try OracleEndpoint.makeConfiguration(
+                saved: snapshot,
+                username: username,
+                password: password,
+                walletPassword: walletPassword,
+                sysDBA: sysDBA
+            )
+            var logger = Logging.Logger(label: "com.iliasazonov.macintora.test")
+            logger.logLevel = .error
+            let conn = try await OracleConnection.connect(
+                on: OracleEventLoopGroup.shared.next(),
+                configuration: config,
+                id: Int.random(in: 1...Int.max),
+                logger: logger
+            )
+            try? await conn.close()
+            return .success
+        } catch {
+            return .failure(error.localizedDescription)
+        }
     }
 }
 
@@ -336,5 +437,29 @@ private struct ConnectionRow: View {
         let svc = connection.service.rawValue.isEmpty ? "—" : connection.service.rawValue
         let host = connection.host.isEmpty ? "—" : connection.host
         return "\(host):\(connection.port)/\(svc)"
+    }
+}
+
+private struct TestStatusBadge: View {
+    let status: ConnectionsManagerView.TestStatus
+
+    var body: some View {
+        switch status {
+        case .idle, .testing:
+            EmptyView()
+        case .success:
+            Label("Connection successful", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+                .font(.callout)
+        case .failure(let message):
+            HStack(spacing: 6) {
+                Image(systemName: "xmark.octagon.fill")
+                    .foregroundStyle(.red)
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .lineLimit(2)
+            }
+        }
     }
 }

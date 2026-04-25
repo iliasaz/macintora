@@ -2,25 +2,39 @@ import SwiftUI
 import AppKit
 
 /// Editor pane for a single ``SavedConnection``. Bound to a working copy held
-/// by the parent (`ConnectionsManagerView`) so the user can cancel without
-/// disturbing the store.
+/// by the parent (`ConnectionsManagerView`) so the user can cancel structural
+/// edits via Revert.
 ///
-/// The form supports three input modes for the host/port/service fields:
+/// Passwords are different. They are committed to the Keychain *immediately*
+/// when the user moves focus out of the field or presses Enter — outside the
+/// draft / Save / Revert cycle. That keeps the Save button focused on the
+/// connection's structural state and avoids losing a typed password if the
+/// user closes the window without thinking to press Save.
+///
+/// The form supports three input modes for host/port/service:
 /// 1. Direct entry (always available).
-/// 2. "Paste JDBC URL" — applies the parsed result to the structured fields.
-/// 3. "Paste TNS descriptor" — same, for `(DESCRIPTION=…)` blobs.
-///
-/// Wallet password and (optional) database password live in the Keychain; the
-/// view holds them in `@State` only while the user is editing, then writes
-/// them through ``KeychainService`` on Save.
+/// 2. "Paste JDBC URL" — parses and applies `jdbc:oracle:thin:@…` URLs.
+/// 3. "Paste TNS descriptor" — parses `(DESCRIPTION=…)` blobs.
 struct ConnectionEditorForm: View {
     @Binding var connection: SavedConnection
     @Binding var databasePassword: String
     @Binding var walletPassword: String
 
+    /// Called when the database password should be committed (focus moved
+    /// away from the field, or Enter pressed). The parent writes to the
+    /// Keychain.
+    var onCommitDatabasePassword: () -> Void
+    /// Same, for the wallet password.
+    var onCommitWalletPassword: () -> Void
+
     @State private var jdbcPaste: String = ""
     @State private var descriptorPaste: String = ""
     @State private var pasteError: String?
+
+    private enum Field: Hashable {
+        case databasePassword, walletPassword
+    }
+    @FocusState private var focusedField: Field?
 
     var body: some View {
         Form {
@@ -75,17 +89,34 @@ struct ConnectionEditorForm: View {
                 if connection.savePasswordInKeychain {
                     SecureField("Password", text: $databasePassword)
                         .textFieldStyle(.roundedBorder)
+                        .focused($focusedField, equals: .databasePassword)
+                        .onSubmit { onCommitDatabasePassword() }
+                    Text("Saved to Keychain when you press Enter or move to another field.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
 
             Section("TLS") {
                 TLSSettingsEditor(
                     tls: $connection.tls,
-                    walletPassword: $walletPassword
+                    walletPassword: $walletPassword,
+                    walletPasswordFocus: $focusedField,
+                    walletPasswordField: .walletPassword,
+                    onCommitWalletPassword: onCommitWalletPassword
                 )
             }
         }
         .formStyle(.grouped)
+        .onChange(of: focusedField) { previous, _ in
+            // Commit when focus *leaves* a password field. The transition is
+            // observed by the previous value being one of the password fields.
+            switch previous {
+            case .databasePassword: onCommitDatabasePassword()
+            case .walletPassword: onCommitWalletPassword()
+            case nil: break
+            }
+        }
     }
 
     private func applyJDBC() {
@@ -188,9 +219,12 @@ private struct ServiceIdentifierEditor: View {
     }
 }
 
-private struct TLSSettingsEditor: View {
+private struct TLSSettingsEditor<Field: Hashable>: View {
     @Binding var tls: TLSSettings
     @Binding var walletPassword: String
+    var walletPasswordFocus: FocusState<Field?>.Binding
+    let walletPasswordField: Field
+    var onCommitWalletPassword: () -> Void
 
     private enum Mode: String, CaseIterable, Hashable {
         case disabled, system, wallet
@@ -252,6 +286,11 @@ private struct TLSSettingsEditor: View {
             }
             SecureField("Wallet password", text: $walletPassword)
                 .textFieldStyle(.roundedBorder)
+                .focused(walletPasswordFocus, equals: walletPasswordField)
+                .onSubmit { onCommitWalletPassword() }
+            Text("Saved to Keychain when you press Enter or move to another field.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

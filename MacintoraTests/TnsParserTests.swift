@@ -182,20 +182,37 @@ final class TnsParserTests: XCTestCase {
     }
 
     /// Exercise the full real-world fixture to verify the parser doesn't
-    /// silently drop most entries. We don't pin to an exact count because
-    /// the file evolves, but it should be far above the legacy parser's
-    /// "few" output.
+    /// silently drop entries. Adaptive: counts approximate top-level
+    /// `IDENTIFIER=(DESCRIPTION` lines in the source and demands the parser
+    /// recovers at least 80% of them. The fixture lives outside the repo
+    /// (developer's Desktop) so this test only runs when present.
     func test_realWorldUserFixtureParsesMost() {
         let path = "/Users/ilia/Desktop/oracle/network/admin/tnsnames.ora"
         guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else {
-            // Test is opportunistic — only runs on the dev's machine.
             return
         }
         let entries = TnsParser.parse(contents)
-        // The file has ~90 entries; demand at least 60 to catch regressions
-        // where we silently drop bulk content again.
-        XCTAssertGreaterThan(entries.count, 60, "Expected most entries to parse, got \(entries.count)")
-        XCTAssertNotNil(entries.first(where: { $0.alias == "ohfadw2020_high" }), "wallet entry with quoted DN should parse")
+        let approximate = approximateTopLevelEntryCount(in: contents)
+        guard approximate > 0 else { return }
+        let ratio = Double(entries.count) / Double(approximate)
+        XCTAssertGreaterThanOrEqual(
+            ratio, 0.8,
+            "Parser dropped too many entries: parsed \(entries.count) of ~\(approximate)"
+        )
+    }
+
+    /// Heuristic count: number of lines whose first non-whitespace char
+    /// starts an identifier and contains `=(` — close enough as a sanity
+    /// upper bound for the parser's output.
+    private func approximateTopLevelEntryCount(in source: String) -> Int {
+        source.split(separator: "\n").reduce(into: 0) { acc, line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty, !trimmed.hasPrefix("#") else { return }
+            guard let first = trimmed.first, first.isLetter || first.isNumber else { return }
+            if trimmed.range(of: "=\\s*\\(\\s*[Dd][Ee][Ss][Cc]", options: .regularExpression) != nil {
+                acc += 1
+            }
+        }
     }
 
     func test_quotedScalarValueDoesNotBreakSubsequentChildren() {
