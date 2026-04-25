@@ -115,4 +115,41 @@ final class TnsParserTests: XCTestCase {
         XCTAssertEqual(TnsParser.parse("").count, 0)
         XCTAssertEqual(TnsParser.parse("   \n\n  ").count, 0)
     }
+
+    // MARK: - parseDescriptor
+
+    func test_parseDescriptor_serviceName() {
+        let entry = TnsParser.parseDescriptor(
+            "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=h1)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=svc)))"
+        )
+        XCTAssertNotNil(entry)
+        XCTAssertEqual(entry?.host, "h1")
+        XCTAssertEqual(entry?.port, 1521)
+        XCTAssertEqual(entry?.serviceName, "svc")
+    }
+
+    func test_parseDescriptor_sid() {
+        let entry = TnsParser.parseDescriptor(
+            "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=h)(PORT=1521))(CONNECT_DATA=(SID=L)))"
+        )
+        XCTAssertNotNil(entry)
+        XCTAssertEqual(entry?.sid, "L")
+    }
+
+    func test_parseDescriptor_returnsNilForGarbage() {
+        XCTAssertNil(TnsParser.parseDescriptor("totally not a descriptor"))
+        XCTAssertNil(TnsParser.parseDescriptor(""))
+    }
+
+    func test_parseDescriptor_pickFirstAddress() {
+        let entry = TnsParser.parseDescriptor("""
+        (DESCRIPTION=
+          (ADDRESS_LIST=
+            (ADDRESS=(PROTOCOL=TCP)(HOST=node1)(PORT=1521))
+            (ADDRESS=(PROTOCOL=TCP)(HOST=node2)(PORT=1521)))
+          (CONNECT_DATA=(SERVICE_NAME=rac_svc)))
+        """)
+        XCTAssertEqual(entry?.host, "node1")
+        XCTAssertEqual(entry?.serviceName, "rac_svc")
+    }
 }

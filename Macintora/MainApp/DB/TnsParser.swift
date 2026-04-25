@@ -17,6 +17,22 @@ import Foundation
 ///
 /// Pure value type; safe to call from any isolation domain.
 nonisolated enum TnsParser {
+    /// Parse a single Oracle connect descriptor — the `(DESCRIPTION=…)` body
+    /// without an `ALIAS =` prefix. Returns `nil` if the input is not a
+    /// well-formed descriptor or doesn't carry enough fields to build a
+    /// connection.
+    ///
+    /// The alias on the returned ``TnsEntry`` is `"<descriptor>"` because no
+    /// alias is present in the input — callers that need a real name supply
+    /// it themselves.
+    static func parseDescriptor(_ contents: String) -> TnsEntry? {
+        let stripped = stripComments(contents)
+        var scanner = Scanner(source: stripped)
+        scanner.skipWhitespace()
+        guard let node = scanner.readNode() else { return nil }
+        return buildEntry(alias: "<descriptor>", root: node)
+    }
+
     static func parse(_ contents: String) -> [TnsEntry] {
         let stripped = stripComments(contents)
         var scanner = Scanner(source: stripped)

@@ -97,6 +97,15 @@
 		AA0000170000000000000000 /* DisplayRowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000180000000000000000 /* DisplayRowTests.swift */; };
 		AA0000190000000000000000 /* AppDBErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001A0000000000000000 /* AppDBErrorTests.swift */; };
 		AA00001B0000000000000000 /* MainDocumentSaveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001C0000000000000000 /* MainDocumentSaveTests.swift */; };
+		AA0000A00000000000000000 /* SavedConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000310000000000000000 /* SavedConnection.swift */; };
+		AA0000320000000000000000 /* JDBCURLParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000330000000000000000 /* JDBCURLParser.swift */; };
+		AA0000340000000000000000 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000350000000000000000 /* KeychainService.swift */; };
+		AA0000360000000000000000 /* ConnectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000370000000000000000 /* ConnectionStore.swift */; };
+		AA0000380000000000000000 /* SavedConnectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000390000000000000000 /* SavedConnectionTests.swift */; };
+		AA00003A0000000000000000 /* JDBCURLParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00003B0000000000000000 /* JDBCURLParserTests.swift */; };
+		AA00003C0000000000000000 /* KeychainServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00003D0000000000000000 /* KeychainServiceTests.swift */; };
+		AA00003E0000000000000000 /* ConnectionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00003F0000000000000000 /* ConnectionStoreTests.swift */; };
+		AA0000400000000000000000 /* ConnectionDetailsCodableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000410000000000000000 /* ConnectionDetailsCodableTests.swift */; };
 		AA00001D0000000000000000 /* DocumentFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00001E0000000000000000 /* DocumentFlowTests.swift */; };
 		BB0000010000000000000000 /* MacintoraUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000000 /* MacintoraUITests.swift */; };
 		C1C1C1C100000000000000A1 /* STTextView in Frameworks */ = {isa = PBXBuildFile; productRef = B1B1B1B100000000000000A1 /* STTextView */; };
@@ -215,6 +224,15 @@
 		AA0000180000000000000000 /* DisplayRowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRowTests.swift; sourceTree = "<group>"; };
 		AA00001A0000000000000000 /* AppDBErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDBErrorTests.swift; sourceTree = "<group>"; };
 		AA00001C0000000000000000 /* MainDocumentSaveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainDocumentSaveTests.swift; sourceTree = "<group>"; };
+		AA0000310000000000000000 /* SavedConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedConnection.swift; sourceTree = "<group>"; };
+		AA0000330000000000000000 /* JDBCURLParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JDBCURLParser.swift; sourceTree = "<group>"; };
+		AA0000350000000000000000 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		AA0000370000000000000000 /* ConnectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStore.swift; sourceTree = "<group>"; };
+		AA0000390000000000000000 /* SavedConnectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedConnectionTests.swift; sourceTree = "<group>"; };
+		AA00003B0000000000000000 /* JDBCURLParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JDBCURLParserTests.swift; sourceTree = "<group>"; };
+		AA00003D0000000000000000 /* KeychainServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainServiceTests.swift; sourceTree = "<group>"; };
+		AA00003F0000000000000000 /* ConnectionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStoreTests.swift; sourceTree = "<group>"; };
+		AA0000410000000000000000 /* ConnectionDetailsCodableTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionDetailsCodableTests.swift; sourceTree = "<group>"; };
 		AA00001E0000000000000000 /* DocumentFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentFlowTests.swift; sourceTree = "<group>"; };
 		BB0000020000000000000000 /* MacintoraUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraUITests.swift; sourceTree = "<group>"; };
 		BB0000030000000000000000 /* MacintoraUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacintoraUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -300,6 +318,11 @@
 				AA00001A0000000000000000 /* AppDBErrorTests.swift */,
 				AA00001C0000000000000000 /* MainDocumentSaveTests.swift */,
 				AA00001E0000000000000000 /* DocumentFlowTests.swift */,
+				AA0000390000000000000000 /* SavedConnectionTests.swift */,
+				AA00003B0000000000000000 /* JDBCURLParserTests.swift */,
+				AA00003D0000000000000000 /* KeychainServiceTests.swift */,
+				AA00003F0000000000000000 /* ConnectionStoreTests.swift */,
+				AA0000410000000000000000 /* ConnectionDetailsCodableTests.swift */,
 				49D0ECF22F9C1E070047540A /* Editor */,
 				49D0ED042F9C34410047540A /* Results */,
 			);
@@ -459,6 +482,10 @@
 				AA00000C0000000000000000 /* DBMSOutput.swift */,
 				AA0000100000000000000000 /* OracleEventLoopGroup.swift */,
 				AA0000120000000000000000 /* BindValue.swift */,
+				AA0000310000000000000000 /* SavedConnection.swift */,
+				AA0000330000000000000000 /* JDBCURLParser.swift */,
+				AA0000350000000000000000 /* KeychainService.swift */,
+				AA0000370000000000000000 /* ConnectionStore.swift */,
 			);
 			path = DB;
 			sourceTree = "<group>";
@@ -622,6 +649,11 @@
 				49D0ED062F9C346B0047540A /* ResultViewModelIntegrationTests.swift in Sources */,
 				AA00001B0000000000000000 /* MainDocumentSaveTests.swift in Sources */,
 				AA00001D0000000000000000 /* DocumentFlowTests.swift in Sources */,
+				AA0000380000000000000000 /* SavedConnectionTests.swift in Sources */,
+				AA00003A0000000000000000 /* JDBCURLParserTests.swift in Sources */,
+				AA00003C0000000000000000 /* KeychainServiceTests.swift in Sources */,
+				AA00003E0000000000000000 /* ConnectionStoreTests.swift in Sources */,
+				AA0000400000000000000000 /* ConnectionDetailsCodableTests.swift in Sources */,
 				49D0ECF62F9C1EB90047540A /* GetCurrentSqlTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -704,6 +736,10 @@
 				AA00000B0000000000000000 /* DBMSOutput.swift in Sources */,
 				AA00000F0000000000000000 /* OracleEventLoopGroup.swift in Sources */,
 				AA0000110000000000000000 /* BindValue.swift in Sources */,
+				AA0000A00000000000000000 /* SavedConnection.swift in Sources */,
+				AA0000320000000000000000 /* JDBCURLParser.swift in Sources */,
+				AA0000340000000000000000 /* KeychainService.swift in Sources */,
+				AA0000360000000000000000 /* ConnectionStore.swift in Sources */,
 				49D0ECED2F9C1D9D0047540A /* EditorLanguage.swift in Sources */,
 				49D0ECEB2F9C1D970047540A /* EditorSelectionBridge.swift in Sources */,
 				49D0ED202F9C40000047540A /* EditorTheme.swift in Sources */,
