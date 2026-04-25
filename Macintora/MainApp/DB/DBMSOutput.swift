@@ -9,17 +9,26 @@ import Logging
 /// after each user statement.
 nonisolated enum DBMSOutput {
     static func enable(on connection: OracleConnection, logger: Logger) async throws {
-        try await connection.execute(
+        let stream = try await connection.execute(
             "BEGIN DBMS_OUTPUT.ENABLE(NULL); END;",
             logger: logger
         )
+        // oracle-nio 1.0.0-rc.4: a PL/SQL block returns an empty OracleRowSequence
+        // but the stream's server-side cleanup is driven by iterator deinit via
+        // `didTerminate`, which runs asynchronously on the event loop. If the
+        // caller issues another `execute(…)` before that cleanup settles the
+        // state machine crashes with "readyForStatement received when statement
+        // is still being executed". Explicitly draining here is synchronous
+        // w.r.t. the Swift await, so subsequent executes are safe.
+        for try await _ in stream { }
     }
 
     static func disable(on connection: OracleConnection, logger: Logger) async throws {
-        try await connection.execute(
+        let stream = try await connection.execute(
             "BEGIN DBMS_OUTPUT.DISABLE; END;",
             logger: logger
         )
+        for try await _ in stream { }
     }
 
     /// Drains the DBMS_OUTPUT buffer into a single newline-joined string.
@@ -31,10 +40,11 @@ nonisolated enum DBMSOutput {
         for _ in 0..<maxLines {
             let lineRef = OracleRef(dataType: .varchar)
             let statusRef = OracleRef(dataType: .number)
-            try await connection.execute(
+            let stream = try await connection.execute(
                 "BEGIN DBMS_OUTPUT.GET_LINE(\(lineRef), \(statusRef)); END;",
                 logger: logger
             )
+            for try await _ in stream { }
             let status = (try? statusRef.decode(as: Int.self)) ?? 1
             if status != 0 { break }
             let line = (try? lineRef.decode(as: String.self)) ?? ""

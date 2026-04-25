@@ -21,8 +21,35 @@ extension Logger {
 
 let log = Logger().default
 
+/// Forces the app to always open an Untitled document on launch (instead of
+/// showing the `NSOpenPanel` picker that macOS's default DocumentGroup flow
+/// presents when nothing was opened from launch args). Positional file args
+/// still open normally because NSApp's file-open handling fires earlier than
+/// `applicationShouldOpenUntitledFile`. This also means integration tests
+/// never see a picker — the host app comes up on an Untitled doc the tests can
+/// ignore.
+final class MacintoraAppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Belt-and-suspenders: on some macOS versions the "Show Open panel at
+        // startup" behaviour is driven by this global default rather than the
+        // delegate method below. Registering a default of NO doesn't override
+        // a user's explicit preference — it just changes the *default*.
+        UserDefaults.standard.register(defaults: [
+            "NSShowAppCentricOpenPanelInsteadOfUntitledFile": false
+        ])
+    }
+
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
+        // Always open an Untitled document when no file was handed to us on
+        // launch. Never show the Open panel.
+        true
+    }
+}
+
 @main
 struct MacOraApp: App {
+    @NSApplicationDelegateAdaptor(MacintoraAppDelegate.self) var appDelegate
+
     var body: some Scene {
         DocumentGroup(newDocument: { MainDocumentVM() }) { config in
                 MainDocumentView(document: config.document)

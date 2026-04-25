@@ -3,10 +3,17 @@ import Combine
 import OracleNIO
 import SwiftUI
 import Logging
+import os
 
 // Mark the ObservableObject conformance as preconcurrency: ResultViewModel is
 // @MainActor-isolated but SwiftUI needs to access `objectWillChange` from any
 // isolation domain. Same pattern used for every other @MainActor view model.
+
+extension os.Logger {
+    // Diagnostic category for tracing SQL execution flow. Delete once the
+    // all_objects hang is root-caused.
+    var sqlexec: os.Logger { os.Logger(subsystem: os.Logger.subsystem, category: "sqlexec") }
+}
 
 enum RunningLogEntryType: Sendable {
     case info, error
@@ -110,6 +117,12 @@ public final class ResultViewModel: nonisolated ObservableObject {
 
     private var activeQuery: ActiveQuery?
     private var currentTask: Task<Void, Never>?
+
+    /// Test-only read-only probe. True when a row stream iterator is still held
+    /// from the most recent query (i.e. the connection is NOT idle). Used to
+    /// verify Bug B: cancel / new-query / disconnect all must leave this `false`
+    /// so the server-side cursor is closed and the connection is free.
+    var hasActiveQuery: Bool { activeQuery != nil }
     private let oracleLogger: Logging.Logger = {
         var logger = Logging.Logger(label: "com.iliasazonov.macintora.oracle.results")
         logger.logLevel = .notice
@@ -155,6 +168,11 @@ public final class ResultViewModel: nonisolated ObservableObject {
     func cancel() {
         currentTask?.cancel()
         currentTask = nil
+        // Bug B: drop the iterator reference so oracle-nio's
+        // `NIOAsyncSequenceProducerDelegate.didTerminate` fires and the
+        // server-side cursor is closed — otherwise the connection stays busy
+        // and the next `conn.execute(…)` deadlocks.
+        activeQuery = nil
     }
 
     func getBinds() -> [String: BindValue] {
@@ -177,10 +195,25 @@ public final class ResultViewModel: nonisolated ObservableObject {
         rows.removeAll()
         sqlCount = 0
         resultsController.isExecuting = true
+        // Bug B: release any iterator held from a previous cap-hit run BEFORE
+        // issuing a new `conn.execute(…)` — otherwise the new execute queues
+        // behind the open cursor and deadlocks.
+        activeQuery = nil
         let sql = currentSql
         let binds = getBinds()
-        let prefetch = queryPrefetchSize
         let limit = rowFetchLimit
+        // Bug A root cause: with prefetchRows > rowFetchLimit, oracle-nio
+        // requests more rows than we'll consume. The server sends them — plus
+        // the statement-completion signal and `readyForStatement` packet —
+        // and they sit in the client's incoming buffer while we stop pulling
+        // at `limit`. When the next `conn.execute(…)` is issued, oracle-nio's
+        // state machine processes those buffered packets and crashes with
+        // `readyForStatement received when statement is still being executed`
+        // because the inner statement state hasn't transitioned through
+        // .commandComplete yet. Capping `prefetchRows` to `limit` means the
+        // server only sends what we'll actually consume; the cursor stays
+        // cleanly mid-fetch and `fetchMoreData` can ask for more on demand.
+        let prefetch = limit > 0 ? min(queryPrefetchSize, limit) : queryPrefetchSize
         let dbmsOutputEnabled = enabledDbmsOutput
         let logger = oracleLogger
         currentTask?.cancel()
@@ -208,35 +241,73 @@ public final class ResultViewModel: nonisolated ObservableObject {
         logger: Logging.Logger
     ) async {
         let start = Date.now
+        let diag = log.sqlexec
         do {
             if dbmsOutputEnabled {
+                diag.notice("enter DBMSOutput.enable")
                 try? await DBMSOutput.enable(on: conn, logger: logger)
+                diag.notice("DBMSOutput.enable returned")
             }
             let statement = BindValue.makeStatement(sql: sql, binds: binds)
+            diag.notice("enter conn.execute; prefetch=\(prefetch, privacy: .public) sql=\(sql, privacy: .public)")
             let rowStream = try await conn.execute(
                 statement,
                 options: OracleOptions.with(prefetchRows: prefetch),
                 logger: logger
             )
             let columns = DisplayRowBuilder.columnLabels(for: rowStream.columns)
+            diag.notice("conn.execute returned; columns=\(columns.count, privacy: .public)")
             var labels = columns
             labels.insert("#", at: 0)
             var iterator = rowStream.makeAsyncIterator()
             var collected: [DisplayRow] = []
             let cap = limit == -1 ? 10_000 : limit
             var idx = 0
-            while idx < cap, let row = try await iterator.next() {
-                if Task.isCancelled { break }
+            var exhausted = false
+            while idx < cap {
+                let shouldLog = idx < 3 || idx % 50 == 0
+                if shouldLog { diag.notice("awaiting iterator.next() at idx=\(idx, privacy: .public)") }
+                guard let row = try await iterator.next() else {
+                    diag.notice("iterator exhausted at idx=\(idx, privacy: .public)")
+                    exhausted = true
+                    break
+                }
+                if shouldLog { diag.notice("iterator.next() returned at idx=\(idx, privacy: .public)") }
+                if Task.isCancelled {
+                    diag.notice("Task cancelled at idx=\(idx, privacy: .public)")
+                    break
+                }
                 collected.append(DisplayRowBuilder.make(from: row, id: idx, columnLabels: columns))
                 idx += 1
             }
+            diag.notice("loop exited at idx=\(idx, privacy: .public) cap=\(cap, privacy: .public) exhausted=\(exhausted, privacy: .public)")
+
+            // Bug A guard: oracle-nio serializes operations per connection. When
+            // the stream is still mid-scan (cap hit before exhaustion), any
+            // follow-up `conn.execute(…)` (DBMS_OUTPUT drain or v$session
+            // sqlID lookup) deadlocks against the open cursor. Only issue those
+            // follow-up calls when the stream ended naturally. The iterator is
+            // saved to `activeQuery` below; once it's released (new query /
+            // cancel / disconnect), oracle-nio's `didTerminate` closes the
+            // server-side cursor and DBMS_OUTPUT buffer carries forward.
             let dbmsOutput: String
-            if dbmsOutputEnabled {
-                dbmsOutput = (try? await DBMSOutput.drain(on: conn, logger: logger)) ?? ""
+            let sqlID: String
+            if exhausted {
+                if dbmsOutputEnabled {
+                    diag.notice("enter DBMSOutput.drain")
+                    dbmsOutput = (try? await DBMSOutput.drain(on: conn, logger: logger)) ?? ""
+                    diag.notice("DBMSOutput.drain returned; bytes=\(dbmsOutput.utf8.count, privacy: .public)")
+                } else {
+                    dbmsOutput = ""
+                }
+                diag.notice("fetching sqlID")
+                sqlID = await Self.fetchSqlID(on: conn, logger: logger)
+                diag.notice("fetched sqlID=\(sqlID, privacy: .public); applying success")
             } else {
+                diag.notice("cap hit, stream still open — skipping drain/sqlID to avoid deadlock")
                 dbmsOutput = ""
+                sqlID = ""
             }
-            let sqlID = await Self.fetchSqlID(on: conn, logger: logger)
             self.activeQuery = ActiveQuery(
                 sql: sql,
                 columnLabels: labels,
@@ -325,6 +396,7 @@ public final class ResultViewModel: nonisolated ObservableObject {
         let logger = oracleLogger
         objectWillChange.send()
         resultsController.isExecuting = true
+        activeQuery = nil // Bug B: free the connection before a new execute.
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -374,6 +446,7 @@ public final class ResultViewModel: nonisolated ObservableObject {
         objectWillChange.send()
         rows.removeAll()
         resultsController.isExecuting = true
+        activeQuery = nil // Bug B: free the connection before a new execute.
         let logger = oracleLogger
         currentTask?.cancel()
         currentTask = Task { [weak self] in
@@ -412,6 +485,7 @@ public final class ResultViewModel: nonisolated ObservableObject {
         objectWillChange.send()
         rows.removeAll()
         resultsController.isExecuting = true
+        activeQuery = nil // Bug B: free the connection before a new execute.
         let logger = oracleLogger
         let compileSQL = rsql.sql
         let storedProc = rsql.storedProc
@@ -469,6 +543,7 @@ public final class ResultViewModel: nonisolated ObservableObject {
         objectWillChange.send()
         runningLog.append(RunningLogEntry(text: "Starting export to \(fileURL)", type: .info))
         showingLog = true
+        activeQuery = nil // Bug B: free the connection before a new execute.
         Task { [weak self] in
             guard let self else { return }
             await self.performExport(conn: conn, sql: sql, binds: binds, fileURL: fileURL, type: type, logger: logger)
@@ -548,13 +623,20 @@ public final class ResultViewModel: nonisolated ObservableObject {
                 "select prev_sql_id from v$session where sid = sys_context('userenv','sid')",
                 logger: logger
             )
+            // Fully drain even though we only care about the first row —
+            // returning inside the loop leaves the iterator to deinit
+            // asynchronously, which races the next `execute(…)` on this
+            // connection. See DBMSOutput.enable for the state-machine fatal
+            // this prevents.
+            var result = ""
             for try await sqlID in rows.decode(String.self) {
-                return sqlID
+                if result.isEmpty { result = sqlID }
             }
+            return result
         } catch {
             // No-op; sqlID is best-effort.
+            return ""
         }
-        return ""
     }
 }
 

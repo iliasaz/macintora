@@ -225,10 +225,15 @@ from dual;\n\n
             )
             self.conn = newConn
             log.debug("connected to \(details.tns, privacy: .public)")
-            try? await newConn.execute(
+            // Drain the ALTER SESSION stream. See DBMSOutput.enable for why —
+            // same oracle-nio state-machine race if the returned sequence is
+            // discarded without iteration.
+            if let alterStream = try? await newConn.execute(
                 "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'",
                 logger: logger
-            )
+            ) {
+                for try await _ in alterStream { }
+            }
             let session = await Self.fetchOracleSession(on: newConn, logger: logger)
             isConnected = .connected
             connectionHealth = .ok
@@ -245,6 +250,12 @@ from dual;\n\n
 
     @MainActor
     func disconnect() {
+        // Bug B: tear down any open row stream BEFORE closing the connection.
+        // `cancelCurrent()` → `ResultViewModel.cancel()` drops `activeQuery`,
+        // which triggers oracle-nio's `didTerminate` and closes the server-side
+        // cursor. Skipping this step races `conn.close()` against the live
+        // stream and crashes inside oracle-nio.
+        resultsController?.cancelCurrent()
         isConnected = .disconnected
         connectionHealth = .notConnected
         self.resultsController?.results["current"]?.clearError()
@@ -267,11 +278,18 @@ from dual;\n\n
             """
         do {
             let rows = try await conn.execute(sql, logger: logger)
+            // Collect into an array so the stream is fully drained before we
+            // return. Using `for try await ... return` inside the loop leaves
+            // the iterator in scope to be cleaned up by deinit — which races
+            // subsequent `execute(…)` calls on the same connection.
+            var found: OracleSession? = nil
             for try await (sid, serial, instance, ts) in rows.decode((Int, Int, Int, Date).self) {
-                return OracleSession(sid: sid, serial: serial, instance: instance, dbTimeZone: TimeZone.current)
-                // Note: oracle-nio converts timestamp to UTC Date; DB tz is not directly exposed.
                 _ = ts
+                if found == nil {
+                    found = OracleSession(sid: sid, serial: serial, instance: instance, dbTimeZone: TimeZone.current)
+                }
             }
+            if let found { return found }
         } catch {
             log.error("getOracleSession failed: \(error.localizedDescription, privacy: .public)")
         }
