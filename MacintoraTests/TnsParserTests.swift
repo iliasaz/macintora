@@ -141,6 +141,73 @@ final class TnsParserTests: XCTestCase {
         XCTAssertNil(TnsParser.parseDescriptor(""))
     }
 
+    // MARK: - Real-world patterns from user's tnsnames.ora
+
+    /// Quoted DN with embedded `=` and `,` plus shell-style `${TNS_ADMIN}`
+    /// substitution must not break parsing of the whole file.
+    func test_walletEntryWithQuotedDN() {
+        let file = """
+        ohfadw2020_high=(description=(retry_count=20)(retry_delay=3)(address=(https_proxy=www-proxy-hqdc.us.oracle.com)(https_proxy_port=80)(protocol=tcps)(port=1522)(host=adb.us-ashburn-1.oraclecloud.com))(connect_data=(service_name=m8yollkmjgtvmcu_ohfadw2020_high.adwc.oraclecloud.com))(security=(ssl_server_cert_dn="CN=adwc.uscom-east-1.oraclecloud.com,OU=Oracle BMCS US,O=Oracle Corporation,L=Redwood City,ST=California,C=US")(MY_WALLET_DIRECTORY=${TNS_ADMIN}/Wallet_OHFADW2020)))
+        """
+        let entries = TnsParser.parse(file)
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries[0].alias, "ohfadw2020_high")
+        XCTAssertEqual(entries[0].host, "adb.us-ashburn-1.oraclecloud.com")
+        XCTAssertEqual(entries[0].port, 1522)
+        XCTAssertEqual(entries[0].serviceName, "m8yollkmjgtvmcu_ohfadw2020_high.adwc.oraclecloud.com")
+    }
+
+    func test_descriptionListLoadBalanceFailover() {
+        let file = """
+        merck2=(DESCRIPTION_LIST=(LOAD_BALANCE=YES)(FAILOVER=YES)(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=h1)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=ebs_MERCK2)(INSTANCE_NAME=MERCK2C1)))(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=h2)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=ebs_MERCK2)(INSTANCE_NAME=MERCK2C2))))
+        """
+        let entries = TnsParser.parse(file)
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries[0].alias, "merck2")
+        XCTAssertEqual(entries[0].host, "h1") // first address in list
+        XCTAssertEqual(entries[0].serviceName, "ebs_MERCK2")
+    }
+
+    func test_brokenEntryDoesNotPoisonNeighbours() {
+        // Middle entry has unbalanced parens; bookends should still parse.
+        let file = """
+        good1=(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=h1)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=s1)))
+        broken=(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=oops)(PORT=1521)
+        good2=(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=h2)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=s2)))
+        """
+        let entries = TnsParser.parse(file)
+        let aliases = entries.map(\.alias)
+        XCTAssertTrue(aliases.contains("good1"))
+        XCTAssertTrue(aliases.contains("good2"))
+    }
+
+    /// Exercise the full real-world fixture to verify the parser doesn't
+    /// silently drop most entries. We don't pin to an exact count because
+    /// the file evolves, but it should be far above the legacy parser's
+    /// "few" output.
+    func test_realWorldUserFixtureParsesMost() {
+        let path = "/Users/ilia/Desktop/oracle/network/admin/tnsnames.ora"
+        guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else {
+            // Test is opportunistic — only runs on the dev's machine.
+            return
+        }
+        let entries = TnsParser.parse(contents)
+        // The file has ~90 entries; demand at least 60 to catch regressions
+        // where we silently drop bulk content again.
+        XCTAssertGreaterThan(entries.count, 60, "Expected most entries to parse, got \(entries.count)")
+        XCTAssertNotNil(entries.first(where: { $0.alias == "ohfadw2020_high" }), "wallet entry with quoted DN should parse")
+    }
+
+    func test_quotedScalarValueDoesNotBreakSubsequentChildren() {
+        let file = """
+        x=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=h)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=s))(SECURITY=(ssl_server_cert_dn="CN=foo,OU=bar")(EXTRA=baz)))
+        """
+        let entries = TnsParser.parse(file)
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries[0].host, "h")
+        XCTAssertEqual(entries[0].serviceName, "s")
+    }
+
     func test_parseDescriptor_pickFirstAddress() {
         let entry = TnsParser.parseDescriptor("""
         (DESCRIPTION=

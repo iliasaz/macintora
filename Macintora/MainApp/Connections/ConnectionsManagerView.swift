@@ -6,15 +6,23 @@ extension Logger {
     fileprivate static let connMgr = Logger(subsystem: Logger.subsystem, category: "connmgr")
 }
 
-/// Two-pane editor for the app-wide connection list. Sidebar lists all
-/// connections, detail shows the selected connection's form. Add / delete /
-/// duplicate / import actions live in the sidebar toolbar.
+/// Two-pane editor for the app-wide connection list.
 ///
-/// Edits operate on a working copy so the user can revert. Save commits the
-/// working copy (and any password fields) to the store + Keychain.
+/// macOS Settings tabs render their content directly under the title bar;
+/// any `.toolbar` modifier on inner views bleeds into the window's title bar
+/// alongside the tab strip — which gave us a row of icons sitting next to
+/// the Settings tabs. So +/- and Import live in a `safeAreaInset(.bottom)`
+/// strip on the sidebar, mirroring the macOS Network / Mail Accounts panes.
 struct ConnectionsManagerView: View {
     @Environment(\.connectionStore) private var injectedStore
     @Environment(\.keychainService) private var keychain
+
+    @State private var selectedID: SavedConnection.ID?
+    @State private var draft: SavedConnection?
+    @State private var draftDatabasePassword: String = ""
+    @State private var draftWalletPassword: String = ""
+    @State private var hasUnsavedChanges: Bool = false
+    @State private var importResultMessage: String?
 
     private var store: ConnectionStore {
         guard let injectedStore else {
@@ -23,23 +31,23 @@ struct ConnectionsManagerView: View {
         return injectedStore
     }
 
-    @State private var selectedID: SavedConnection.ID?
-    @State private var draft: SavedConnection?
-    @State private var draftDatabasePassword: String = ""
-    @State private var draftWalletPassword: String = ""
-    @State private var hasUnsavedChanges: Bool = false
-
     var body: some View {
-        NavigationSplitView {
+        HSplitView {
             sidebar
-                .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 320)
-        } detail: {
+                .frame(minWidth: 200, idealWidth: 240, maxWidth: 320)
             detail
+                .frame(minWidth: 480)
         }
-        .frame(minWidth: 720, minHeight: 480)
+        .frame(minWidth: 760, minHeight: 500)
         .onAppear { selectInitialConnection() }
         .onChange(of: selectedID) { _, newID in loadDraft(for: newID) }
         .onChange(of: draft) { _, _ in hasUnsavedChanges = draft != nil && draftDiffers() }
+        .alert(
+            importResultMessage ?? "",
+            isPresented: importAlertBinding
+        ) {
+            Button("OK") { importResultMessage = nil }
+        }
     }
 
     // MARK: - Subviews
@@ -48,28 +56,68 @@ struct ConnectionsManagerView: View {
     private var sidebar: some View {
         List(selection: $selectedID) {
             ForEach(store.connections) { conn in
-                ConnectionRow(connection: conn).tag(conn.id)
+                ConnectionRow(connection: conn)
+                    .tag(conn.id)
+                    .contextMenu {
+                        Button("Duplicate") { duplicate(id: conn.id) }
+                        Divider()
+                        Button("Delete", role: .destructive) { delete(id: conn.id) }
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            delete(id: conn.id)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
             }
         }
-        .listStyle(.sidebar)
-        .toolbar {
-            ToolbarItemGroup {
-                Button("Add", systemImage: "plus", action: addConnection)
-                    .help("Add a new connection")
-                Button("Duplicate", systemImage: "plus.square.on.square") {
-                    duplicateSelected()
-                }
-                .disabled(selectedID == nil)
-                .help("Duplicate the selected connection")
-                Button("Delete", systemImage: "minus", action: deleteSelected)
+        .listStyle(.bordered)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            sidebarBottomBar
+        }
+    }
+
+    @ViewBuilder
+    private var sidebarBottomBar: some View {
+        HStack(spacing: 4) {
+            Button(action: addConnection) {
+                Image(systemName: "plus")
+                    .frame(width: 22, height: 22)
+            }
+            .help("Add a new connection")
+            .accessibilityLabel("Add Connection")
+
+            Button(action: deleteSelected) {
+                Image(systemName: "minus")
+                    .frame(width: 22, height: 22)
+            }
+            .disabled(selectedID == nil)
+            .help("Delete the selected connection")
+            .accessibilityLabel("Delete Connection")
+
+            Divider().frame(height: 16)
+
+            Menu {
+                Button("Duplicate Selected") { duplicateSelected() }
                     .disabled(selectedID == nil)
-                    .help("Delete the selected connection")
-                Button("Import…", systemImage: "square.and.arrow.down") {
-                    importTnsnames()
-                }
-                .help("Import entries from a tnsnames.ora file")
+                Button("Import from tnsnames.ora…") { importTnsnames() }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .frame(width: 22, height: 22)
             }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("More actions")
+
+            Spacer()
         }
+        .buttonStyle(.borderless)
+        .controlSize(.small)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(.bar)
     }
 
     @ViewBuilder
@@ -90,7 +138,7 @@ struct ConnectionsManagerView: View {
                         .keyboardShortcut(.defaultAction)
                         .disabled(!canSave)
                 }
-                .padding()
+                .padding(12)
             }
         } else {
             ContentUnavailableView(
@@ -108,6 +156,13 @@ struct ConnectionsManagerView: View {
         return !draft.name.trimmingCharacters(in: .whitespaces).isEmpty
             && !draft.host.trimmingCharacters(in: .whitespaces).isEmpty
             && !draft.service.rawValue.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    private var importAlertBinding: Binding<Bool> {
+        Binding(
+            get: { importResultMessage != nil },
+            set: { if !$0 { importResultMessage = nil } }
+        )
     }
 
     private func selectInitialConnection() {
@@ -130,7 +185,12 @@ struct ConnectionsManagerView: View {
     }
 
     private func duplicateSelected() {
-        guard let id = selectedID, let source = store.connection(id: id) else { return }
+        guard let id = selectedID else { return }
+        duplicate(id: id)
+    }
+
+    private func duplicate(id: SavedConnection.ID) {
+        guard let source = store.connection(id: id) else { return }
         var copy = source
         copy.id = UUID()
         copy.name = uniqueName(base: "\(source.name) Copy")
@@ -142,6 +202,10 @@ struct ConnectionsManagerView: View {
 
     private func deleteSelected() {
         guard let id = selectedID else { return }
+        delete(id: id)
+    }
+
+    private func delete(id: SavedConnection.ID) {
         let nextID = store.connections
             .firstIndex(where: { $0.id == id })
             .flatMap { idx -> SavedConnection.ID? in
@@ -150,7 +214,7 @@ struct ConnectionsManagerView: View {
                 return nil
             }
         store.delete(id: id, keychain: keychain)
-        selectedID = nextID
+        if selectedID == id { selectedID = nextID }
     }
 
     private func importTnsnames() {
@@ -162,7 +226,8 @@ struct ConnectionsManagerView: View {
         if panel.runModal() == .OK, let url = panel.url {
             let count = store.importFromTnsnames(at: url.path)
             Logger.connMgr.notice("imported \(count, privacy: .public) entries from \(url.path, privacy: .public)")
-            if let first = store.connections.first {
+            importResultMessage = "Imported \(count) \(count == 1 ? "connection" : "connections") from \(url.lastPathComponent)."
+            if selectedID == nil, let first = store.connections.first {
                 selectedID = first.id
             }
         }
@@ -203,7 +268,6 @@ struct ConnectionsManagerView: View {
             try? keychain.deletePassword(for: draftCopy.id, kind: .walletPassword)
         }
 
-        // Refresh the draft so timestamps and any normalisation are visible.
         if let stored = store.connection(id: draftCopy.id) {
             draft = stored
         }
@@ -212,7 +276,6 @@ struct ConnectionsManagerView: View {
 
     private func draftDiffers() -> Bool {
         guard let draft, let stored = store.connection(id: draft.id) else { return true }
-        // updatedAt is bumped on save; ignore it here.
         var lhs = draft
         var rhs = stored
         lhs.updatedAt = rhs.updatedAt
@@ -241,6 +304,7 @@ private struct ConnectionRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+        .padding(.vertical, 2)
     }
 
     private var subtitle: String {
