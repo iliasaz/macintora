@@ -1,110 +1,132 @@
 import Foundation
 import OracleNIO
+import NIOSSL
 
-/// Resolves ``ConnectionDetails`` into an ``OracleConnection.Configuration`` that oracle-nio
-/// can consume.
+/// Resolves a document's ``ConnectionDetails`` against the app-wide
+/// ``ConnectionStore`` and produces the ``OracleConnection.Configuration``
+/// oracle-nio expects.
 ///
-/// Lookup order for the `tns` field on ``ConnectionDetails``:
-/// 1. If it matches a ``TnsEntry`` alias in the provided list, use that entry's host/port/service.
-/// 2. Otherwise, attempt to parse it as a manual endpoint: `host[:port][/service]` or
-///    `host[:port]:sid`. This is the escape hatch for users without a tnsnames.ora.
+/// Lookup order:
+/// 1. `details.savedConnectionID` is the primary key. If a ``SavedConnection``
+///    with that ID exists, it provides host/port/service/TLS.
+/// 2. If the ID is missing or unknown but `details.tns` is non-empty (legacy
+///    documents written before the connection-manager overhaul), match the
+///    name against the store. Set the ID on the document if found.
+/// 3. Otherwise: ``ResolveError/unknownConnection``.
+///
+/// The configuration step also pulls credentials from the Keychain when
+/// applicable (saved-password DB users and Oracle wallet TLS).
 nonisolated enum OracleEndpoint {
     enum ResolveError: Error, LocalizedError {
-        case unknownAlias(String)
-        case malformedManualEndpoint(String)
+        case unknownConnection
+        case missingPassword
+        case walletConfigurationFailed(String)
 
         var errorDescription: String? {
             switch self {
-            case .unknownAlias(let alias):
-                "TNS alias '\(alias)' not found and could not be parsed as host:port/service."
-            case .malformedManualEndpoint(let raw):
-                "Could not interpret '\(raw)' as host:port/service or host:port:sid."
+            case .unknownConnection:
+                "No saved connection matches this document. Open Manage Connections… to fix."
+            case .missingPassword:
+                "Password is required."
+            case .walletConfigurationFailed(let detail):
+                "Wallet TLS setup failed: \(detail)"
             }
         }
     }
 
+    /// Build the oracle-nio configuration for a document. Must be called from
+    /// `@MainActor` because it touches the main-actor-isolated
+    /// ``ConnectionStore``.
+    @MainActor
     static func configuration(
         for details: ConnectionDetails,
-        aliases: [TnsEntry]
+        store: ConnectionStore,
+        keychain: KeychainService
     ) throws -> OracleConnection.Configuration {
-        let resolved = try resolve(tnsField: details.tns, aliases: aliases)
-        return makeConfiguration(
-            entry: resolved,
-            username: details.username,
-            password: details.password,
+        guard let saved = resolve(details: details, store: store) else {
+            throw ResolveError.unknownConnection
+        }
+
+        let username = details.username.isEmpty ? saved.defaultUsername : details.username
+        let password: String = {
+            if !details.password.isEmpty { return details.password }
+            if saved.savePasswordInKeychain,
+               let stored = try? keychain.password(for: saved.id, kind: .databasePassword) {
+                return stored
+            }
+            return ""
+        }()
+        guard !password.isEmpty else { throw ResolveError.missingPassword }
+
+        let walletPassword: String? = {
+            guard case .wallet = saved.tls else { return nil }
+            return try? keychain.password(for: saved.id, kind: .walletPassword)
+        }()
+
+        return try makeConfiguration(
+            saved: saved,
+            username: username,
+            password: password,
+            walletPassword: walletPassword,
             sysDBA: details.connectionRole == .sysDBA
         )
     }
 
-    static func resolve(tnsField: String, aliases: [TnsEntry]) throws -> TnsEntry {
-        let key = tnsField.lowercased()
-        if let match = aliases.first(where: { $0.alias.lowercased() == key }) {
-            return match
+    /// Lookup helper. Splits out so unit tests can drive the fallback path
+    /// without a Keychain.
+    @MainActor
+    static func resolve(details: ConnectionDetails, store: ConnectionStore) -> SavedConnection? {
+        if let id = details.savedConnectionID, let saved = store.connection(id: id) {
+            return saved
         }
-        return try parseManualEndpoint(tnsField)
+        if !details.tns.isEmpty, let saved = store.connection(named: details.tns) {
+            return saved
+        }
+        return nil
     }
 
-    /// `host[:port][/serviceName]`  OR  `host[:port]:sid` when prefixed with colon-sid form is not supported —
-    /// the `/` separator unambiguously indicates a service name; use `@host:port/svc` style from Oracle URLs.
-    static func parseManualEndpoint(_ raw: String) throws -> TnsEntry {
-        let trimmed = raw.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { throw ResolveError.malformedManualEndpoint(raw) }
-
-        let hostPart: String
-        let servicePart: String?
-        if let slash = trimmed.firstIndex(of: "/") {
-            hostPart = String(trimmed[..<slash])
-            servicePart = String(trimmed[trimmed.index(after: slash)...])
-        } else {
-            hostPart = trimmed
-            servicePart = nil
-        }
-
-        let host: String
-        let port: Int
-        if let colon = hostPart.firstIndex(of: ":") {
-            host = String(hostPart[..<colon])
-            guard let p = Int(hostPart[hostPart.index(after: colon)...]) else {
-                throw ResolveError.malformedManualEndpoint(raw)
-            }
-            port = p
-        } else {
-            host = hostPart
-            port = 1521
-        }
-
-        guard !host.isEmpty else { throw ResolveError.malformedManualEndpoint(raw) }
-        guard let servicePart, !servicePart.isEmpty else {
-            throw ResolveError.malformedManualEndpoint(raw)
-        }
-
-        return TnsEntry(alias: raw, host: host, port: port, serviceName: servicePart, sid: nil)
-    }
-
+    /// Pure builder for an `OracleConnection.Configuration`. No store / Keychain
+    /// dependency — easy to unit-test.
     static func makeConfiguration(
-        entry: TnsEntry,
+        saved: SavedConnection,
         username: String,
         password: String,
+        walletPassword: String?,
         sysDBA: Bool
-    ) -> OracleConnection.Configuration {
+    ) throws -> OracleConnection.Configuration {
         let service: OracleServiceMethod
-        if let svc = entry.serviceName {
-            service = .serviceName(svc)
-        } else if let sid = entry.sid {
-            service = .sid(sid)
-        } else {
-            service = .serviceName(entry.alias)
+        switch saved.service {
+        case .serviceName(let s): service = .serviceName(s)
+        case .sid(let s): service = .sid(s)
         }
+
         var config = OracleConnection.Configuration(
-            host: entry.host,
-            port: entry.port,
+            host: saved.host,
+            port: saved.port,
             service: service,
             username: username,
             password: password
         )
-        if sysDBA {
-            config.mode = .sysDBA
+        if sysDBA { config.mode = .sysDBA }
+
+        switch saved.tls {
+        case .disabled:
+            break
+        case .system:
+            let tls = TLSConfiguration.makeClientConfiguration()
+            config.tls = try .require(.init(configuration: tls))
+        case .wallet(let folderPath):
+            do {
+                let tls = try TLSConfiguration.makeOracleWalletConfiguration(
+                    wallet: folderPath,
+                    walletPassword: walletPassword ?? ""
+                )
+                config.tls = try .require(.init(configuration: tls))
+            } catch {
+                throw ResolveError.walletConfigurationFailed(error.localizedDescription)
+            }
         }
+
         return config
     }
 }

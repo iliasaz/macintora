@@ -185,39 +185,46 @@ from dual;\n\n
     /// a fallback ResultsController creation for environments (e.g. tests) that
     /// don't route through `MainDocumentView.init`.
     @MainActor
-    func prepareOnAppear() {
+    func prepareOnAppear(store: ConnectionStore? = nil, keychain: KeychainService = KeychainService()) {
         if resultsController == nil {
             resultsController = ResultsController(document: self)
         }
-        if shouldAutoConnectOnAppear, isConnected == .disconnected {
-            connect()
+        // Migrate documents written before the connection-manager overhaul:
+        // their `tns` is set, `savedConnectionID` is nil. If the store has a
+        // matching name, anchor the document on it.
+        if let store, mainConnection.mainConnDetails.savedConnectionID == nil,
+           !mainConnection.mainConnDetails.tns.isEmpty,
+           let saved = store.connection(named: mainConnection.mainConnDetails.tns) {
+            mainConnection.mainConnDetails.savedConnectionID = saved.id
+        }
+        if shouldAutoConnectOnAppear, isConnected == .disconnected, let store {
+            connect(store: store, keychain: keychain)
         }
     }
 
     // MARK: - Intent functions
 
     @MainActor
-    func connect() {
+    func connect(store: ConnectionStore, keychain: KeychainService) {
         isConnected = .changing
         let details = mainConnection.mainConnDetails
-        let aliases = loadTnsAliases()
         let logger = oracleLogger
-        Task { [weak self] in
-            await self?.performConnect(details: details, aliases: aliases, logger: logger)
-        }
-    }
-
-    @MainActor
-    private func performConnect(details: ConnectionDetails, aliases: [TnsEntry], logger: Logging.Logger) async {
         let configuration: OracleConnection.Configuration
         do {
-            configuration = try OracleEndpoint.configuration(for: details, aliases: aliases)
+            configuration = try OracleEndpoint.configuration(for: details, store: store, keychain: keychain)
         } catch {
             log.error("connection configuration failed: \(error.localizedDescription, privacy: .public)")
             resultsController?.displayError(AppDBError.from(error))
             isConnected = .disconnected
             return
         }
+        Task { [weak self] in
+            await self?.performConnect(details: details, configuration: configuration, logger: logger)
+        }
+    }
+
+    @MainActor
+    private func performConnect(details: ConnectionDetails, configuration: OracleConnection.Configuration, logger: Logging.Logger) async {
         log.debug("Attempting to connect to \(details.username, privacy: .public)@\(details.tns, privacy: .public) as \(details.connectionRole == .sysDBA ? "SysDBA" : "regular user", privacy: .public)")
         do {
             let newConn = try await OracleConnection.connect(
@@ -330,15 +337,6 @@ from dual;\n\n
                 _ = logger
             }
         }
-    }
-
-    private nonisolated func loadTnsAliases() -> [TnsEntry] {
-        let defaultPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/.oracle/tnsnames.ora"
-        let path = UserDefaults.standard.string(forKey: "tnsnamesPath") ?? defaultPath
-        guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else {
-            return []
-        }
-        return TnsParser.parse(contents)
     }
 
     /// Here we determine the SQL under the current cursor position
