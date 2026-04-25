@@ -78,7 +78,6 @@ struct EditorSettings: View {
                         Text(theme.displayName).tag(theme)
                     }
                 }
-
             }
             Spacer()
         }

@@ -472,10 +472,14 @@ struct ConnectionsManagerView: View {
                 } catch is CancellationError {
                     return nil
                 } catch {
+                    // Map through AppDBError so we surface ORA-NNNNN codes
+                    // and the server's actual message instead of the generic
+                    // `OracleSQLError(code: server)` describer.
+                    let app = AppDBError.from(error)
                     let trace = await captured.tail(lines: 6)
                     let body = trace.isEmpty
-                        ? error.localizedDescription
-                        : "\(error.localizedDescription)\n\nLast log lines:\n\(trace)"
+                        ? app.description
+                        : "\(app.description)\n\nLast log lines:\n\(trace)"
                     return .failure(body)
                 }
             }
@@ -483,9 +487,10 @@ struct ConnectionsManagerView: View {
                 try? await Task.sleep(for: .seconds(20))
                 if Task.isCancelled { return nil }
                 let trace = await captured.tail(lines: 6)
+                let hint = "If the password is in the expiry warning window, Oracle Cloud may not respond to mTLS auth — try changing it in SQL Developer first."
                 let body = trace.isEmpty
-                    ? "Connection timed out after 20 seconds."
-                    : "Connection timed out after 20 seconds.\n\nLast log lines (the connect was probably stuck here):\n\(trace)"
+                    ? "Connection timed out after 20 seconds.\n\n\(hint)"
+                    : "Connection timed out after 20 seconds.\n\(hint)\n\nLast log lines (the connect was probably stuck here):\n\(trace)"
                 return .failure(body)
             }
             for await result in group {
