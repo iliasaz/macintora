@@ -23,6 +23,7 @@ struct ConnectionsManagerView: View {
     @State private var draftWalletPassword: String = ""
     @State private var hasUnsavedChanges: Bool = false
     @State private var importResultMessage: String?
+    @State private var deleteAllConfirmation = false
 
     private var store: ConnectionStore {
         guard let injectedStore else {
@@ -47,6 +48,16 @@ struct ConnectionsManagerView: View {
             isPresented: importAlertBinding
         ) {
             Button("OK") { importResultMessage = nil }
+        }
+        .confirmationDialog(
+            "Delete all \(store.connections.count) connections?",
+            isPresented: $deleteAllConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete All", role: .destructive, action: deleteAll)
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This removes every saved connection and its Keychain passwords. The action can't be undone.")
         }
     }
 
@@ -102,6 +113,11 @@ struct ConnectionsManagerView: View {
                 Button("Duplicate Selected") { duplicateSelected() }
                     .disabled(selectedID == nil)
                 Button("Import from tnsnames.ora…") { importTnsnames() }
+                Divider()
+                Button("Delete All…", role: .destructive) {
+                    deleteAllConfirmation = true
+                }
+                .disabled(store.connections.isEmpty)
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .frame(width: 22, height: 22)
@@ -215,6 +231,15 @@ struct ConnectionsManagerView: View {
             }
         store.delete(id: id, keychain: keychain)
         if selectedID == id { selectedID = nextID }
+    }
+
+    private func deleteAll() {
+        let ids = store.connections.map(\.id)
+        for id in ids {
+            store.delete(id: id, keychain: keychain)
+        }
+        selectedID = nil
+        draft = nil
     }
 
     private func importTnsnames() {
