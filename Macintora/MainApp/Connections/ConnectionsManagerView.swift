@@ -377,6 +377,25 @@ struct ConnectionsManagerView: View {
         commitDatabasePassword(for: id)
         commitWalletPassword(for: id)
 
+        // Surface the most common wallet misconfiguration before we even
+        // hit NIOSSL — an empty wallet password produces a generic OpenSSL
+        // error that doesn't make the cause obvious.
+        if case .wallet(let folderPath) = conn.tls {
+            if draftWalletPassword.isEmpty {
+                testStatus = .failure("Wallet password is empty. Enter it in the Wallet Password field and press Test again.")
+                return
+            }
+            if !FileManager.default.fileExists(atPath: folderPath) {
+                testStatus = .failure("Wallet folder '\(folderPath)' does not exist.")
+                return
+            }
+            let pemPath = folderPath.hasSuffix("/") ? folderPath + "ewallet.pem" : folderPath + "/ewallet.pem"
+            if !FileManager.default.fileExists(atPath: pemPath) {
+                testStatus = .failure("ewallet.pem not found in '\(folderPath)'.")
+                return
+            }
+        }
+
         testStatus = .testing
         let username = conn.defaultUsername
         let password = draftDatabasePassword
@@ -466,14 +485,16 @@ private struct TestStatusBadge: View {
                 .foregroundStyle(.green)
                 .font(.callout)
         case .failure(let message):
-            HStack(spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Image(systemName: "xmark.octagon.fill")
                     .foregroundStyle(.red)
                 Text(message)
                     .font(.caption)
                     .foregroundStyle(.red)
-                    .lineLimit(2)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .help(message)
         }
     }
 }
