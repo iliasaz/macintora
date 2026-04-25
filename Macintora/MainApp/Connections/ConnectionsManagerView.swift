@@ -84,26 +84,40 @@ struct ConnectionsManagerView: View {
 
     @ViewBuilder
     private var sidebar: some View {
-        List(selection: $selectedID) {
-            ForEach(store.connections) { conn in
-                ConnectionRow(connection: conn)
-                    .tag(conn.id)
-                    .contextMenu {
-                        Button("Duplicate") { duplicate(id: conn.id) }
-                        Divider()
-                        Button("Delete", role: .destructive) { delete(id: conn.id) }
+        VStack(spacing: 0) {
+            ZStack {
+                List(selection: $selectedID) {
+                    ForEach(store.connections) { conn in
+                        ConnectionRow(connection: conn)
+                            .tag(conn.id)
+                            .contextMenu {
+                                Button("Duplicate") { duplicate(id: conn.id) }
+                                Divider()
+                                Button("Delete", role: .destructive) { delete(id: conn.id) }
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    delete(id: conn.id)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                     }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            delete(id: conn.id)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
+                }
+                .listStyle(.sidebar)
+
+                if store.connections.isEmpty {
+                    Text("No connections yet.\nClick + to add one or use the … menu to import.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                        .allowsHitTesting(false)
+                }
             }
-        }
-        .listStyle(.bordered)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+            .frame(maxHeight: .infinity)
+
+            Divider()
             sidebarBottomBar
         }
     }
