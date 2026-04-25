@@ -41,7 +41,7 @@ final class ResultsController {
         resultVM.cancel()
     }
 
-    func displayError(_ error: Error) {
+    func displayError(_ error: any Error) {
         let resultVM = results["current"]!
         resultVM.displayError(AppDBError.from(error))
     }

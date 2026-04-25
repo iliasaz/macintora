@@ -8,6 +8,7 @@ import Logging
 /// enabling the server-side buffer and then calling `DBMS_OUTPUT.GET_LINE` in a loop
 /// after each user statement.
 nonisolated enum DBMSOutput {
+    @concurrent
     static func enable(on connection: OracleConnection, logger: Logger) async throws {
         let stream = try await connection.execute(
             "BEGIN DBMS_OUTPUT.ENABLE(NULL); END;",
@@ -23,6 +24,7 @@ nonisolated enum DBMSOutput {
         for try await _ in stream { }
     }
 
+    @concurrent
     static func disable(on connection: OracleConnection, logger: Logger) async throws {
         let stream = try await connection.execute(
             "BEGIN DBMS_OUTPUT.DISABLE; END;",
@@ -34,6 +36,10 @@ nonisolated enum DBMSOutput {
     /// Drains the DBMS_OUTPUT buffer into a single newline-joined string.
     ///
     /// We cap at 10_000 lines per drain to guard against unbounded PUT_LINE loops.
+    /// `@concurrent` keeps the loop off the caller's actor (typically MainActor
+    /// under approachable concurrency) so the round-trip GET_LINE calls don't
+    /// pin the UI thread.
+    @concurrent
     static func drain(on connection: OracleConnection, logger: Logger) async throws -> String {
         var lines: [String] = []
         let maxLines = 10_000

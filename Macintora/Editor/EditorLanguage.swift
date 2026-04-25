@@ -10,6 +10,7 @@
 
 import Foundation
 import STPluginNeon
+import TreeSitterResource
 
 enum EditorLanguage: Sendable, Hashable {
     case sql

@@ -5,7 +5,9 @@ import Logging
 import Network
 import OracleNIO
 import NIOCore
+import NIOPosix
 import Synchronization
+import os
 
 extension UTType {
     static var macora: UTType {
@@ -13,10 +15,11 @@ extension UTType {
     }
 }
 
-// Conform to ReferenceFileDocument via an @preconcurrency extension so that the
-// @MainActor-isolated init/snapshot can satisfy the protocol witnesses. The
-// Sendable requirement is honoured via the thread-safe Mutex-backed save state.
-extension MainDocumentVM: @preconcurrency ReferenceFileDocument {}
+// `ReferenceFileDocument`'s requirements are now main-actor-friendly in newer
+// SwiftUI; `@preconcurrency` would be a no-op (compiler warns "has no effect").
+// The Sendable requirement is still honoured via the thread-safe Mutex-backed
+// save state — see `snapshot(contentType:)` and `fileWrapper(snapshot:…)`.
+extension MainDocumentVM: ReferenceFileDocument {}
 
 nonisolated public enum ConnectionStatus: Sendable {
     case connected, disconnected, changing
@@ -211,7 +214,7 @@ from dual;\n\n
             configuration = try OracleEndpoint.configuration(for: details, aliases: aliases)
         } catch {
             log.error("connection configuration failed: \(error.localizedDescription, privacy: .public)")
-            await resultsController?.displayError(AppDBError.from(error))
+            resultsController?.displayError(AppDBError.from(error))
             isConnected = .disconnected
             return
         }
@@ -243,7 +246,7 @@ from dual;\n\n
         } catch {
             let appError = AppDBError.from(error)
             log.error("connection failure: \(appError.description, privacy: .public)")
-            await resultsController?.displayError(appError)
+            resultsController?.displayError(appError)
             isConnected = .disconnected
         }
     }
@@ -271,6 +274,11 @@ from dual;\n\n
         }
     }
 
+    /// `@concurrent` keeps this off the caller's actor under Swift 6.2's
+    /// `NonisolatedNonsendingByDefault` rules — without it, a nonisolated async
+    /// static method now inherits the caller's actor (main, in our case),
+    /// which would block the UI while we wait on the v$session round-trip.
+    @concurrent
     nonisolated static func fetchOracleSession(on conn: OracleConnection, logger: Logging.Logger) async -> OracleSession {
         let sql: OracleStatement = """
             select sid, serial#, to_number(sys_context('userenv','instance')) instance, systimestamp as ts

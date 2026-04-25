@@ -14,6 +14,7 @@ nonisolated enum OracleEventLoopGroup {
     }()
 
     /// Request a clean shutdown. Safe to call multiple times; subsequent calls are no-ops.
+    @concurrent
     static func shutdown() async {
         try? await shared.shutdownGracefully()
     }

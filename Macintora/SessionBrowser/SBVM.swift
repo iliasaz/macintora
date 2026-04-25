@@ -2,7 +2,9 @@ import Foundation
 import AppKit
 import OracleNIO
 import NIOCore
+import NIOPosix
 import Logging
+import os
 
 @MainActor
 @Observable
@@ -96,10 +98,14 @@ final class SBVM {
                 id: Int.random(in: 1...Int.max),
                 logger: logger
             )
-            try? await newConn.execute(
+            // Drain so oracle-nio's `didTerminate` cleanup doesn't race the
+            // next execute. See `MainDocumentVM.performConnect`.
+            if let alterStream = try? await newConn.execute(
                 "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'",
                 logger: logger
-            )
+            ) {
+                for try await _ in alterStream { }
+            }
             self.conn = newConn
             self.oraSession = await MainDocumentVM.fetchOracleSession(on: newConn, logger: logger)
             connStatus = .connected
@@ -175,7 +181,9 @@ final class SBVM {
             begin DBMS_MONITOR.SESSION_TRACE_ENABLE(session_id => \(sid), serial_num => \(serial), waits => true, binds => true); end;
             """
         Task { [weak self] in
-            try? await self?.conn?.execute(stmt, logger: logger)
+            if let stream = try? await self?.conn?.execute(stmt, logger: logger) {
+                for try await _ in stream { }
+            }
             self?.populateData()
         }
     }
@@ -187,7 +195,9 @@ final class SBVM {
             begin DBMS_MONITOR.SESSION_TRACE_DISABLE(session_id => \(sid), serial_num => \(serial)); end;
             """
         Task { [weak self] in
-            try? await self?.conn?.execute(stmt, logger: logger)
+            if let stream = try? await self?.conn?.execute(stmt, logger: logger) {
+                for try await _ in stream { }
+            }
             self?.populateData()
         }
     }
@@ -252,7 +262,9 @@ final class SBVM {
             begin DBMS_SQL_MONITOR.END_OPERATION(dbop_name => \(name), dop_eid => \(dopEid)); end;
             """
         Task { [weak self] in
-            try? await self?.conn?.execute(stmt, logger: logger)
+            if let stream = try? await self?.conn?.execute(stmt, logger: logger) {
+                for try await _ in stream { }
+            }
             self?.populateData()
         }
     }
@@ -262,7 +274,9 @@ final class SBVM {
         let logger = oracleLogger
         let sql = "alter system kill session '\(sid),\(serial)' immediate"
         Task { [weak self] in
-            try? await self?.conn?.execute(OracleStatement(stringLiteral: sql), logger: logger)
+            if let stream = try? await self?.conn?.execute(OracleStatement(stringLiteral: sql), logger: logger) {
+                for try await _ in stream { }
+            }
             self?.populateData()
         }
     }

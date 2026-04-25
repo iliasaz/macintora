@@ -12,7 +12,7 @@ import SwiftUI
 import STTextView
 
 extension MacintoraEditor {
-    final class Coordinator: NSObject, @preconcurrency STTextViewDelegate {
+    final class Coordinator: NSObject, STTextViewDelegate {
         @Binding var text: String
         @Binding var selection: Range<String.Index>
 
