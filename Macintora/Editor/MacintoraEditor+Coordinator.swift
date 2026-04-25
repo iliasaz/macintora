@@ -12,7 +12,17 @@ import SwiftUI
 import STTextView
 
 extension MacintoraEditor {
-    final class Coordinator: NSObject, STTextViewDelegate {
+    /// `STTextViewDelegate` predates Swift Concurrency and isn't annotated;
+    /// the methods touch `@MainActor`-isolated `STTextView` API at runtime
+    /// (always called on main by AppKit) but the protocol witness is treated
+    /// as nonisolated, so Swift 6.2 emits warnings about each main-actor
+    /// access. The combinations that actually compile under approachable
+    /// concurrency leave at least one of those warnings — `@preconcurrency`,
+    /// `@MainActor`-on-class, and `@MainActor`-on-method all conflict with
+    /// the nonisolated protocol requirement. Leaving the warnings in place
+    /// with this comment documents the upstream limitation. Drop the warnings
+    /// when STTextView adopts Swift Concurrency.
+    final class Coordinator: NSObject, @preconcurrency STTextViewDelegate {
         @Binding var text: String
         @Binding var selection: Range<String.Index>
 

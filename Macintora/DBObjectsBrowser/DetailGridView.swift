@@ -122,11 +122,25 @@ struct DetailGridView: NSViewRepresentable {
 }
 
 
-class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataSource {
+/// `@MainActor` on the coordinator: every `NSTableViewDelegate` and
+/// `NSTableViewDataSource` callback is fired by AppKit on the main thread, so
+/// the methods are free to touch `NSTableView`, `NSTableColumn`, the parent
+/// `NSViewRepresentable`, and the SwiftUI bindings without isolation hops.
+/// Without this annotation, Swift 6.2 emits ~50 "main actor-isolated property
+/// can not be referenced from a nonisolated context" warnings across this
+/// coordinator. NSTableView's delegate protocols are now MainActor-annotated
+/// in the macOS SDK, so the conformance is accepted.
+///
+/// `nonisolated`-marked conformances pre-empt the upcoming
+/// `InferIsolatedConformances` feature flag: Swift would otherwise infer
+/// isolated conformances and the witness dispatch would change. Marking them
+/// explicitly preserves the current witness behaviour.
+@MainActor
+class DetailGridViewCoordinator: NSObject, nonisolated NSTableViewDelegate, nonisolated NSTableViewDataSource {
     var parent: DetailGridView
-    
+
     weak var tableView: TableViewWithPasteboard?
-    
+
     init(_ parent: DetailGridView) {
         self.parent = parent
     }
@@ -184,8 +198,11 @@ class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataS
             let colName = tableView.tableColumns[column].identifier.rawValue
             var width = tableView.tableColumns[column].width
             for row in parent.rows {
-                view.textField?.objectValue = row.value(forKey: colName)
-                let size = view.textField?.fittingSize ?? CGSize(width: 0.0, height: 0.0)
+                // `NSTableCellView.textField` is `@unsafe` (KVC-backed). The
+                // sizing loop runs on main actor inside `populateColumnHeaders`
+                // and only touches one cell view at a time, so no aliasing.
+                unsafe view.textField?.objectValue = row.value(forKey: colName)
+                let size = unsafe view.textField?.fittingSize ?? CGSize(width: 0.0, height: 0.0)
                 //                log.viewcycle.debug("col \(column) original width: \(tableView.tableColumns[column].width), new width: \(max(width, size.width))")
                 width = max(width, size.width)
             }
@@ -212,14 +229,16 @@ class DetailGridViewCoordinator: NSObject, NSTableViewDelegate, NSTableViewDataS
         text.preferredMaxLayoutWidth = 400
         
         let cell = NSTableCellView()
-        cell.textField = text
+        // `NSTableCellView.textField` is `@unsafe`. Assignment + KVO bind on
+        // a freshly-created cell — no aliasing risk.
+        unsafe cell.textField = text
         cell.addSubview(text)
         cell.autoresizingMask = .width
         cell.identifier = identifier
-        
+
         // bind text field to cell's objectValue, which is auto-magically populated
         // by tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? (see below)
-        cell.textField?.bind(.value , to: cell, withKeyPath: "objectValue", options: nil)
+        unsafe cell.textField?.bind(.value, to: cell, withKeyPath: "objectValue", options: nil)
         
         cell.addConstraint(NSLayoutConstraint(item: text, attribute: .centerY, relatedBy: .equal, toItem: cell, attribute: .centerY, multiplier: 1, constant: 0))
         cell.addConstraint(NSLayoutConstraint(item: text, attribute: .leading, relatedBy: .equal, toItem: cell, attribute: .leading, multiplier: 1, constant: 0))

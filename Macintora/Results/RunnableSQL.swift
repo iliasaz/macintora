@@ -40,31 +40,29 @@ struct RunnableSQL: Identifiable {
         guard let sql = sql else { return ret }
         let pattern = #"(:\w+)"#
         let exclPattern = #"(('.*?')|(/\*.*?\*/)|(--.*$))+"#
-        
-        
+
         let regex = try? NSRegularExpression(pattern: pattern, options: [])
         let qRegex = try? NSRegularExpression(pattern: exclPattern, options: [.anchorsMatchLines, .dotMatchesLineSeparators])
         let nsRange = NSRange(sql.startIndex..<sql.endIndex, in: sql)
         log.sqlparse.debug("sql: \(sql, privacy: .public)")
-        
-        // get quoted ranges first
-        let _ = qRegex?.enumerateMatches(in: sql, range: nsRange) { match, flags, stop in
-            guard let match = match else { print("no quote match"); return }
-            let range = Range(match.range, in: sql)!
+
+        // `matches(in:range:)` returns an array of results; preferred over the
+        // older `enumerateMatches(in:range:using:)` because the latter takes an
+        // `UnsafeMutablePointer<ObjCBool>` stop flag in its closure (Swift 6.2
+        // flags as "unsafe construct"). We don't need early-termination here.
+        for match in qRegex?.matches(in: sql, range: nsRange) ?? [] {
+            guard let range = Range(match.range, in: sql) else { continue }
             quotedRanges.append(range)
-            let val = sql[range]
-            log.sqlparse.debug("quoted range: \(match.range, privacy: .public), val: \(val, privacy: .public)")
+            log.sqlparse.debug("quoted range: \(match.range, privacy: .public), val: \(sql[range], privacy: .public)")
         }
 
-        let _ = regex?.enumerateMatches(in: sql, range: nsRange) { match, flags, stop in
-            guard let match = match else { print("no match"); return }
-            log.sqlparse.debug("found potential bind in range \(match.range)")
-            let range = Range(match.range, in: sql)!
+        for match in regex?.matches(in: sql, range: nsRange) ?? [] {
+            guard let range = Range(match.range, in: sql) else { continue }
             let val = sql[range]
-            
-            if quotedRanges.firstIndex(where: {$0.overlaps(range) }) != nil {
+            log.sqlparse.debug("found potential bind in range \(match.range)")
+            if quotedRanges.firstIndex(where: { $0.overlaps(range) }) != nil {
                 log.sqlparse.debug("ignoring quoted colon")
-                return
+                continue
             }
             ret.insert(String(val))
             log.sqlparse.debug("scanBindVars: range: \(match.range, privacy: .public), val: \(val, privacy: .public)")
@@ -86,26 +84,31 @@ struct RunnableSQL: Identifiable {
         // don't look for more than 1000 chars
         let nsRange = NSRange(sql.startIndex..<sql.index(sql.startIndex, offsetBy: min(1000, sql.count)), in: sql)
         log.sqlparse.debug("nsRange: \(nsRange), sql: \(sql)")
-        let _ = regex.enumerateMatches(in: sql, range: nsRange) { match, flags, stop in
-            guard let match = match, match.numberOfRanges > 2 else { log.sqlparse.debug("no match or less than 3 groups"); return }
-            
+        // Same swap as `scanBindVars`: `matches(in:range:)` returns an array
+        // we can `break` out of, avoiding the `UnsafeMutablePointer<ObjCBool>`
+        // `stop` parameter of `enumerateMatches`.
+        for match in regex.matches(in: sql, range: nsRange) {
+            guard match.numberOfRanges > 2 else {
+                log.sqlparse.debug("no match or less than 3 groups")
+                continue
+            }
             log.sqlparse.debug("=====================================")
             for i in 0 ..< match.numberOfRanges {
                 log.sqlparse.debug("range \(i), \(match.range(at: i)): value: \(sql[Range(match.range(at: i), in: sql) ?? sql.startIndex..<sql.startIndex ])")
             }
-            
+
             // get first two nonzero-based and nonzero-length ranges - should be type and compound name
             var typeNameRanges = [Range<String.Index>]()
             for i in 0 ..< match.numberOfRanges {
-                guard match.range(at: i).lowerBound > 0, match.range(at: i).length > 0 else {continue}
-                guard let r = Range(match.range(at: i), in: sql) else {continue}
+                guard match.range(at: i).lowerBound > 0, match.range(at: i).length > 0 else { continue }
+                guard let r = Range(match.range(at: i), in: sql) else { continue }
                 typeNameRanges.append(r)
                 if typeNameRanges.count > 2 { break }
             }
             // identifying type
             let typeRange = typeNameRanges[0]
-            let type = String(sql[typeRange]).trimmingCharacters(in: [" ", "\n", "\t"]).replacingOccurrences(of: "  ", with: " ") .uppercased()
-            
+            let type = String(sql[typeRange]).trimmingCharacters(in: [" ", "\n", "\t"]).replacingOccurrences(of: "  ", with: " ").uppercased()
+
             // identifying owner name name
             let nameRange = typeNameRanges[1]
             let maybeName = String(sql[nameRange]).trimmingCharacters(in: [" ", "\n", "\t"])
@@ -113,15 +116,18 @@ struct RunnableSQL: Identifiable {
                 // if doublequotes are in the name we should preserve case, otherwise convert to uppercase
                 $0.contains("\"") ? String($0.replacingOccurrences(of: "\"", with: "")) : String($0.uppercased())
             }
-            guard nameComponents.count < 3 else { log.sqlparse.debug("name components are wrong: \(nameComponents, privacy: .public)"); return }
-            
+            guard nameComponents.count < 3 else {
+                log.sqlparse.debug("name components are wrong: \(nameComponents, privacy: .public)")
+                continue
+            }
+
             // now we have all the details
             if nameComponents.count == 1 {
                 ret = (true, StoredProc(owner: nil, name: nameComponents[0], type: type))
             } else {
                 ret = (true, StoredProc(owner: nameComponents[0], name: nameComponents[1], type: type))
             }
-            stop.pointee = true
+            break  // first valid CREATE wins
         }
         log.sqlparse.debug("stored proc: \(ret.0, privacy: .public), \(ret.1.debugDescription, privacy: .public)")
         return ret
@@ -130,7 +136,13 @@ struct RunnableSQL: Identifiable {
 
 
 public func md5Hash(_ source: String) -> String {
-    return Insecure.MD5.hash(data: source.data(using: .utf8)!).map { String(format: "%02hhx", $0) }.joined()
+    // `String.data(using: .utf8)` never returns nil for a valid String, so the
+    // coalesce to empty Data is just defensive programming for the type system.
+    let data = source.data(using: .utf8) ?? Data()
+    // `String(format:_:)` uses C variadic argument passing — `@unsafe` in
+    // Swift 6.2's strict-memory-safety mode. The format string is a literal,
+    // so misuse is impossible.
+    return unsafe Insecure.MD5.hash(data: data).map { String(format: "%02hhx", $0) }.joined()
 }
 
 

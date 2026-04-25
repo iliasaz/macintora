@@ -220,14 +220,18 @@ struct RunningLogView: NSViewRepresentable {
     func updateNSView(_ nsView: NSViewType, context: Context) {
         let textView = (nsView.documentView as! NSTextView)
         textView.isSelectable = isSelectable
-        
+
+        // `NSTextView.textStorage` and `NSTextView.textContainer` are `@unsafe`
+        // (the underlying KVC-backed accessors can return aliased pointers).
+        // Both calls here only happen on the main thread inside SwiftUI's
+        // updateNSView, so there's no aliasing risk in practice.
         if let attributedText = attributedText,
            attributedText != textView.attributedString() {
-            textView.textStorage?.setAttributedString(attributedText)
+            unsafe textView.textStorage?.setAttributedString(attributedText)
         }
-        
+
         if let lineLimit = context.environment.lineLimit {
-            textView.textContainer?.maximumNumberOfLines = lineLimit
+            unsafe textView.textContainer?.maximumNumberOfLines = lineLimit
         }
     }
 }

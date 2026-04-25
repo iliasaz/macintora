@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import os
 
 struct ResultView: NSViewRepresentable {
     @ObservedObject var model: ResultViewModel
@@ -150,9 +151,14 @@ class ResultViewCoordinator: NSObject, nonisolated NSTableViewDelegate, nonisola
             var colWidth = tableView.tableColumns[columnIndex].width + 20
             // now calculate optimal width based on data width
             for row in parent.model.rows {
-                view.textField?.objectValue = row[colName]?.valueString
+                // `NSTableCellView.textField` is `@unsafe` in Swift 6.2's
+                // strict-memory-safety mode (the property is dynamically
+                // unboxed via KVC). The accesses below are a sequential
+                // assign-then-read on a single cell that lives entirely
+                // inside this AppKit-driven sizing loop — safe in practice.
+                unsafe view.textField?.objectValue = row[colName]?.valueString
                 // make data width capped at max column width
-                let dataWidth = min((view.textField?.fittingSize ?? CGSize(width: 0.0, height: 0.0)).width, Constants.maxColumnWidth)
+                let dataWidth = unsafe min((view.textField?.fittingSize ?? CGSize(width: 0.0, height: 0.0)).width, Constants.maxColumnWidth)
                 colWidth = max(colWidth, dataWidth)
             }
             tableView.tableColumns[columnIndex].width = colWidth
@@ -180,14 +186,17 @@ class ResultViewCoordinator: NSObject, nonisolated NSTableViewDelegate, nonisola
 //        text.preferredMaxLayoutWidth = 1200
         
         let cell = NSTableCellView()
-        cell.textField = text
+        // `NSTableCellView.textField` is `@unsafe` (KVC-backed). We only
+        // assign and immediately bind on a freshly-created cell, so there's
+        // no aliasing concern.
+        unsafe cell.textField = text
         cell.addSubview(text)
         cell.autoresizingMask = [.width, .height]
         cell.identifier = identifier
-        
+
         // bind text field to cell's objectValue, which is auto-magically populated
         // by tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? (see below)
-        cell.textField?.bind(.value, to: cell, withKeyPath: "objectValue", options: nil)
+        unsafe cell.textField?.bind(.value, to: cell, withKeyPath: "objectValue", options: nil)
         
         cell.addConstraint(NSLayoutConstraint(item: text, attribute: .top, relatedBy: .equal, toItem: cell, attribute: .top, multiplier: 1, constant: 0))
         cell.addConstraint(NSLayoutConstraint(item: text, attribute: .leading, relatedBy: .equal, toItem: cell, attribute: .leading, multiplier: 1, constant: 0))
