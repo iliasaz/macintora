@@ -3,6 +3,12 @@ name: Release
 on:
   release:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to attach the DMG to"
+        required: true
+        type: string
 
 env:
   SCHEME: Macintora
@@ -14,11 +20,24 @@ permissions:
 
 jobs:
   build-and-release:
-    runs-on: macos-15
+    runs-on: macos-26
 
     steps:
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${{ inputs.tag }}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Resolved release tag: $TAG"
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
 
       - name: Clone sibling SPM dependencies
         # The Xcode project references these as relative paths
@@ -110,7 +129,7 @@ jobs:
 
       - name: Create DMG
         run: |
-          DMG_NAME="${APP_NAME}-${{ github.event.release.tag_name }}"
+          DMG_NAME="${APP_NAME}-${{ steps.tag.outputs.tag }}"
           hdiutil create -volname "$APP_NAME" \
             -srcfolder "$APP_PATH" \
             -ov -format UDZO \
@@ -123,6 +142,7 @@ jobs:
       - name: Upload DMG to Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.tag.outputs.tag }}
           files: |
             *.dmg
         env:
