@@ -25,6 +25,10 @@ nonisolated public enum ConnectionStatus: Sendable {
     case connected, disconnected, changing
 }
 
+/// Sentinel thrown by ``MainDocumentVM/connectWithDeadline`` when the
+/// configured deadline elapses before oracle-nio finishes the connect.
+nonisolated struct ConnectTimeoutError: Error, Sendable {}
+
 nonisolated public enum ConnectionHealthStatus: Sendable {
     case ok, busy, lost, notConnected
 }
@@ -223,15 +227,18 @@ from dual;\n\n
         }
     }
 
+    /// Hard deadline we apply to the whole connect phase. Past this point
+    /// the UI is reported as disconnected; a hung server (e.g. oracle-nio
+    /// not surfacing ORA-28002 when a password is in EXPIRED(GRACE)) won't
+    /// freeze the document indefinitely.
+    private static let connectDeadline: Duration = .seconds(30)
+
     @MainActor
     private func performConnect(details: ConnectionDetails, configuration: OracleConnection.Configuration, logger: Logging.Logger) async {
         log.debug("Attempting to connect to \(details.username, privacy: .public)@\(details.tns, privacy: .public) as \(details.connectionRole == .sysDBA ? "SysDBA" : "regular user", privacy: .public)")
         do {
-            let newConn = try await OracleConnection.connect(
-                on: OracleEventLoopGroup.shared.next(),
-                configuration: configuration,
-                id: Int.random(in: 1...Int.max),
-                logger: logger
+            let newConn = try await Self.connectWithDeadline(
+                configuration: configuration, logger: logger
             )
             self.conn = newConn
             log.debug("connected to \(details.tns, privacy: .public)")
@@ -250,11 +257,50 @@ from dual;\n\n
             mainConnection.mainSession = session
             resultsController?.clearError()
             startPingTimer()
+        } catch is ConnectTimeoutError {
+            let hint = "Connection timed out. If your password is in the expiry warning window (grace period), Oracle may not respond — try changing it in SQL*Plus or another client first."
+            log.error("connection timed out: \(hint, privacy: .public)")
+            resultsController?.displayError(AppDBError(kind: .connection, message: hint))
+            isConnected = .disconnected
         } catch {
             let appError = AppDBError.from(error)
             log.error("connection failure: \(appError.description, privacy: .public)")
             resultsController?.displayError(appError)
             isConnected = .disconnected
+        }
+    }
+
+    /// Race `OracleConnection.connect` against ``connectDeadline``. The
+    /// loser is cancelled. oracle-nio's own TCP timeout (10s) only covers
+    /// the socket — the post-handshake auth flow has no internal deadline,
+    /// so the server can stall us indefinitely on edge cases like
+    /// EXPIRED(GRACE) accounts where it doesn't send the auth result.
+    @concurrent
+    nonisolated static func connectWithDeadline(
+        configuration: OracleConnection.Configuration,
+        logger: Logging.Logger
+    ) async throws -> OracleConnection {
+        try await withThrowingTaskGroup(of: OracleConnection.self) { group in
+            group.addTask {
+                try await OracleConnection.connect(
+                    on: OracleEventLoopGroup.shared.next(),
+                    configuration: configuration,
+                    id: Int.random(in: 1...Int.max),
+                    logger: logger
+                )
+            }
+            group.addTask {
+                try await Task.sleep(for: connectDeadline)
+                throw ConnectTimeoutError()
+            }
+            do {
+                let value = try await group.next()!
+                group.cancelAll()
+                return value
+            } catch {
+                group.cancelAll()
+                throw error
+            }
         }
     }
 

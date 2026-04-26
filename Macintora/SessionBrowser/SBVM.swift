@@ -91,11 +91,10 @@ final class SBVM {
 
     private func performConnect(configuration: OracleConnection.Configuration, logger: Logging.Logger) async {
         do {
-            let newConn = try await OracleConnection.connect(
-                on: OracleEventLoopGroup.shared.next(),
-                configuration: configuration,
-                id: Int.random(in: 1...Int.max),
-                logger: logger
+            // Match MainDocumentVM's deadline so the SB window doesn't lock
+            // up when the server hangs at auth phase two.
+            let newConn = try await MainDocumentVM.connectWithDeadline(
+                configuration: configuration, logger: logger
             )
             // Drain so oracle-nio's `didTerminate` cleanup doesn't race the
             // next execute. See `MainDocumentVM.performConnect`.
