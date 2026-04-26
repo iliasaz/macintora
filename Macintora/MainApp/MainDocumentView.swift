@@ -16,10 +16,19 @@ public enum FocusedView: Int, Hashable {
 struct MainDocumentView: View {
     @ObservedObject var document: MainDocumentVM
     @Environment(\.undoManager) var undoManager
+    @Environment(\.connectionStore) private var injectedStore
+    @Environment(\.keychainService) private var keychain
     @State private var selectedTab: String = "queryResults"
     @FocusState private var focusedView: FocusedView?
     @Environment(\.openDocument) private var openDocument
     @AppStorage("wordWrap") private var wordWrapping = false
+
+    private var store: ConnectionStore {
+        guard let injectedStore else {
+            preconditionFailure("ConnectionStore not installed in environment — wire it from MacOraApp.body")
+        }
+        return injectedStore
+    }
 
     @State private var resultsController: ResultsController
     @State private var editorSelection: Range<String.Index> = "".startIndex..<"".endIndex
@@ -48,11 +57,8 @@ struct MainDocumentView: View {
         NavigationSplitView {
             ConnectionListView(
                 connectionStatus: $document.isConnected,
-                username: $document.mainConnection.mainConnDetails.username,
-                password: $document.mainConnection.mainConnDetails.password,
-                selectedTns: Binding<String> ( get: { document.mainConnection.mainConnDetails.tns }, set: {document.mainConnection.mainConnDetails.tns = $0} ),
-                connectionRole: $document.mainConnection.mainConnDetails.connectionRole,
-                connect: document.connect,
+                details: $document.mainConnection.mainConnDetails,
+                connect: { document.connect(store: store, keychain: keychain) },
                 disconnect: document.disconnect
             )
             .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 420)
@@ -87,8 +93,9 @@ struct MainDocumentView: View {
         )
         .focusedSceneValue(\.mainConnection, document.mainConnection)
         .focusedSceneValue(\.selectedObjectName, selectedObject)
+        .tnsImportPromptOnFirstLaunch()
         .onAppear {
-            document.prepareOnAppear()
+            document.prepareOnAppear(store: injectedStore, keychain: keychain)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
                 self.focusedView = .codeEditor
             }
@@ -101,7 +108,7 @@ struct MainDocumentView: View {
                     if document.isConnected == .connected {
                         document.disconnect()
                     } else {
-                        document.connect()
+                        document.connect(store: store, keychain: keychain)
                     }
                     focusedView = .codeEditor
                 } label: {

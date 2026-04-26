@@ -17,12 +17,14 @@ struct DBCacheInputValue: Hashable, Codable, Equatable {
 struct DBCacheMainView: View {
     @ObservedObject var cache: DBCacheVM
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.connectionStore) private var injectedStore
+    @Environment(\.keychainService) private var keychain
     @State private var reportDisplayed = false
     @State private var columnVisibility = NavigationSplitViewVisibility.all
 //    @State private var totalCountMatched: Int = 0
     @SectionedFetchRequest var items: SectionedFetchResults<String?, DBCacheObject>
     @State private var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
-    
+
     init(cache: DBCacheVM) {
         self.cache = cache
         _items = SectionedFetchRequest(fetchRequest: DBCacheObject.fetchRequest(limit: cache.searchLimit, predicate: cache.searchCriteria.predicate), sectionIdentifier: \DBCacheObject.owner_, animation: .default)
@@ -62,6 +64,10 @@ struct DBCacheMainView: View {
             }
         }
         .searchable(text: query, placement: .sidebar, prompt: "type something")
+        .onAppear {
+            cache.store = injectedStore
+            cache.keychain = keychain
+        }
         .onChange(of: cache.searchCriteria.predicate) { _, value in
             listSelection = nil
             items.nsPredicate = value

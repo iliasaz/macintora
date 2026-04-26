@@ -115,4 +115,125 @@ final class TnsParserTests: XCTestCase {
         XCTAssertEqual(TnsParser.parse("").count, 0)
         XCTAssertEqual(TnsParser.parse("   \n\n  ").count, 0)
     }
+
+    // MARK: - parseDescriptor
+
+    func test_parseDescriptor_serviceName() {
+        let entry = TnsParser.parseDescriptor(
+            "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=h1)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=svc)))"
+        )
+        XCTAssertNotNil(entry)
+        XCTAssertEqual(entry?.host, "h1")
+        XCTAssertEqual(entry?.port, 1521)
+        XCTAssertEqual(entry?.serviceName, "svc")
+    }
+
+    func test_parseDescriptor_sid() {
+        let entry = TnsParser.parseDescriptor(
+            "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=h)(PORT=1521))(CONNECT_DATA=(SID=L)))"
+        )
+        XCTAssertNotNil(entry)
+        XCTAssertEqual(entry?.sid, "L")
+    }
+
+    func test_parseDescriptor_returnsNilForGarbage() {
+        XCTAssertNil(TnsParser.parseDescriptor("totally not a descriptor"))
+        XCTAssertNil(TnsParser.parseDescriptor(""))
+    }
+
+    // MARK: - Real-world patterns from user's tnsnames.ora
+
+    /// Quoted DN with embedded `=` and `,` plus shell-style `${TNS_ADMIN}`
+    /// substitution must not break parsing of the whole file.
+    func test_walletEntryWithQuotedDN() {
+        let file = """
+        ohfadw2020_high=(description=(retry_count=20)(retry_delay=3)(address=(https_proxy=www-proxy-hqdc.us.oracle.com)(https_proxy_port=80)(protocol=tcps)(port=1522)(host=adb.us-ashburn-1.oraclecloud.com))(connect_data=(service_name=m8yollkmjgtvmcu_ohfadw2020_high.adwc.oraclecloud.com))(security=(ssl_server_cert_dn="CN=adwc.uscom-east-1.oraclecloud.com,OU=Oracle BMCS US,O=Oracle Corporation,L=Redwood City,ST=California,C=US")(MY_WALLET_DIRECTORY=${TNS_ADMIN}/Wallet_OHFADW2020)))
+        """
+        let entries = TnsParser.parse(file)
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries[0].alias, "ohfadw2020_high")
+        XCTAssertEqual(entries[0].host, "adb.us-ashburn-1.oraclecloud.com")
+        XCTAssertEqual(entries[0].port, 1522)
+        XCTAssertEqual(entries[0].serviceName, "m8yollkmjgtvmcu_ohfadw2020_high.adwc.oraclecloud.com")
+    }
+
+    func test_descriptionListLoadBalanceFailover() {
+        let file = """
+        merck2=(DESCRIPTION_LIST=(LOAD_BALANCE=YES)(FAILOVER=YES)(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=h1)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=ebs_MERCK2)(INSTANCE_NAME=MERCK2C1)))(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=h2)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=ebs_MERCK2)(INSTANCE_NAME=MERCK2C2))))
+        """
+        let entries = TnsParser.parse(file)
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries[0].alias, "merck2")
+        XCTAssertEqual(entries[0].host, "h1") // first address in list
+        XCTAssertEqual(entries[0].serviceName, "ebs_MERCK2")
+    }
+
+    func test_brokenEntryDoesNotPoisonNeighbours() {
+        // Middle entry has unbalanced parens; bookends should still parse.
+        let file = """
+        good1=(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=h1)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=s1)))
+        broken=(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=oops)(PORT=1521)
+        good2=(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=h2)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=s2)))
+        """
+        let entries = TnsParser.parse(file)
+        let aliases = entries.map(\.alias)
+        XCTAssertTrue(aliases.contains("good1"))
+        XCTAssertTrue(aliases.contains("good2"))
+    }
+
+    /// Exercise the full real-world fixture to verify the parser doesn't
+    /// silently drop entries. Adaptive: counts approximate top-level
+    /// `IDENTIFIER=(DESCRIPTION` lines in the source and demands the parser
+    /// recovers at least 80% of them. The fixture lives outside the repo
+    /// (developer's Desktop) so this test only runs when present.
+    func test_realWorldUserFixtureParsesMost() {
+        let path = "/Users/ilia/Desktop/oracle/network/admin/tnsnames.ora"
+        guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else {
+            return
+        }
+        let entries = TnsParser.parse(contents)
+        let approximate = approximateTopLevelEntryCount(in: contents)
+        guard approximate > 0 else { return }
+        let ratio = Double(entries.count) / Double(approximate)
+        XCTAssertGreaterThanOrEqual(
+            ratio, 0.8,
+            "Parser dropped too many entries: parsed \(entries.count) of ~\(approximate)"
+        )
+    }
+
+    /// Heuristic count: number of lines whose first non-whitespace char
+    /// starts an identifier and contains `=(` — close enough as a sanity
+    /// upper bound for the parser's output.
+    private func approximateTopLevelEntryCount(in source: String) -> Int {
+        source.split(separator: "\n").reduce(into: 0) { acc, line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty, !trimmed.hasPrefix("#") else { return }
+            guard let first = trimmed.first, first.isLetter || first.isNumber else { return }
+            if trimmed.range(of: "=\\s*\\(\\s*[Dd][Ee][Ss][Cc]", options: .regularExpression) != nil {
+                acc += 1
+            }
+        }
+    }
+
+    func test_quotedScalarValueDoesNotBreakSubsequentChildren() {
+        let file = """
+        x=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=h)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=s))(SECURITY=(ssl_server_cert_dn="CN=foo,OU=bar")(EXTRA=baz)))
+        """
+        let entries = TnsParser.parse(file)
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries[0].host, "h")
+        XCTAssertEqual(entries[0].serviceName, "s")
+    }
+
+    func test_parseDescriptor_pickFirstAddress() {
+        let entry = TnsParser.parseDescriptor("""
+        (DESCRIPTION=
+          (ADDRESS_LIST=
+            (ADDRESS=(PROTOCOL=TCP)(HOST=node1)(PORT=1521))
+            (ADDRESS=(PROTOCOL=TCP)(HOST=node2)(PORT=1521)))
+          (CONNECT_DATA=(SERVICE_NAME=rac_svc)))
+        """)
+        XCTAssertEqual(entry?.host, "node1")
+        XCTAssertEqual(entry?.serviceName, "rac_svc")
+    }
 }

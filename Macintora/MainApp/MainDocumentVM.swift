@@ -25,6 +25,10 @@ nonisolated public enum ConnectionStatus: Sendable {
     case connected, disconnected, changing
 }
 
+/// Sentinel thrown by ``MainDocumentVM/connectWithDeadline`` when the
+/// configured deadline elapses before oracle-nio finishes the connect.
+nonisolated struct ConnectTimeoutError: Error, Sendable {}
+
 nonisolated public enum ConnectionHealthStatus: Sendable {
     case ok, busy, lost, notConnected
 }
@@ -185,46 +189,56 @@ from dual;\n\n
     /// a fallback ResultsController creation for environments (e.g. tests) that
     /// don't route through `MainDocumentView.init`.
     @MainActor
-    func prepareOnAppear() {
+    func prepareOnAppear(store: ConnectionStore? = nil, keychain: KeychainService = KeychainService()) {
         if resultsController == nil {
             resultsController = ResultsController(document: self)
         }
-        if shouldAutoConnectOnAppear, isConnected == .disconnected {
-            connect()
+        // Migrate documents written before the connection-manager overhaul:
+        // their `tns` is set, `savedConnectionID` is nil. If the store has a
+        // matching name, anchor the document on it.
+        if let store, mainConnection.mainConnDetails.savedConnectionID == nil,
+           !mainConnection.mainConnDetails.tns.isEmpty,
+           let saved = store.connection(named: mainConnection.mainConnDetails.tns) {
+            mainConnection.mainConnDetails.savedConnectionID = saved.id
+        }
+        if shouldAutoConnectOnAppear, isConnected == .disconnected, let store {
+            connect(store: store, keychain: keychain)
         }
     }
 
     // MARK: - Intent functions
 
     @MainActor
-    func connect() {
+    func connect(store: ConnectionStore, keychain: KeychainService) {
         isConnected = .changing
         let details = mainConnection.mainConnDetails
-        let aliases = loadTnsAliases()
         let logger = oracleLogger
-        Task { [weak self] in
-            await self?.performConnect(details: details, aliases: aliases, logger: logger)
-        }
-    }
-
-    @MainActor
-    private func performConnect(details: ConnectionDetails, aliases: [TnsEntry], logger: Logging.Logger) async {
         let configuration: OracleConnection.Configuration
         do {
-            configuration = try OracleEndpoint.configuration(for: details, aliases: aliases)
+            configuration = try OracleEndpoint.configuration(for: details, store: store, keychain: keychain)
         } catch {
             log.error("connection configuration failed: \(error.localizedDescription, privacy: .public)")
             resultsController?.displayError(AppDBError.from(error))
             isConnected = .disconnected
             return
         }
+        Task { [weak self] in
+            await self?.performConnect(details: details, configuration: configuration, logger: logger)
+        }
+    }
+
+    /// Hard deadline we apply to the whole connect phase. Past this point
+    /// the UI is reported as disconnected; a hung server (e.g. oracle-nio
+    /// not surfacing ORA-28002 when a password is in EXPIRED(GRACE)) won't
+    /// freeze the document indefinitely.
+    private static let connectDeadline: Duration = .seconds(30)
+
+    @MainActor
+    private func performConnect(details: ConnectionDetails, configuration: OracleConnection.Configuration, logger: Logging.Logger) async {
         log.debug("Attempting to connect to \(details.username, privacy: .public)@\(details.tns, privacy: .public) as \(details.connectionRole == .sysDBA ? "SysDBA" : "regular user", privacy: .public)")
         do {
-            let newConn = try await OracleConnection.connect(
-                on: OracleEventLoopGroup.shared.next(),
-                configuration: configuration,
-                id: Int.random(in: 1...Int.max),
-                logger: logger
+            let newConn = try await Self.connectWithDeadline(
+                configuration: configuration, logger: logger
             )
             self.conn = newConn
             log.debug("connected to \(details.tns, privacy: .public)")
@@ -243,11 +257,50 @@ from dual;\n\n
             mainConnection.mainSession = session
             resultsController?.clearError()
             startPingTimer()
+        } catch is ConnectTimeoutError {
+            let hint = "Connection timed out. If your password is in the expiry warning window (grace period), Oracle may not respond — try changing it in SQL*Plus or another client first."
+            log.error("connection timed out: \(hint, privacy: .public)")
+            resultsController?.displayError(AppDBError(kind: .connection, message: hint))
+            isConnected = .disconnected
         } catch {
             let appError = AppDBError.from(error)
             log.error("connection failure: \(appError.description, privacy: .public)")
             resultsController?.displayError(appError)
             isConnected = .disconnected
+        }
+    }
+
+    /// Race `OracleConnection.connect` against ``connectDeadline``. The
+    /// loser is cancelled. oracle-nio's own TCP timeout (10s) only covers
+    /// the socket — the post-handshake auth flow has no internal deadline,
+    /// so the server can stall us indefinitely on edge cases like
+    /// EXPIRED(GRACE) accounts where it doesn't send the auth result.
+    @concurrent
+    nonisolated static func connectWithDeadline(
+        configuration: OracleConnection.Configuration,
+        logger: Logging.Logger
+    ) async throws -> OracleConnection {
+        try await withThrowingTaskGroup(of: OracleConnection.self) { group in
+            group.addTask {
+                try await OracleConnection.connect(
+                    on: OracleEventLoopGroup.shared.next(),
+                    configuration: configuration,
+                    id: Int.random(in: 1...Int.max),
+                    logger: logger
+                )
+            }
+            group.addTask {
+                try await Task.sleep(for: connectDeadline)
+                throw ConnectTimeoutError()
+            }
+            do {
+                let value = try await group.next()!
+                group.cancelAll()
+                return value
+            } catch {
+                group.cancelAll()
+                throw error
+            }
         }
     }
 
@@ -330,15 +383,6 @@ from dual;\n\n
                 _ = logger
             }
         }
-    }
-
-    private nonisolated func loadTnsAliases() -> [TnsEntry] {
-        let defaultPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/.oracle/tnsnames.ora"
-        let path = UserDefaults.standard.string(forKey: "tnsnamesPath") ?? defaultPath
-        guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else {
-            return []
-        }
-        return TnsParser.parse(contents)
     }
 
     /// Here we determine the SQL under the current cursor position

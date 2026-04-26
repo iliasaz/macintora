@@ -34,8 +34,21 @@ final class ResultViewModelIntegrationTests: XCTestCase {
     func test_userRepro_queriesCancelDisconnect() async throws {
         let data = try Data(contentsOf: Self.fixtureURL)
         let doc = try await Task.detached { try MainDocumentVM(documentData: data) }.value
-        doc.prepareOnAppear()
-        doc.connect()
+
+        // Spin up a per-test connection store + Keychain so the fixture's
+        // `tns` resolves through the new connection-manager flow. The fixture
+        // doc carries `tns: <alias>`; we materialise a SavedConnection from
+        // tnsnames.ora at the user's standard path.
+        let storeURL = FileManager.default.temporaryDirectory
+            .appending(path: "macintora-int-\(UUID().uuidString).json")
+        let store = ConnectionStore(storeURL: storeURL)
+        defer { try? FileManager.default.removeItem(at: storeURL) }
+        let keychain = KeychainService(service: "com.iliasazonov.macintora.tests.\(UUID().uuidString)")
+        let tnsPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/.oracle/tnsnames.ora"
+        store.importFromTnsnames(at: tnsPath)
+
+        doc.prepareOnAppear(store: store, keychain: keychain)
+        doc.connect(store: store, keychain: keychain)
 
         // 0. Wait for the connection; skip if Oracle is unreachable.
         let connectDeadline = Date().addingTimeInterval(10)

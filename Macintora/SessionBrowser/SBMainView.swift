@@ -18,6 +18,9 @@ struct SBMainView: View {
     @State private var vm: SBVM
     @State var theWindow: NSWindow?
 
+    @Environment(\.connectionStore) private var injectedStore
+    @Environment(\.keychainService) private var keychain
+
     init(inputValue: SBInputValue) {
         _vm = State(wrappedValue: SBVM(mainConnection: inputValue.mainConnection))
     }
@@ -70,8 +73,9 @@ struct SBMainView: View {
             WindowAccessor(window: $theWindow)
         }
         .onAppear() {
+            guard let injectedStore else { return }
             if vm.connStatus == .disconnected {
-                vm.connectAndQuery()
+                vm.connectAndQuery(store: injectedStore, keychain: keychain)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification, object: theWindow)) { _ in

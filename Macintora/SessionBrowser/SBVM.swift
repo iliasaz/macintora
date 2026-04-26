@@ -72,31 +72,29 @@ final class SBVM {
             .replacing("$WHERE$", with: whereConditions)
     }
 
-    func connectAndQuery() {
+    func connectAndQuery(store: ConnectionStore, keychain: KeychainService) {
         connStatus = .changing
         let details = mainConnection.mainConnDetails
-        let aliases = loadTnsAliases()
         let logger = oracleLogger
-        Task { [weak self] in
-            await self?.performConnect(details: details, aliases: aliases, logger: logger)
-        }
-    }
-
-    private func performConnect(details: ConnectionDetails, aliases: [TnsEntry], logger: Logging.Logger) async {
         let configuration: OracleConnection.Configuration
         do {
-            configuration = try OracleEndpoint.configuration(for: details, aliases: aliases)
+            configuration = try OracleEndpoint.configuration(for: details, store: store, keychain: keychain)
         } catch {
             log.error("SB connection config failed: \(error.localizedDescription, privacy: .public)")
             connStatus = .disconnected
             return
         }
+        Task { [weak self] in
+            await self?.performConnect(configuration: configuration, logger: logger)
+        }
+    }
+
+    private func performConnect(configuration: OracleConnection.Configuration, logger: Logging.Logger) async {
         do {
-            let newConn = try await OracleConnection.connect(
-                on: OracleEventLoopGroup.shared.next(),
-                configuration: configuration,
-                id: Int.random(in: 1...Int.max),
-                logger: logger
+            // Match MainDocumentVM's deadline so the SB window doesn't lock
+            // up when the server hangs at auth phase two.
+            let newConn = try await MainDocumentVM.connectWithDeadline(
+                configuration: configuration, logger: logger
             )
             // Drain so oracle-nio's `didTerminate` cleanup doesn't race the
             // next execute. See `MainDocumentVM.performConnect`.
@@ -127,13 +125,6 @@ final class SBVM {
             self?.oraSession = nil
             self?.connStatus = .disconnected
         }
-    }
-
-    private nonisolated func loadTnsAliases() -> [TnsEntry] {
-        let defaultPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/.oracle/tnsnames.ora"
-        let path = UserDefaults.standard.string(forKey: "tnsnamesPath") ?? defaultPath
-        guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
-        return TnsParser.parse(contents)
     }
 
     func populateData() {

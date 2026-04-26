@@ -8,65 +8,79 @@
 import SwiftUI
 import AppKit
 
+/// Per-document connection picker. Reads the app-wide ``ConnectionStore`` and
+/// writes the chosen connection's ID + display name back into the document's
+/// ``ConnectionDetails``.
+///
+/// The picker is the only place that mutates `details.savedConnectionID` /
+/// `details.tns` from a document; everything else (browser windows, session
+/// browser, save/restore) reads them through.
 struct ConnectionListView: View {
-    @StateObject var tnsReader = TnsReader()
+    @Environment(\.connectionStore) private var injectedStore
+    @Environment(\.keychainService) private var keychain
+    @Environment(\.openSettings) private var openSettings
+
+    private var store: ConnectionStore {
+        guard let injectedStore else {
+            preconditionFailure("ConnectionStore not installed in environment — wire it from MacOraApp.body")
+        }
+        return injectedStore
+    }
+
     @Binding var connectionStatus: ConnectionStatus
-    @Binding var username: String
-    @Binding var password: String
-    @Binding var selectedTns: String
-    @Binding var connectionRole: ConnectionRole
-    var connect: (() -> Void)
-    var disconnect: (() -> Void)
-    @Environment(\.undoManager) var undoManager
-    
+    @Binding var details: ConnectionDetails
+    var connect: () -> Void
+    var disconnect: () -> Void
+
     var body: some View {
         VStack(alignment: .leading) {
             Text("Connection").font(.title)
-            HStack {
-                Picker("", selection: $selectedTns) {
-                    // Tagged empty placeholder so a fresh doc whose `tns`
-                    // field hasn't been picked yet (e.g. the "preview"
-                    // default from ConnectionDetails) maps to a valid tag
-                    // while we wait for the alias list to load.
-                    Text("").tag("")
-                    ForEach(tnsReader.tnsAliases, id: \.self) { alias in
-                        Text(alias).tag(alias)
-                    }
-                }
-                .labelsHidden()
 
-                Button {
-                    tnsReader.load()
-                } label: {
-                    Image(systemName: "arrow.triangle.2.circlepath").foregroundColor(.blue)
+            Picker("Connection", selection: selectionBinding) {
+                Text("Select a connection…").tag(SavedConnection.ID?.none)
+                ForEach(store.connections) { conn in
+                    Text(conn.name).tag(SavedConnection.ID?.some(conn.id))
                 }
             }
+            .labelsHidden()
             .frame(minWidth: 200, alignment: .leading)
             .disabled(connectionStatus == .connected)
-            .onAppear { reconcileSelectedTns() }
-            .onChange(of: tnsReader.tnsAliases) { _, _ in reconcileSelectedTns() }
-            
-            TextField("username", text: $username)
+
+            Button("Manage Connections…", systemImage: "slider.horizontal.3") {
+                openSettings()
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+            .disabled(connectionStatus == .connected)
+
+            if details.savedConnectionID == nil, !details.tns.isEmpty {
+                Text("Connection '\(details.tns)' is not in your store. Use Manage Connections… to import or recreate it.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            TextField("username", text: $details.username)
                 .textFieldStyle(.roundedBorder)
                 .frame(minWidth: 50)
                 .disableAutocorrection(true)
                 .disabled(connectionStatus == .connected)
-            
-            SecureField("password", text: $password)
+
+            SecureField("password", text: $details.password)
                 .textFieldStyle(.roundedBorder)
                 .frame(minWidth: 50)
                 .disableAutocorrection(true)
                 .disabled(connectionStatus == .connected)
-            
-            Picker(selection: $connectionRole, label: Text("Connect As:")) {
+
+            Picker("Connect As:", selection: $details.connectionRole) {
                 Text("Regular").tag(ConnectionRole.regular)
                 Text("SysDBA").tag(ConnectionRole.sysDBA)
             }
-                .pickerStyle(SegmentedPickerStyle())
-                .labelsHidden()
-                .frame(width: 150)
-                .disabled(connectionStatus == .connected)
-            
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(width: 150)
+            .disabled(connectionStatus == .connected)
+
             Button {
                 if connectionStatus == .connected {
                     disconnect()
@@ -74,144 +88,47 @@ struct ConnectionListView: View {
                     connect()
                 }
             } label: {
-                if connectionStatus == .connected {
-                    Text("Disconnect")
-                } else {
-                    Text("Connect")
-                }
+                Text(connectionStatus == .connected ? "Disconnect" : "Connect")
             }
-            
+
             Spacer()
         }
         .padding()
     }
 
-    /// Keeps `selectedTns` in sync with the available aliases. New documents
-    /// start with the placeholder `"preview"` (the default in
-    /// `ConnectionDetails`), which never appears in a real `tnsnames.ora` —
-    /// without this, SwiftUI's `Picker` logs "selection is invalid and does
-    /// not have an associated tag" on launch.
-    private func reconcileSelectedTns() {
-        let aliases = tnsReader.tnsAliases
-        if aliases.contains(selectedTns) { return }
-        selectedTns = ""
-    }
-}
-
-struct ConnectionListInnerView: View {
-    @Binding var tnsAliases: [String]
-    @State private var selectedTns: String = ""
-    
-    var body: some View {
-        Picker("TNS", selection: $selectedTns) {
-            ForEach(tnsAliases, id: \.self) {alias in
-                Text(alias)
+    /// Binds the Picker to `details.savedConnectionID`. On change, updates
+    /// the denormalised display fields (`tns`, default username, role).
+    private var selectionBinding: Binding<SavedConnection.ID?> {
+        Binding(
+            get: { details.savedConnectionID },
+            set: { newID in
+                details.savedConnectionID = newID
+                guard let newID, let conn = store.connection(id: newID) else {
+                    details.tns = ""
+                    return
+                }
+                details.tns = conn.name
+                if details.username.isEmpty {
+                    details.username = conn.defaultUsername
+                }
+                details.connectionRole = conn.defaultRole
+                if details.password.isEmpty,
+                   conn.savePasswordInKeychain,
+                   let stored = try? keychain.password(for: conn.id, kind: .databasePassword) {
+                    details.password = stored
+                }
             }
-        }
-    }
-}
-
-
-
-struct ConnectionListView_Previews: PreviewProvider {
-    static var previews: some View {
-        ConnectionListView(
-            connectionStatus: .constant(.disconnected),
-            username: .constant("user"),
-            password: .constant("password"),
-            selectedTns: .constant("tns"),
-            connectionRole: .constant(.regular),
-            connect: {},
-            disconnect: {}
         )
-            .environmentObject(MainDocumentVM())
     }
 }
 
-
-// NOTUSED
-
-//struct ConnectionListView_OLD: View {
-//    @StateObject var tnsReader = TnsReader()
-//    var body: some View {
-//        VStack(alignment: .leading) {
-//            Text("Connection").font(.title)
-//            ConnectionListInnerView(tnsAliases: $tnsReader.tnsAliases)
-//                .frame(minWidth: 200, maxHeight: 300, alignment: .topLeading)
-//
-//            Button {
-//                tnsReader.load()
-//            } label: {
-//                Text("Reload tnsnames.ora")
-//            }
-//
-//            Divider()
-//            LoginView()
-//
-////            Spacer()
-//        }
-//        .padding()
-//    }
-//}
-//
-//struct ConnectionListInnerView_OLD: View {
-//    @State var searchText: String = ""
-//    @EnvironmentObject var document: MainDocumentVM
-//    @StateObject var tnsReader = TnsReader()
-////    @Binding @FocusState var focusedView: FocusedView?
-//
-//    var body: some View {
-//        List(selection: $document.connDetails.tns) {
-//            ForEach(searchResults, id: \.self) { alias in
-//                Text(alias)
-//                    .frame(minWidth: 200, alignment: .leading)
-//            }
-//        }
-//        .searchable(text: $searchText, placement: .sidebar, prompt: "TNS alias")
-//        .listStyle(SidebarListStyle())
-//    }
-//
-//    var searchResults: [String] {
-//        if searchText.isEmpty {
-//            return tnsReader.tnsAliases
-//        } else {
-//            let list = tnsReader.tnsAliases.filter { $0.contains(searchText) }
-////            if list.count == 1 { focusedView = .login }
-//            return list
-//        }
-//    }
-//}
-
-//    func reloadConnections() {
-//        let tnsReader = TnsReader()
-//        if let data = UserDefaults.standard.data(forKey: "Connections") {
-//            if let decoded = try? JSONDecoder().decode([ConnectionDetails].self, from: data) {
-//                connections = decoded
-//                // merge unused TNS entries with saved connections
-//                let unusedTns = tnsReader.tnsAliases.subtracting( Set<String>(connections.map { $0.tns }.unique()) )
-//                objectWillChange.send()
-//                unusedTns.forEach { connections.append(ConnectionDetails(tns: $0)) }
-//                connections.sort(by: <)
-//                return
-//            }
-//        }
-//        // if no saved conneections, load tns aliases
-//        connections = tnsReader.tnsAliases.map { ConnectionDetails(tns: $0) }.sorted(by: <)
-//    }
-    
-//    func saveConnection() {
-//        objectWillChange.send()
-//        let username = selectedConnDetails?.username ?? ""
-//        let password = selectedConnDetails?.password ?? ""
-//        let tns = selectedConnDetails?.tns ?? ""
-//        let role = selectedConnDetails?.connectionRole
-//        if let connIndex = connections.firstIndex(where: {$0.tns == tns && $0.username == username} ) {
-//            connections[connIndex] = ConnectionDetails(username: username, password: password, tns: tns, connectionRole: role)
-//        } else {
-//            connections.append(ConnectionDetails(username: username, password: password, tns: tns, connectionRole: role))
-//        }
-//        connections.sort(by: <)
-//        if let encoded = try? JSONEncoder().encode(connections) {
-//            UserDefaults.standard.set(encoded, forKey: "Connections")
-//        }
-//    }
+#Preview {
+    @Previewable @State var status: ConnectionStatus = .disconnected
+    @Previewable @State var details = ConnectionDetails(username: "scott", tns: "PROD")
+    return ConnectionListView(
+        connectionStatus: $status,
+        details: $details,
+        connect: {},
+        disconnect: {}
+    )
+}

@@ -313,11 +313,17 @@ final class DBCacheVM: nonisolated ObservableObject {
 
     // MARK: - Service connection
 
+    var store: ConnectionStore?
+    var keychain: KeychainService = KeychainService()
+
     func connectSvc() async throws {
         log.cache.debug("Attempting to create an OracleClient")
         if self.isConnected == .connected { return }
-        let aliases = loadTnsAliases()
-        let config = try OracleEndpoint.configuration(for: connDetails, aliases: aliases)
+        guard let store else {
+            log.cache.error("DBCacheVM: ConnectionStore not configured before connect")
+            throw OracleEndpoint.ResolveError.unknownConnection
+        }
+        let config = try OracleEndpoint.configuration(for: connDetails, store: store, keychain: keychain)
         var options = OracleClient.Options()
         options.maximumConnections = cacheUpdateSessionLimit
         options.minimumConnections = 0
@@ -342,15 +348,6 @@ final class DBCacheVM: nonisolated ObservableObject {
         client = nil
         clientRunTask = nil
         isConnected = .disconnected
-    }
-
-    private nonisolated func loadTnsAliases() -> [TnsEntry] {
-        let defaultPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/.oracle/tnsnames.ora"
-        let path = UserDefaults.standard.string(forKey: "tnsnamesPath") ?? defaultPath
-        guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else {
-            return []
-        }
-        return TnsParser.parse(contents)
     }
 
     /// Runs the closure on a new CoreData background context.
