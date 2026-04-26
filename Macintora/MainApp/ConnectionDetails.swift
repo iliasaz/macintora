@@ -63,7 +63,7 @@ extension ConnectionDetails: Codable {
         case savedConnectionID, username, tns, connectionRole
     }
 
-    init(from decoder: Decoder) throws {
+  init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.savedConnectionID = try c.decodeIfPresent(UUID.self, forKey: .savedConnectionID)
         self.username = try c.decodeIfPresent(String.self, forKey: .username) ?? ""
@@ -73,7 +73,7 @@ extension ConnectionDetails: Codable {
         self.password = ""
     }
 
-    func encode(to encoder: Encoder) throws {
+  func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encodeIfPresent(savedConnectionID, forKey: .savedConnectionID)
         try c.encode(username, forKey: .username)
