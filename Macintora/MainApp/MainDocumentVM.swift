@@ -280,8 +280,8 @@ from dual;\n\n
         configuration: OracleConnection.Configuration,
         logger: Logging.Logger
     ) async throws -> OracleConnection {
-        try await withThrowingTaskGroup(of: OracleConnection.self) { group in
-            group.addTask {
+        try await withThrowingTaskGroup(of: OracleConnection.self) { @concurrent group in
+            group.addTask { @concurrent in
                 try await OracleConnection.connect(
                     on: OracleEventLoopGroup.shared.next(),
                     configuration: configuration,
@@ -289,7 +289,7 @@ from dual;\n\n
                     logger: logger
                 )
             }
-            group.addTask {
+            group.addTask { @concurrent in
                 try await Task.sleep(for: connectDeadline)
                 throw ConnectTimeoutError()
             }

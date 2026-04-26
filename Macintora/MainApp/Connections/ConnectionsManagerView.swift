@@ -2,6 +2,8 @@ import SwiftUI
 import AppKit
 import Logging
 import OracleNIO
+import NIOCore
+import NIOPosix
 import os
 
 extension os.Logger {
@@ -458,8 +460,8 @@ struct ConnectionsManagerView: View {
         logger.logLevel = .debug
         let testLogger = logger
 
-        return await withTaskGroup(of: TestStatus?.self) { group in
-            group.addTask {
+        return await withTaskGroup(of: TestStatus?.self) { @concurrent group in
+            group.addTask { @concurrent in
                 do {
                     let conn = try await OracleConnection.connect(
                         on: OracleEventLoopGroup.shared.next(),
@@ -483,7 +485,7 @@ struct ConnectionsManagerView: View {
                     return .failure(body)
                 }
             }
-            group.addTask {
+            group.addTask { @concurrent in
                 try? await Task.sleep(for: .seconds(20))
                 if Task.isCancelled { return nil }
                 let trace = await captured.tail(lines: 6)
@@ -535,7 +537,7 @@ private struct TestLogHandler: Logging.LogHandler {
     func log(event: Logging.LogEvent) {
         let text = "[\(event.level)] \(event.message.description)"
         let collector = self.collector
-        Task { await collector.append(text) }
+        Task { @concurrent in await collector.append(text) }
     }
 
     func log(
@@ -549,7 +551,7 @@ private struct TestLogHandler: Logging.LogHandler {
     ) {
         let text = "[\(level)] \(message.description)"
         let collector = self.collector
-        Task { await collector.append(text) }
+        Task { @concurrent in await collector.append(text) }
     }
 }
 
