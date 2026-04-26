@@ -42,11 +42,19 @@ struct EditorSettings: View {
     @AppStorage("serverTimeSeconds") private var serverTimeSeconds = false
     @AppStorage("wordWrap") private var wordWrap = false
     @AppStorage("editorTheme") private var editorThemeRaw: String = EditorTheme.default.rawValue
+    @AppStorage(TimestampDisplayMode.storageKey) private var timestampDisplayModeRaw: String = TimestampDisplayMode.mixed.rawValue
 
     private var editorThemeBinding: Binding<EditorTheme> {
         Binding(
             get: { EditorTheme(rawValue: editorThemeRaw) ?? .default },
             set: { editorThemeRaw = $0.rawValue }
+        )
+    }
+
+    private var timestampDisplayModeBinding: Binding<TimestampDisplayMode> {
+        Binding(
+            get: { TimestampDisplayMode(rawValue: timestampDisplayModeRaw) ?? .mixed },
+            set: { timestampDisplayModeRaw = $0.rawValue }
         )
     }
 
@@ -76,6 +84,12 @@ struct EditorSettings: View {
                 Picker("Color Theme", selection: editorThemeBinding) {
                     ForEach(EditorTheme.allCases) { theme in
                         Text(theme.displayName).tag(theme)
+                    }
+                }
+
+                Picker("Timestamp Display", selection: timestampDisplayModeBinding) {
+                    ForEach(TimestampDisplayMode.allCases) { mode in
+                        Text(mode.displayName).tag(mode)
                     }
                 }
             }
