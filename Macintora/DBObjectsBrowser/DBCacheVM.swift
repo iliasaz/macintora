@@ -259,7 +259,7 @@ final class DBCacheVM: nonisolated ObservableObject {
     }
 
     func clearCache() {
-        Task(priority: .utility) {
+        Task(priority: .userInitiated) {
             do {
                 try await deleteAll(from: "DBCacheTableColumn")
                 try await deleteAll(from: "DBCacheTable")
@@ -280,7 +280,7 @@ final class DBCacheVM: nonisolated ObservableObject {
 
     func updateCache(ignoreLastUpdate: Bool = false, withCleanup: Bool = false, cleanupOnly: Bool = false) {
         isReloading = true
-        Task(priority: .utility) { [weak self] in
+        Task(priority: .userInitiated) { [weak self] in
             guard let self else { return }
             if self.isConnected == .disconnected {
                 do {
