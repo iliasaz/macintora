@@ -104,6 +104,7 @@
 		AA00003A0000000000000000 /* JDBCURLParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00003B0000000000000000 /* JDBCURLParserTests.swift */; };
 		AA00003C0000000000000000 /* KeychainServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00003D0000000000000000 /* KeychainServiceTests.swift */; };
 		AA00003E0000000000000000 /* ConnectionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00003F0000000000000000 /* ConnectionStoreTests.swift */; };
+		AA0000F00000000000000000 /* FullRefreshReproTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000F10000000000000000 /* FullRefreshReproTests.swift */; };
 		AA0000400000000000000000 /* ConnectionDetailsCodableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000410000000000000000 /* ConnectionDetailsCodableTests.swift */; };
 		AA0000A00000000000000000 /* SavedConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000310000000000000000 /* SavedConnection.swift */; };
 		AA0000B00000000000000000 /* ConnectionStoreEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000B10000000000000000 /* ConnectionStoreEnvironment.swift */; };
@@ -236,6 +237,7 @@
 		AA00003B0000000000000000 /* JDBCURLParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JDBCURLParserTests.swift; sourceTree = "<group>"; };
 		AA00003D0000000000000000 /* KeychainServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainServiceTests.swift; sourceTree = "<group>"; };
 		AA00003F0000000000000000 /* ConnectionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStoreTests.swift; sourceTree = "<group>"; };
+		AA0000F10000000000000000 /* FullRefreshReproTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullRefreshReproTests.swift; sourceTree = "<group>"; };
 		AA0000410000000000000000 /* ConnectionDetailsCodableTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionDetailsCodableTests.swift; sourceTree = "<group>"; };
 		AA0000B10000000000000000 /* ConnectionStoreEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStoreEnvironment.swift; sourceTree = "<group>"; };
 		AA0000B30000000000000000 /* ConnectionsManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionsManagerView.swift; sourceTree = "<group>"; };
@@ -332,6 +334,7 @@
 				AA00003F0000000000000000 /* ConnectionStoreTests.swift */,
 				AA0000410000000000000000 /* ConnectionDetailsCodableTests.swift */,
 				AA0000C10000000000000000 /* LegacyDocumentMigrationTests.swift */,
+				AA0000F10000000000000000 /* FullRefreshReproTests.swift */,
 				49D0ECF22F9C1E070047540A /* Editor */,
 				49D0ED042F9C34410047540A /* Results */,
 			);
@@ -675,6 +678,7 @@
 				AA00003E0000000000000000 /* ConnectionStoreTests.swift in Sources */,
 				AA0000400000000000000000 /* ConnectionDetailsCodableTests.swift in Sources */,
 				AA0000C00000000000000000 /* LegacyDocumentMigrationTests.swift in Sources */,
+				AA0000F00000000000000000 /* FullRefreshReproTests.swift in Sources */,
 				49D0ECF62F9C1EB90047540A /* GetCurrentSqlTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1144,7 +1148,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/iliasaz/oracle-nio.git";
 			requirement = {
-				branch = "fix-timestamp-tz-negative-offset";
+				branch = "macintora";
 				kind = branch;
 			};
 		};
