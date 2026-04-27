@@ -259,7 +259,7 @@ final class DBCacheVM: nonisolated ObservableObject {
     }
 
     func clearCache() {
-        Task.init(priority: .background) {
+        Task(priority: .utility) {
             do {
                 try await deleteAll(from: "DBCacheTableColumn")
                 try await deleteAll(from: "DBCacheTable")
@@ -280,7 +280,7 @@ final class DBCacheVM: nonisolated ObservableObject {
 
     func updateCache(ignoreLastUpdate: Bool = false, withCleanup: Bool = false, cleanupOnly: Bool = false) {
         isReloading = true
-        Task.init(priority: .background) { [weak self] in
+        Task(priority: .utility) { [weak self] in
             guard let self else { return }
             if self.isConnected == .disconnected {
                 do {
@@ -581,13 +581,15 @@ from dba_objects o
                 options: options,
                 logger: logger
             )
-            var tables: [TableDTO] = []
+            // Drain the parent stream first. Issuing another execute on the
+            // same PooledConnection while a stream is open misaligns the
+            // oracle-nio protocol parser and crashes deep in QueryParameter.
+            var pending: [TableDTO] = []
             for try await row in stream {
                 let rr = row.makeRandomAccess()
                 guard let owner = rr.optString("OWNER"),
                       let name = rr.optString("TABLE_NAME") else { continue }
-                let columns = (try? await Self.fetchTableColumns(on: &conn, owner: owner, table: name, logger: logger)) ?? []
-                tables.append(TableDTO(
+                pending.append(TableDTO(
                     owner: owner,
                     name: name,
                     numRows: rr.optInt("NUM_ROWS") ?? 0,
@@ -596,6 +598,22 @@ from dba_objects o
                     sqltext: rr.optString("TEXT"),
                     isEditioning: rr.optString("EDITIONING_VIEW") == "Y",
                     isReadOnly: rr.optString("READ_ONLY") == "Y",
+                    columns: []
+                ))
+            }
+            var tables: [TableDTO] = []
+            tables.reserveCapacity(pending.count)
+            for t in pending {
+                let columns = (try? await Self.fetchTableColumns(on: &conn, owner: t.owner, table: t.name, logger: logger)) ?? []
+                tables.append(TableDTO(
+                    owner: t.owner,
+                    name: t.name,
+                    numRows: t.numRows,
+                    lastAnalyzed: t.lastAnalyzed,
+                    isPartitioned: t.isPartitioned,
+                    sqltext: t.sqltext,
+                    isEditioning: t.isEditioning,
+                    isReadOnly: t.isReadOnly,
                     columns: columns
                 ))
             }
@@ -707,13 +725,16 @@ from dba_objects o
                 options: options,
                 logger: logger
             )
-            var indexes: [IndexDTO] = []
+            // Drain the parent stream before issuing per-index column queries.
+            // Nested execute on the same PooledConnection while a stream is
+            // open misaligns the oracle-nio protocol parser and crashes deep
+            // in QueryParameter.decode.
+            var pending: [IndexDTO] = []
             for try await row in stream {
                 let rr = row.makeRandomAccess()
                 guard let owner = rr.optString("OWNER"),
                       let name = rr.optString("INDEX_NAME") else { continue }
-                let columns = (try? await Self.fetchIndexColumns(on: &conn, owner: owner, index: name, logger: logger)) ?? []
-                indexes.append(IndexDTO(
+                pending.append(IndexDTO(
                     owner: owner,
                     name: name,
                     type: rr.optString("INDEX_TYPE") ?? "",
@@ -733,6 +754,33 @@ from dba_objects o
                     degree: rr.optString("DEGREE"),
                     isPartitioned: rr.optString("PARTITIONED") == "YES",
                     isVisible: rr.optString("VISIBILITY") == "VISIBLE",
+                    columns: []
+                ))
+            }
+            var indexes: [IndexDTO] = []
+            indexes.reserveCapacity(pending.count)
+            for idx in pending {
+                let columns = (try? await Self.fetchIndexColumns(on: &conn, owner: idx.owner, index: idx.name, logger: logger)) ?? []
+                indexes.append(IndexDTO(
+                    owner: idx.owner,
+                    name: idx.name,
+                    type: idx.type,
+                    tableOwner: idx.tableOwner,
+                    tableName: idx.tableName,
+                    tablespaceName: idx.tablespaceName,
+                    isUnique: idx.isUnique,
+                    leafBlocks: idx.leafBlocks,
+                    distinctKeys: idx.distinctKeys,
+                    avgLeafBlocksPerKey: idx.avgLeafBlocksPerKey,
+                    avgDataBlocksPerKey: idx.avgDataBlocksPerKey,
+                    clusteringFactor: idx.clusteringFactor,
+                    isValid: idx.isValid,
+                    numRows: idx.numRows,
+                    sampleSize: idx.sampleSize,
+                    lastAnalyzed: idx.lastAnalyzed,
+                    degree: idx.degree,
+                    isPartitioned: idx.isPartitioned,
+                    isVisible: idx.isVisible,
                     columns: columns
                 ))
             }
