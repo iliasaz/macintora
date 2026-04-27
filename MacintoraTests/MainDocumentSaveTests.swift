@@ -88,6 +88,25 @@ final class MainDocumentSaveTests: XCTestCase {
         XCTAssertEqual(snap.connectionDetails.tns, "TEST")
     }
 
+    /// The session-restore path sets a process-wide flag that must override
+    /// the file's own `autoConnect=true` so a restored doc comes up
+    /// disconnected. With the flag clear, the file's intent wins as before.
+    func test_suppressFlagBlocksAutoConnectOnLoad() async throws {
+        var source = MainModel(text: "select 1 from dual")
+        source.autoConnect = true
+        let encoded = try JSONEncoder().encode(source)
+
+        // Baseline: flag clear, file's autoConnect honored.
+        let normal = try MainDocumentVM(documentData: encoded)
+        XCTAssertTrue(normal.shouldAutoConnectOnAppear)
+
+        MainDocumentVM.suppressAutoConnectOnLoad.withLock { $0 = true }
+        defer { MainDocumentVM.suppressAutoConnectOnLoad.withLock { $0 = false } }
+
+        let restored = try MainDocumentVM(documentData: encoded)
+        XCTAssertFalse(restored.shouldAutoConnectOnAppear)
+    }
+
     /// Full round-trip: type into a new doc, save it to disk, reopen via the
     /// init-from-data path, verify contents survived.
     func test_newDocumentSaveReopenRoundTrip() async throws {

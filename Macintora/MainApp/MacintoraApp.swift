@@ -8,6 +8,7 @@
 import SwiftUI
 import Combine
 import os
+import Synchronization
 import UniformTypeIdentifiers
 import OracleNIO
 
@@ -21,14 +22,33 @@ extension Logger {
 
 let log = Logger().default
 
-/// Forces the app to always open an Untitled document on launch (instead of
-/// showing the `NSOpenPanel` picker that macOS's default DocumentGroup flow
-/// presents when nothing was opened from launch args). Positional file args
-/// still open normally because NSApp's file-open handling fires earlier than
-/// `applicationShouldOpenUntitledFile`. This also means integration tests
-/// never see a picker — the host app comes up on an Untitled doc the tests can
-/// ignore.
-final class MacintoraAppDelegate: NSObject, NSApplicationDelegate {
+/// Owns launch-time document handling. Two responsibilities:
+///
+/// 1. Force an Untitled document on launch instead of the `NSOpenPanel` that
+///    macOS's default DocumentGroup flow would otherwise present. Files passed
+///    via Finder/CLI still open via the standard `application(_:open:)` path.
+///
+/// 2. Restore the previous session's saved documents at launch. URLs are
+///    snapshotted on every window key/close (and again on clean ⌘Q) to a
+///    UserDefaults list, then reopened from `applicationDidFinishLaunching` —
+///    SwiftUI's DocumentGroup auto-creates an Untitled doc before
+///    `applicationShouldOpenUntitledFile` would fire, so that classic hook
+///    can't be used here. Restored docs do NOT auto-connect even if their
+///    `MainModel.autoConnect == true`; the suppression flag on
+///    `MainDocumentVM` is held until every restore-time `init(documentData:)`
+///    has finished.
+@MainActor
+final class MacintoraAppDelegate: NSObject {
+    private let sessionRestorer = SessionRestorer()
+    private var pendingRestoreOpens = 0
+    private var sessionObservers: [any NSObjectProtocol] = []
+    /// Snapshots are no-ops while a restore is in progress; otherwise the
+    /// auto-created Untitled doc that SwiftUI shows during launch wipes the
+    /// persisted URL list before restore opens have populated documents.
+    private var restoreInProgress = false
+}
+
+extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Belt-and-suspenders: on some macOS versions the "Show Open panel at
         // startup" behaviour is driven by this global default rather than the
@@ -39,10 +59,101 @@ final class MacintoraAppDelegate: NSObject, NSApplicationDelegate {
         ])
     }
 
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // `OperationQueue.main` runs callbacks on the main thread, but the
+        // closure type isn't compile-time MainActor — wrap each body with
+        // `MainActor.assumeIsolated`.
+        let center = NotificationCenter.default
+        let main = OperationQueue.main
+        sessionObservers.append(
+            center.addObserver(forName: NSWindow.didBecomeMainNotification, object: nil, queue: main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.scheduleSessionSnapshot() }
+            }
+        )
+        sessionObservers.append(
+            center.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.scheduleSessionSnapshot() }
+            }
+        )
+
+        restoreSessionIfNeeded()
+    }
+
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
-        // Always open an Untitled document when no file was handed to us on
-        // launch. Never show the Open panel.
+        // SwiftUI's DocumentGroup typically auto-creates the Untitled doc
+        // before this hook fires on cold launch, so its return value is
+        // effectively unused. Keep `true` for the rare cases where it does.
         true
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        // Final save on clean ⌘Q. Force through even if a restore was still
+        // in flight so we capture the user's actual final state.
+        restoreInProgress = false
+        snapshotSession()
+    }
+}
+
+extension MacintoraAppDelegate {
+    private func restoreSessionIfNeeded() {
+        let urls = sessionRestorer.restorableURLs()
+        guard !urls.isEmpty else { return }
+
+        // Don't re-open files that are already open (e.g., user double-clicked
+        // a .macintora in Finder to launch — that file is already a doc).
+        let alreadyOpen = Set(NSDocumentController.shared.documents
+            .compactMap(\.fileURL)
+            .map(\.standardizedFileURL))
+        let toOpen = urls.filter { !alreadyOpen.contains($0.standardizedFileURL) }
+        guard !toOpen.isEmpty else { return }
+
+        restoreInProgress = true
+        pendingRestoreOpens = toOpen.count
+        MainDocumentVM.suppressAutoConnectOnLoad.withLock { $0 = true }
+
+        let controller = NSDocumentController.shared
+        for url in toOpen {
+            controller.openDocument(withContentsOf: url, display: true) { [weak self] _, _, error in
+                MainActor.assumeIsolated {
+                    if let error {
+                        log.error("session restore failed for \(url.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                    }
+                    self?.restoreOpenDidFinish()
+                }
+            }
+        }
+    }
+
+    private func restoreOpenDidFinish() {
+        pendingRestoreOpens -= 1
+        guard pendingRestoreOpens <= 0 else { return }
+
+        pendingRestoreOpens = 0
+        MainDocumentVM.suppressAutoConnectOnLoad.withLock { $0 = false }
+
+        // Close the auto-created Untitled now that restored docs are visible.
+        // Only close docs with no fileURL AND no edits — never destroy work.
+        let pristine = NSDocumentController.shared.documents.filter {
+            $0.fileURL == nil && !$0.isDocumentEdited
+        }
+        for doc in pristine { doc.close() }
+
+        restoreInProgress = false
+    }
+
+    /// Defer one main-actor hop so the documents collection has settled
+    /// (`willClose` fires before NSDocumentController has dropped the closing
+    /// doc; `didBecomeMain` may fire mid-open before `addDocument`).
+    private func scheduleSessionSnapshot() {
+        Task { @MainActor in
+            self.snapshotSession()
+        }
+    }
+
+    private func snapshotSession() {
+        guard !restoreInProgress else { return }
+        let urls = NSDocumentController.shared.documents.compactMap(\.fileURL)
+        sessionRestorer.saveSession(urls: urls)
     }
 }
 

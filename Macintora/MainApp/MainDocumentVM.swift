@@ -138,6 +138,12 @@ final class MainDocumentVM: ObservableObject, @unchecked Sendable {
     /// auto-connect. `MainDocumentView` consumes this on first appear.
     let shouldAutoConnectOnAppear: Bool
 
+    /// Process-wide kill-switch consulted by `init(documentData:)` while the
+    /// app is restoring the previous session at launch. Mutex-guarded because
+    /// `init(configuration:)` is `nonisolated` per the `ReferenceFileDocument`
+    /// contract and may run off the main actor.
+    static let suppressAutoConnectOnLoad = Mutex<Bool>(false)
+
     /// `ReferenceFileDocument.init(configuration:)` is nonisolated per the
     /// protocol and invoked by SwiftUI off the MainActor executor. Both inits
     /// stay nonisolated to satisfy the witness. `@MainActor` collaborators
@@ -172,7 +178,8 @@ from dual;\n\n
         self.modelStorage = Mutex(localModel)
         self.connectionStorage = Mutex(connection)
         self.dbName = localModel.connectionDetails.tns
-        self.shouldAutoConnectOnAppear = localModel.autoConnect ?? false
+        let suppressed = MainDocumentVM.suppressAutoConnectOnLoad.withLock { $0 }
+        self.shouldAutoConnectOnAppear = (localModel.autoConnect ?? false) && !suppressed
     }
 
     /// The view creates the `ResultsController` on the main actor and hands it

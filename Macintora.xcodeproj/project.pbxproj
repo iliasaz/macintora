@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 55;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -112,6 +112,8 @@
 		AA0000B70000000000000000 /* TnsImportPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000B80000000000000000 /* TnsImportPrompt.swift */; };
 		AA0000C00000000000000000 /* LegacyDocumentMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000C10000000000000000 /* LegacyDocumentMigrationTests.swift */; };
 		AA0000F00000000000000000 /* FullRefreshReproTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000F10000000000000000 /* FullRefreshReproTests.swift */; };
+		AA0001000000000000000000 /* SessionRestorer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001010000000000000000 /* SessionRestorer.swift */; };
+		AA0001020000000000000000 /* SessionRestorerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001030000000000000000 /* SessionRestorerTests.swift */; };
 		BB0000010000000000000000 /* MacintoraUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000000 /* MacintoraUITests.swift */; };
 		C1C1C1C100000000000000A1 /* STTextView in Frameworks */ = {isa = PBXBuildFile; productRef = B1B1B1B100000000000000A1 /* STTextView */; };
 		C2C2C2C200000000000000B2 /* STTextView-Plugin-Neon in Frameworks */ = {isa = PBXBuildFile; productRef = B2B2B2B200000000000000B2 /* STTextView-Plugin-Neon */; };
@@ -244,6 +246,8 @@
 		AA0000B80000000000000000 /* TnsImportPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TnsImportPrompt.swift; sourceTree = "<group>"; };
 		AA0000C10000000000000000 /* LegacyDocumentMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDocumentMigrationTests.swift; sourceTree = "<group>"; };
 		AA0000F10000000000000000 /* FullRefreshReproTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullRefreshReproTests.swift; sourceTree = "<group>"; };
+		AA0001010000000000000000 /* SessionRestorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRestorer.swift; sourceTree = "<group>"; };
+		AA0001030000000000000000 /* SessionRestorerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRestorerTests.swift; sourceTree = "<group>"; };
 		BB0000020000000000000000 /* MacintoraUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraUITests.swift; sourceTree = "<group>"; };
 		BB0000030000000000000000 /* MacintoraUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacintoraUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -332,6 +336,7 @@
 				AA00003B0000000000000000 /* JDBCURLParserTests.swift */,
 				AA00003D0000000000000000 /* KeychainServiceTests.swift */,
 				AA00003F0000000000000000 /* ConnectionStoreTests.swift */,
+				AA0001030000000000000000 /* SessionRestorerTests.swift */,
 				AA0000410000000000000000 /* ConnectionDetailsCodableTests.swift */,
 				AA0000C10000000000000000 /* LegacyDocumentMigrationTests.swift */,
 				AA0000F10000000000000000 /* FullRefreshReproTests.swift */,
@@ -350,6 +355,7 @@
 				4982890428B7EF5E00A28B04 /* ConnectionDetails.swift */,
 				49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */,
 				49D0ED312F9C50000047540A /* WindowLayoutPersister.swift */,
+				AA0001010000000000000000 /* SessionRestorer.swift */,
 				4982889628B1C41700A28B04 /* Formatter.swift */,
 				49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */,
 				4982890C28B95BC100A28B04 /* SettingsView.swift */,
@@ -676,6 +682,7 @@
 				AA00003A0000000000000000 /* JDBCURLParserTests.swift in Sources */,
 				AA00003C0000000000000000 /* KeychainServiceTests.swift in Sources */,
 				AA00003E0000000000000000 /* ConnectionStoreTests.swift in Sources */,
+				AA0001020000000000000000 /* SessionRestorerTests.swift in Sources */,
 				AA0000400000000000000000 /* ConnectionDetailsCodableTests.swift in Sources */,
 				AA0000C00000000000000000 /* LegacyDocumentMigrationTests.swift in Sources */,
 				AA0000F00000000000000000 /* FullRefreshReproTests.swift in Sources */,
@@ -735,6 +742,7 @@
 				4947FEA6286FA39D00AEBE60 /* TableViewWithPasteboard.swift in Sources */,
 				49B55F36270ADD8B00CFB3C7 /* MainDocumentView.swift in Sources */,
 				49D0ED302F9C50000047540A /* WindowLayoutPersister.swift in Sources */,
+				AA0001000000000000000000 /* SessionRestorer.swift in Sources */,
 				49EAEFA928C93263008F0B80 /* DBTriggerDetailView.swift in Sources */,
 				49EAEFAB28C9331C008F0B80 /* SourceView.swift in Sources */,
 				49C62C2427E010AE00DE69E4 /* ConnectionListView.swift in Sources */,
