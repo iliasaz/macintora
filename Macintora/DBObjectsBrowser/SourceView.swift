@@ -39,7 +39,8 @@ struct SourceView: View {
                     .closeOnEscape(true)
 
                     Task { [objName, text] in
-                        _ = await formatter.formatSource(name: objName, text: text)
+                        let formatted = await formatter.formatSource(name: objName, text: text)
+                        formatter.formattedSource = formatted
                     }
                 }
                 label: { Text("Format&View") }
@@ -69,7 +70,7 @@ struct SourceView: View {
                 isEditable: true,
                 isSelectable: true,
                 wordWrap: .constant(true),
-                showsLineNumbers: false,
+                showsLineNumbers: true,
                 highlightsSelectedLine: false,
                 accessibilityIdentifier: "editor.db.source"
             )

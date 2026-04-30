@@ -19,7 +19,7 @@ struct FormattedView: View {
             isEditable: false,
             isSelectable: true,
             wordWrap: .constant(true),
-            showsLineNumbers: false,
+            showsLineNumbers: true,
             highlightsSelectedLine: false,
             accessibilityIdentifier: "editor.db.formatted"
         )
