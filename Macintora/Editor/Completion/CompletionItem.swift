@@ -8,6 +8,7 @@
 //
 
 import AppKit
+import SwiftUI
 import STTextView
 
 // MARK: - Sendable suggestion structs
@@ -15,7 +16,10 @@ import STTextView
 struct TableSuggestion: Sendable, Hashable {
     let owner: String
     let name: String
-    let isView: Bool
+    /// Raw `ALL_OBJECTS.object_type` from the cache — `"TABLE"`, `"VIEW"`,
+    /// `"MATERIALIZED VIEW"`, `"SYNONYM"`, etc. Drives both the popup row's
+    /// secondary text and the icon choice.
+    let objectType: String
 }
 
 struct ColumnSuggestion: Sendable, Hashable {
@@ -70,37 +74,50 @@ final class MacintoraCompletionItem: NSObject, STCompletionItem, @unchecked Send
     }
 
     private func makeView() -> NSView {
-        let container = NSStackView()
-        container.orientation = .horizontal
-        container.alignment = .centerY
-        container.spacing = 6
-        container.edgeInsets = NSEdgeInsets(top: 2, left: 6, bottom: 2, right: 6)
+        // SwiftUI inside `NSHostingView` handles row sizing/layout cleanly —
+        // an earlier raw NSStackView attempt left the stack collapsed at
+        // (0,0,0,0) inside the cell because NSTableView's autoresizing
+        // contract for plain NSViews didn't propagate to the inner stack.
+        // STTextView's own demo (`TextEdit/Mac/CompletionItem.swift`) uses
+        // the same NSHostingView pattern.
+        NSHostingView(rootView: CompletionRowView(
+            displayText: displayText,
+            secondaryText: secondaryText,
+            symbolName: kind.symbolName))
+    }
+}
 
-        let icon = NSImageView()
-        icon.image = NSImage(systemSymbolName: kind.symbolName,
-                             accessibilityDescription: kind.symbolName)
-        icon.symbolConfiguration = .init(pointSize: 11, weight: .regular)
-        icon.contentTintColor = .secondaryLabelColor
-        icon.setContentHuggingPriority(.required, for: .horizontal)
+// MARK: - SwiftUI row
 
-        let name = NSTextField(labelWithString: displayText)
-        name.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-        name.textColor = .labelColor
-        name.lineBreakMode = .byTruncatingTail
+private struct CompletionRowView: View {
+    let displayText: String
+    let secondaryText: String?
+    let symbolName: String
 
-        container.addArrangedSubview(icon)
-        container.addArrangedSubview(name)
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: symbolName)
+                .symbolRenderingMode(.monochrome)
+                .foregroundStyle(Color(nsColor: .controlAccentColor))
+                .frame(width: 14, alignment: .center)
 
-        if let secondaryText {
-            let detail = NSTextField(labelWithString: secondaryText)
-            detail.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
-            detail.textColor = .secondaryLabelColor
-            detail.lineBreakMode = .byTruncatingTail
-            detail.setContentHuggingPriority(.defaultLow, for: .horizontal)
-            container.addArrangedSubview(detail)
+            Text(displayText)
+                .font(.system(.body, design: .monospaced))
+                .foregroundStyle(Color(nsColor: .labelColor))
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            if let secondaryText {
+                Text(secondaryText)
+                    .font(.callout)
+                    .foregroundStyle(Color(nsColor: .secondaryLabelColor))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+
+            Spacer(minLength: 0)
         }
-
-        return container
+        .padding(.horizontal, 6)
     }
 }
 
@@ -121,11 +138,18 @@ private extension MacintoraCompletionItem.Kind {
 
 extension MacintoraCompletionItem {
     static func make(from t: TableSuggestion) -> MacintoraCompletionItem {
-        MacintoraCompletionItem(
+        let kind: Kind
+        switch t.objectType {
+        case "TABLE": kind = .table
+        case "VIEW", "MATERIALIZED VIEW": kind = .view
+        case "SYNONYM": kind = .generic
+        default: kind = .table
+        }
+        return MacintoraCompletionItem(
             displayText: t.name,
             insertText: t.name,
-            secondaryText: t.owner,
-            kind: t.isView ? .view : .table)
+            secondaryText: "\(t.owner) · \(t.objectType)",
+            kind: kind)
     }
 
     static func make(from c: ColumnSuggestion) -> MacintoraCompletionItem {

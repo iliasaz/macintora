@@ -128,24 +128,18 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
         textView.setAccessibilityIdentifier(accessibilityIdentifier)
         textView.setAccessibilityRole(.textArea)
 
-        // When the host opted in to autocompletion, build the completion
-        // stack now and feed parse-tree updates from Neon directly into the
-        // shared `SQLTreeStore`. This avoids running a second tree-sitter
-        // parser inside the host process.
-        let onTreeUpdated: NeonPlugin.TreeUpdateHandler?
+        // Always create the SQLTreeStore and install Neon with a tree-update
+        // callback, even when the host hasn't (yet) opted in to autocompletion.
+        // The CompletionCoordinator is built lazily in `updateNSView` once
+        // `completionConfig` arrives — typical for SwiftUI worksheets where
+        // `.onAppear` builds the config AFTER `makeNSView` runs.
+        let treeStore = SQLTreeStore()
+        context.coordinator.treeStore = treeStore
+        let onTreeUpdated: NeonPlugin.TreeUpdateHandler = { [weak treeStore] tree in
+            treeStore?.update(tree)
+        }
         if let config = completionConfig {
-            let treeStore = SQLTreeStore()
-            let dataSource = CompletionDataSource(persistenceController: config.persistenceController)
-            let coordinator = CompletionCoordinator(
-                treeStore: treeStore,
-                dataSource: dataSource,
-                defaultOwnerProvider: config.defaultOwnerProvider)
-            context.coordinator.completionCoordinator = coordinator
-            onTreeUpdated = { [weak treeStore] tree in
-                treeStore?.update(tree)
-            }
-        } else {
-            onTreeUpdated = nil
+            context.coordinator.installCompletionCoordinator(with: config)
         }
 
         // Install the Neon syntax-highlighting plugin before the first text
@@ -166,6 +160,12 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? STTextView else { return }
+
+        // Promote a late-binding completion config (e.g. MainDocumentView's
+        // `.onAppear` runs after `makeNSView`) to a live CompletionCoordinator.
+        if let config = completionConfig, context.coordinator.completionCoordinator == nil {
+            context.coordinator.installCompletionCoordinator(with: config)
+        }
 
         if textView.isEditable != isEditable { textView.isEditable = isEditable }
         if textView.isSelectable != isSelectable { textView.isSelectable = isSelectable }

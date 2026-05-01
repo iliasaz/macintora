@@ -10,6 +10,10 @@
 import AppKit
 import SwiftUI
 import STTextView
+import os
+
+let editorCompletionLog = Logger(subsystem: "com.iliasazonov.macintora",
+                                 category: "editor.completion")
 
 extension MacintoraEditorRepresentable {
     /// `STTextViewDelegate` predates Swift Concurrency and isn't annotated, so
@@ -29,8 +33,18 @@ extension MacintoraEditorRepresentable {
         /// to prevent `updateNSView` from immediately writing the same value back.
         var isPushingSelection = false
 
-        /// Optional. Wired only when the editor is configured with a
-        /// `EditorCompletionConfig` (worksheet); read-only viewers leave this nil.
+        /// Always present once `makeNSView` has run; receives parse-tree
+        /// updates from the Neon plugin regardless of whether completion has
+        /// been wired yet. The CompletionCoordinator (created lazily once a
+        /// non-nil `EditorCompletionConfig` arrives) reads from this same
+        /// instance, so tree updates that fire before the coordinator exists
+        /// are not lost.
+        var treeStore: SQLTreeStore?
+
+        /// Lazily wired when `EditorCompletionConfig` arrives — typically
+        /// from `updateNSView` because SwiftUI's `.onAppear` runs the config
+        /// constructor AFTER `makeNSView`. Read-only viewers (DBBrowser
+        /// source/formatted) leave this nil for the editor's lifetime.
         var completionCoordinator: CompletionCoordinator?
 
         /// Last UTF-16 cursor location seen in the selection callback. Used to
@@ -43,15 +57,23 @@ extension MacintoraEditorRepresentable {
             self._selection = selection
         }
 
+        /// Builds the `CompletionCoordinator` using the previously installed
+        /// `treeStore`. Idempotent: subsequent calls are no-ops while a
+        /// coordinator is already in place.
         @MainActor
-        func textView(_ textView: STTextView, willChangeTextIn affectedCharRange: NSTextRange, replacementString: String?) {
-            // Capture the replacement string here so we can decide whether to
-            // auto-trigger after the change applies. STTextViewDelegate's
-            // didChange notification doesn't carry it.
-            pendingReplacement = replacementString
+        func installCompletionCoordinator(with config: EditorCompletionConfig) {
+            guard completionCoordinator == nil else { return }
+            guard let treeStore else {
+                editorCompletionLog.error("installCompletionCoordinator called before treeStore was set")
+                return
+            }
+            let dataSource = CompletionDataSource(persistenceController: config.persistenceController)
+            completionCoordinator = CompletionCoordinator(
+                treeStore: treeStore,
+                dataSource: dataSource,
+                defaultOwnerProvider: config.defaultOwnerProvider)
+            editorCompletionLog.info("installCompletionCoordinator: completion wired for editor")
         }
-
-        private var pendingReplacement: String?
 
         @MainActor
         func textViewDidChangeText(_ notification: Notification) {
@@ -62,13 +84,20 @@ extension MacintoraEditorRepresentable {
             if text != newText {
                 text = newText
             }
-            // Auto-trigger evaluation runs on every text change. The
-            // coordinator decides whether the keystroke warrants popping the
-            // completion menu and debounces accordingly.
-            if let replacement = pendingReplacement {
-                pendingReplacement = nil
-                completionCoordinator?.handleTextChange(textView, replacement: replacement)
-            }
+        }
+
+        /// `didChangeTextIn:replacementString:` is what STTextView calls with
+        /// the actual edit payload. Earlier I was capturing it via
+        /// `willChangeTextIn:replacementString:`, but my signature used
+        /// `String?` while the protocol requires `String`, so Swift never
+        /// matched it as a witness and the auto-trigger silently never fired.
+        @MainActor
+        func textView(_ textView: STTextView,
+                      didChangeTextIn affectedCharRange: NSTextRange,
+                      replacementString: String) {
+            guard !isApplyingExternalUpdate else { return }
+            editorCompletionLog.debug("didChangeTextIn replacement=\(replacementString, privacy: .public) coordinator=\(self.completionCoordinator != nil)")
+            completionCoordinator?.handleTextChange(textView, replacement: replacementString)
         }
 
         @MainActor

@@ -36,17 +36,28 @@ extension MacintoraEditorRepresentable.Coordinator {
     @MainActor
     func textView(_ textView: STTextView,
                   completionItemsAtLocation location: any NSTextLocation) async -> [any STCompletionItem]? {
-        guard let coordinator = completionCoordinator else { return nil }
+        guard let coordinator = completionCoordinator else {
+            editorCompletionLog.notice("async completion: no coordinator (config not yet installed)")
+            return nil
+        }
         let utf16Offset = textView.textContentManager.offset(
             from: textView.textContentManager.documentRange.location,
             to: location)
         let items: [MacintoraCompletionItem] =
             await coordinator.items(for: textView, atUTF16Offset: utf16Offset)
+        editorCompletionLog.info("async completion: offset=\(utf16Offset) returned \(items.count) item(s)")
         return items.isEmpty ? nil : items
     }
 
     @MainActor
     func textView(_ textView: STTextView, insertCompletionItem item: any STCompletionItem) {
         completionCoordinator?.insert(item, into: textView)
+    }
+
+    /// Provide our customised view controller (softer material + accent-tinted
+    /// selection). STTextView keeps owning the popup window and key handling.
+    @MainActor
+    func textViewCompletionViewController(_ textView: STTextView) -> any STCompletionViewControllerProtocol {
+        MacintoraCompletionViewController()
     }
 }

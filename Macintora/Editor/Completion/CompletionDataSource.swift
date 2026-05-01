@@ -25,32 +25,60 @@ actor CompletionDataSource {
         self.context.name = "completion-datasource"
     }
 
-    /// Tables/views whose name starts with `prefix`. Searches the user's
-    /// schema first; callers may run a second query for a different owner.
-    func tables(prefix: String,
-                defaultOwner: String,
+    /// Tables/views whose name **contains** `search` (case-insensitive).
+    /// Sourced from `DBCacheObject` (filtered by `type_ IN ("TABLE", "VIEW")`),
+    /// which is the comprehensive catalog the DB browser shows. Reading from
+    /// `DBCacheTable` would miss any table whose details haven't been
+    /// fetched yet.
+    ///
+    /// Returns matches across every cached schema; the connected schema is
+    /// sorted first as a relevance hint (NOT a filter), and prefix matches
+    /// rank above infix matches so a typed `EMP` still puts `EMPLOYEES`
+    /// ahead of `XYZ_EMP`. Empty `search` is scoped to `preferredOwner` only
+    /// to avoid dumping the entire cache.
+    func tables(search: String,
+                preferredOwner: String,
                 limit: Int) async -> [TableSuggestion] {
         await fetch { ctx -> [TableSuggestion] in
-            let request = DBCacheTable.fetchRequest()
-            let upperPrefix = prefix.uppercased()
-            let upperOwner = defaultOwner.uppercased()
-            if upperPrefix.isEmpty {
-                request.predicate = NSPredicate(format: "owner_ = %@", upperOwner)
+            let request = DBCacheObject.fetchRequest()
+            let upperSearch = search.uppercased()
+            let upperOwner = preferredOwner.uppercased()
+            // Anything you can SELECT from in the FROM clause. Oracle's
+            // ALL_OBJECTS.object_type uses the literal strings below; we
+            // include synonyms because they typically resolve to a table or
+            // view the user wants to query.
+            var predicates: [NSPredicate] = [
+                NSPredicate(format: "type_ IN %@",
+                            ["TABLE", "VIEW", "MATERIALIZED VIEW", "SYNONYM"])
+            ]
+            if upperSearch.isEmpty {
+                predicates.append(NSPredicate(format: "owner_ = %@", upperOwner))
             } else {
-                request.predicate = NSPredicate(
-                    format: "owner_ = %@ AND name_ BEGINSWITH[c] %@",
-                    upperOwner, upperPrefix)
+                predicates.append(NSPredicate(format: "name_ CONTAINS[c] %@", upperSearch))
             }
-            request.sortDescriptors = [NSSortDescriptor(key: "name_", ascending: true)]
-            request.fetchLimit = limit
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+            request.sortDescriptors = [
+                NSSortDescriptor(key: "owner_", ascending: true),
+                NSSortDescriptor(key: "name_", ascending: true)
+            ]
+            // Pull a wider candidate set than the popup limit so the
+            // prefix-first / preferred-owner-first reordering done in Swift
+            // below doesn't get truncated to a noisy slice.
+            request.fetchLimit = max(limit * 4, limit)
             do {
                 let rows = try ctx.fetch(request)
-                return rows.map { row in
+                let suggestions = rows.map { row in
                     TableSuggestion(
                         owner: row.owner_ ?? "",
                         name: row.name_ ?? "",
-                        isView: row.isView)
+                        objectType: row.type_ ?? "TABLE")
                 }
+                return self.rank(suggestions,
+                                 name: \.name,
+                                 owner: \.owner,
+                                 search: upperSearch,
+                                 preferredOwner: upperOwner,
+                                 limit: limit)
             } catch {
                 self.logger.error("tables fetch failed: \(error.localizedDescription, privacy: .public)")
                 return []
@@ -58,36 +86,44 @@ actor CompletionDataSource {
         }
     }
 
-    /// Columns of a specific table. `owner` defaults to whatever was saved on
-    /// the cached row when nil.
+    /// Columns of a specific table. `search` is matched as a case-insensitive
+    /// substring against the column name. When `owner` is nil the query is
+    /// open to every schema with a matching table (relevant when the user
+    /// typed an alias whose backing table couldn't be schema-disambiguated).
     func columns(tableName: String,
                  owner: String?,
-                 prefix: String,
+                 search: String,
                  limit: Int) async -> [ColumnSuggestion] {
         await fetch { ctx -> [ColumnSuggestion] in
             let request = DBCacheTableColumn.fetchRequest()
             let upperTable = tableName.uppercased()
-            let upperPrefix = prefix.uppercased()
+            let upperSearch = search.uppercased()
             var predicates: [NSPredicate] = [
                 NSPredicate(format: "tableName_ = %@", upperTable)
             ]
             if let owner {
                 predicates.append(NSPredicate(format: "owner_ = %@", owner.uppercased()))
             }
-            if !upperPrefix.isEmpty {
-                predicates.append(NSPredicate(format: "columnName_ BEGINSWITH[c] %@", upperPrefix))
+            if !upperSearch.isEmpty {
+                predicates.append(NSPredicate(format: "columnName_ CONTAINS[c] %@", upperSearch))
             }
             request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-            request.fetchLimit = limit
+            // Wider fetch so the prefix-first re-rank below has material to
+            // sort.
+            request.fetchLimit = max(limit * 4, limit)
             do {
                 let rows = try ctx.fetch(request)
-                return rows.map { row in
+                let suggestions = rows.map { row in
                     ColumnSuggestion(
                         owner: row.owner_ ?? "",
                         tableName: row.tableName_ ?? "",
                         columnName: row.columnName_ ?? "",
                         dataType: row.dataType_ ?? "")
                 }
+                return self.rankByPrefixThenInfix(suggestions,
+                                                  name: \.columnName,
+                                                  search: upperSearch,
+                                                  limit: limit)
             } catch {
                 self.logger.error("columns fetch failed: \(error.localizedDescription, privacy: .public)")
                 return []
@@ -95,20 +131,25 @@ actor CompletionDataSource {
         }
     }
 
-    /// Objects (tables, views, packages, etc.) for `owner.prefix...` style
-    /// completion (e.g. when the user types `HR.`).
-    func objects(prefix: String,
+    /// Objects (tables, views, packages, etc.). `search` is a case-insensitive
+    /// substring match against the name. When `owner` is non-nil the query
+    /// is strictly scoped to that schema — used for `schema.<search>`. When
+    /// `owner` is nil the query spans every schema and the `preferredOwner`
+    /// (if any) is sorted first; prefix matches still rank above infix.
+    func objects(search: String,
                  owner: String?,
+                 preferredOwner: String? = nil,
                  types: [String],
                  limit: Int) async -> [ObjectSuggestion] {
         await fetch { ctx -> [ObjectSuggestion] in
             let request = DBCacheObject.fetchRequest()
+            let upperSearch = search.uppercased()
             var predicates: [NSPredicate] = []
             if let owner {
                 predicates.append(NSPredicate(format: "owner_ = %@", owner.uppercased()))
             }
-            if !prefix.isEmpty {
-                predicates.append(NSPredicate(format: "name_ BEGINSWITH[c] %@", prefix.uppercased()))
+            if !upperSearch.isEmpty {
+                predicates.append(NSPredicate(format: "name_ CONTAINS[c] %@", upperSearch))
             }
             if !types.isEmpty {
                 predicates.append(NSPredicate(format: "type_ IN %@", types))
@@ -120,20 +161,100 @@ actor CompletionDataSource {
                 NSSortDescriptor(key: "type_", ascending: true),
                 NSSortDescriptor(key: "name_", ascending: true)
             ]
-            request.fetchLimit = limit
+            request.fetchLimit = max(limit * 4, limit)
             do {
                 let rows = try ctx.fetch(request)
-                return rows.map { row in
+                let suggestions = rows.map { row in
                     ObjectSuggestion(
                         owner: row.owner_ ?? "",
                         name: row.name_ ?? "",
                         type: row.type_ ?? "")
                 }
+                if owner != nil {
+                    // Strict-owner case: just rank by prefix-vs-infix.
+                    return self.rankByPrefixThenInfix(suggestions,
+                                                     name: \.name,
+                                                     search: upperSearch,
+                                                     limit: limit)
+                }
+                let preferred = preferredOwner?.uppercased() ?? ""
+                return self.rank(suggestions,
+                                 name: \.name,
+                                 owner: \.owner,
+                                 search: upperSearch,
+                                 preferredOwner: preferred,
+                                 limit: limit)
             } catch {
                 self.logger.error("objects fetch failed: \(error.localizedDescription, privacy: .public)")
                 return []
             }
         }
+    }
+
+    /// Two-tier rank for a list returned by a `CONTAINS[c]` predicate:
+    /// 1. name-prefix matches first, infix matches after;
+    /// 2. within each tier, rows whose owner equals `preferredOwner` first.
+    /// Stable within tiers (CoreData's sort order is preserved). Truncated
+    /// to `limit`. `nonisolated` because the helper is pure and called from
+    /// the actor's background `context.perform` closure.
+    nonisolated private func rank<T>(_ rows: [T],
+                                     name: KeyPath<T, String>,
+                                     owner: KeyPath<T, String>,
+                                     search: String,
+                                     preferredOwner: String,
+                                     limit: Int) -> [T] {
+        guard !search.isEmpty else {
+            return ownerFirst(rows, owner: owner, preferredOwner: preferredOwner, limit: limit)
+        }
+        var prefixHits: [T] = []
+        var infixHits: [T] = []
+        for row in rows {
+            if row[keyPath: name].uppercased().hasPrefix(search) {
+                prefixHits.append(row)
+            } else {
+                infixHits.append(row)
+            }
+        }
+        let prefixOrdered = ownerFirst(prefixHits, owner: owner, preferredOwner: preferredOwner, limit: limit)
+        let infixOrdered = ownerFirst(infixHits, owner: owner, preferredOwner: preferredOwner, limit: limit)
+        return Array((prefixOrdered + infixOrdered).prefix(limit))
+    }
+
+    /// Same idea as `rank(_:name:owner:search:preferredOwner:limit:)` but
+    /// without the owner-tier — used when the caller has already constrained
+    /// by owner (e.g. `schema.<search>`).
+    nonisolated private func rankByPrefixThenInfix<T>(_ rows: [T],
+                                                      name: KeyPath<T, String>,
+                                                      search: String,
+                                                      limit: Int) -> [T] {
+        guard !search.isEmpty else { return Array(rows.prefix(limit)) }
+        var prefixHits: [T] = []
+        var infixHits: [T] = []
+        for row in rows {
+            if row[keyPath: name].uppercased().hasPrefix(search) {
+                prefixHits.append(row)
+            } else {
+                infixHits.append(row)
+            }
+        }
+        return Array((prefixHits + infixHits).prefix(limit))
+    }
+
+    nonisolated private func ownerFirst<T>(_ rows: [T],
+                                           owner: KeyPath<T, String>,
+                                           preferredOwner: String,
+                                           limit: Int) -> [T] {
+        guard !preferredOwner.isEmpty else { return Array(rows.prefix(limit)) }
+        var preferred: [T] = []
+        var others: [T] = []
+        for row in rows {
+            if row[keyPath: owner] == preferredOwner {
+                preferred.append(row)
+            } else {
+                others.append(row)
+            }
+        }
+        return Array((preferred + others).prefix(limit))
     }
 
     // MARK: - Background-context wrapper

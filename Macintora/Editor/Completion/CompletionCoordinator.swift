@@ -33,6 +33,13 @@ final class CompletionCoordinator: @unchecked Sendable {
     /// fire `complete(_:)` after the user pauses.
     private var debounceTask: Task<Void, Never>?
 
+    /// Set true while we're applying a chosen completion. STTextView fires
+    /// `didChangeTextIn` synchronously inside `replaceCharacters`, which
+    /// would otherwise be interpreted as the user typing the inserted text
+    /// and immediately re-pop the completion menu. We swallow the next
+    /// notification by checking this flag in `handleTextChange`.
+    private var isInsertingCompletion = false
+
     /// Maximum suggestions per fetch; keeps the popup table snappy.
     private let fetchLimit = 50
 
@@ -59,15 +66,17 @@ final class CompletionCoordinator: @unchecked Sendable {
         let context = analyzer.analyze(source: source, tree: tree, utf16Offset: offset)
 
         let owner = defaultOwnerProvider()
+        editorCompletionLog.info("items(): context=\(String(describing: context), privacy: .public) preferredOwner=\(owner, privacy: .public) (sort hint, not a filter) treeAvailable=\(tree != nil)")
 
         switch context {
         case .none:
             return []
 
         case .afterFromKeyword(let prefix):
-            let tables = await dataSource.tables(prefix: prefix,
-                                                 defaultOwner: owner,
+            let tables = await dataSource.tables(search: prefix,
+                                                 preferredOwner: owner,
                                                  limit: fetchLimit)
+            editorCompletionLog.info("afterFromKeyword: search=\(prefix, privacy: .public) preferredOwner=\(owner, privacy: .public) → \(tables.count) tables")
             return tables.map { MacintoraCompletionItem.make(from: $0) }
 
         case .columnReference(let qualifier, let prefix):
@@ -87,12 +96,15 @@ final class CompletionCoordinator: @unchecked Sendable {
 
         case .identifierPrefix(let prefix):
             // Soft fallback: if the prefix is non-trivial, surface objects
-            // from the user's schema. Avoids spamming on a single keystroke.
+            // across all cached schemas; the user's connected schema is
+            // sorted first as a relevance hint.
             guard prefix.count >= 2 else { return [] }
-            let objects = await dataSource.objects(prefix: prefix,
-                                                   owner: owner,
+            let objects = await dataSource.objects(search: prefix,
+                                                   owner: nil,
+                                                   preferredOwner: owner,
                                                    types: ["TABLE", "VIEW", "PACKAGE"],
                                                    limit: fetchLimit)
+            editorCompletionLog.info("identifierPrefix: prefix=\(prefix, privacy: .public) preferredOwner=\(owner, privacy: .public) → \(objects.count) objects")
             return objects.map { MacintoraCompletionItem.make(from: $0) }
         }
     }
@@ -114,7 +126,9 @@ final class CompletionCoordinator: @unchecked Sendable {
             start -= 1
         }
         let replaceRange = NSRange(location: start, length: cursor - start)
+        isInsertingCompletion = true
         textView.replaceCharacters(in: replaceRange, with: item.insertText)
+        isInsertingCompletion = false
     }
 
     // MARK: - Auto-trigger
@@ -125,19 +139,42 @@ final class CompletionCoordinator: @unchecked Sendable {
     func handleTextChange(_ textView: STTextView, replacement: String) {
         debounceTask?.cancel()
 
+        // The text change is the result of accepting a popup item — don't
+        // treat the inserted text as a fresh user keystroke and re-pop the
+        // menu. The flag is reset by `insert(_:into:)` after the call
+        // returns; STTextView fires the change notification synchronously.
+        if isInsertingCompletion {
+            editorCompletionLog.debug("auto-trigger skipped: completion insertion in progress")
+            return
+        }
+
         // Suppress while marked text (IME composition) is active.
-        if textView.hasMarkedText() { return }
+        if textView.hasMarkedText() {
+            editorCompletionLog.debug("auto-trigger skipped: marked text active")
+            return
+        }
 
         // Decide whether the keystroke is a completion trigger:
         //   * `.` after an identifier → dotted member
         //   * an identifier character with prefix length ≥ 1 → prefix typing
-        guard shouldAutoTrigger(textView: textView, replacement: replacement) else { return }
+        guard shouldAutoTrigger(textView: textView, replacement: replacement) else {
+            editorCompletionLog.debug("auto-trigger skipped: shouldAutoTrigger=false replacement=\(replacement, privacy: .public)")
+            return
+        }
 
+        editorCompletionLog.debug("auto-trigger scheduled (debounce \(self.debounceInterval)) replacement=\(replacement, privacy: .public)")
         debounceTask = Task { [weak self, weak textView] in
             guard let self else { return }
             try? await Task.sleep(for: debounceInterval)
-            if Task.isCancelled { return }
-            guard let textView else { return }
+            if Task.isCancelled {
+                editorCompletionLog.debug("auto-trigger cancelled after sleep")
+                return
+            }
+            guard let textView else {
+                editorCompletionLog.debug("auto-trigger: textView gone after sleep")
+                return
+            }
+            editorCompletionLog.debug("auto-trigger firing: textView.complete(_:)")
             textView.complete(self)
         }
     }
@@ -189,7 +226,7 @@ final class CompletionCoordinator: @unchecked Sendable {
         for resolved in aliases.values.compactMap({ $0 }) {
             let cols = await dataSource.columns(tableName: resolved.name,
                                                 owner: resolved.owner,
-                                                prefix: prefix,
+                                                search: prefix,
                                                 limit: fetchLimit)
             for c in cols where !seen.contains(c.columnName) {
                 seen.insert(c.columnName)
@@ -215,7 +252,7 @@ final class CompletionCoordinator: @unchecked Sendable {
 
         // 2) Treat as schema → list its objects (tables/views/packages).
         let objects = await dataSource.objects(
-            prefix: prefix,
+            search: prefix,
             owner: upper,
             types: ["TABLE", "VIEW", "PACKAGE"],
             limit: fetchLimit)
@@ -223,16 +260,18 @@ final class CompletionCoordinator: @unchecked Sendable {
             return objects.map { MacintoraCompletionItem.make(from: $0) }
         }
 
-        // 3) Treat as table → its columns under the user's schema.
+        // 3) Treat as table → columns of any cached table with this name,
+        // regardless of schema. The user typed an unqualified table name
+        // and may legitimately be reaching across grants.
         return await dataSource
-            .columns(tableName: upper, owner: owner, prefix: prefix, limit: fetchLimit)
+            .columns(tableName: upper, owner: nil, search: prefix, limit: fetchLimit)
             .map { MacintoraCompletionItem.make(from: $0) }
     }
 
     private func fetchColumns(table: ResolvedTable, prefix: String) async -> [MacintoraCompletionItem] {
         let cols = await dataSource.columns(tableName: table.name,
                                             owner: table.owner,
-                                            prefix: prefix,
+                                            search: prefix,
                                             limit: fetchLimit)
         return cols.map { MacintoraCompletionItem.make(from: $0) }
     }
