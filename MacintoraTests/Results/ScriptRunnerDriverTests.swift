@@ -37,7 +37,7 @@ final class ScriptRunnerDriverTests: XCTestCase {
         XCTAssertEqual(executions[0].resolvedText, "select 1 from dual")
     }
 
-    func test_single_unit_failure_short_circuits_when_stopOnError() async {
+    func test_single_unit_failure_short_circuits_when_whenever_exit() async {
         let units = lex("select bad;\nselect 1 from dual;")
         XCTAssertEqual(units.count, 2)
 
@@ -45,7 +45,12 @@ final class ScriptRunnerDriverTests: XCTestCase {
             .failure(NSError(domain: "ora", code: 942, userInfo: [NSLocalizedDescriptionKey: "ORA-00942: table or view does not exist"]))
         ])
 
-        let events = await collect(units: units, executor: executor)
+        let env = SqlPlusEnvironment()
+        env.whenever = .exit(.failure, commitOrRollback: nil)
+
+        let runner = ScriptRunner(units: units, executor: executor, env: env)
+        var events: [ScriptRunnerEvent] = []
+        for await ev in runner.start() { events.append(ev) }
 
         // 1: unitStarted(0), 2: unitFinished(0,failed), 3: scriptFinished
         XCTAssertEqual(events.count, 3)
@@ -60,14 +65,15 @@ final class ScriptRunnerDriverTests: XCTestCase {
         XCTAssertEqual(executions.count, 1, "second unit should not have run")
     }
 
-    func test_failure_continues_when_stopOnError_disabled() async {
+    func test_failure_continues_when_whenever_continue() async {
         let units = lex("select bad;\nselect 1 from dual;")
         let executor = FakeConnectionExecutor(responses: [
             .failure(NSError(domain: "ora", code: 942)),
             .success(UnitResult(outcome: .statementSucceeded(rowCount: 1, dbmsOutput: [], preview: nil), elapsed: .zero))
         ])
 
-        let runner = ScriptRunner(units: units, executor: executor, options: .init(stopOnError: false))
+        // Default env has WHENEVER SQLERROR CONTINUE.
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
         var collected: [ScriptRunnerEvent] = []
         for await ev in runner.start() {
             collected.append(ev)
@@ -95,7 +101,7 @@ final class ScriptRunnerDriverTests: XCTestCase {
             .delayedSuccess(forever: true)
         ])
 
-        let runner = ScriptRunner(units: units, executor: executor)
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
         let stream = runner.start()
         var collected: [ScriptRunnerEvent] = []
 
@@ -118,6 +124,146 @@ final class ScriptRunnerDriverTests: XCTestCase {
         XCTAssertFalse(final.contains(where: { if case .scriptFinished = $0 { return true }; return false }))
     }
 
+    func test_whenever_exit_takes_effect_when_set_mid_script() async {
+        // Unit 0 fails — env still defaults to CONTINUE, so we proceed.
+        // Unit 1 sets WHENEVER SQLERROR EXIT.
+        // Unit 2 fails — now we should halt before unit 3.
+        let units = lex("""
+            select bad_one from dual;
+            WHENEVER SQLERROR EXIT FAILURE
+            select bad_two from dual;
+            select 'never reached' from dual;
+            """)
+        XCTAssertEqual(units.count, 4)
+
+        let executor = FakeConnectionExecutor(responses: [
+            .failure(NSError(domain: "ora", code: 942)),
+            .failure(NSError(domain: "ora", code: 942)),
+        ])
+
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
+        var collected: [ScriptRunnerEvent] = []
+        for await ev in runner.start() { collected.append(ev) }
+
+        let outcomes = collected.compactMap { event -> UnitResult.Outcome? in
+            if case .unitFinished(_, let r) = event { return r.outcome }
+            return nil
+        }
+        XCTAssertEqual(outcomes.count, 3, "expected 3 finished units (two failures + one directive), got: \(outcomes)")
+        if case .statementFailed = outcomes[0] {} else { XCTFail("first should fail") }
+        if case .directiveAcknowledged = outcomes[1] {} else { XCTFail("WHENEVER should ack as directive") }
+        if case .statementFailed = outcomes[2] {} else { XCTFail("third should fail") }
+
+        let executions = await executor.observedExecutions()
+        XCTAssertEqual(executions.count, 2, "fourth unit must not run after WHENEVER EXIT halts")
+    }
+
+    func test_define_mid_script_substitutes_subsequent_units() async {
+        // Unit 0: DEFINE owner = hr
+        // Unit 1: SELECT * FROM &owner..t  → resolved text "SELECT * FROM hr.t"
+        let units = lex("""
+            DEFINE owner = hr
+            SELECT * FROM &owner..t;
+            """)
+        let executor = FakeConnectionExecutor(responses: [
+            .success(UnitResult(outcome: .statementSucceeded(rowCount: 0, dbmsOutput: [], preview: nil), elapsed: .zero)),
+        ])
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
+        for await _ in runner.start() {}
+
+        let executions = await executor.observedExecutions()
+        XCTAssertEqual(executions.count, 1)
+        XCTAssertEqual(executions[0].resolvedText, "SELECT * FROM hr.t")
+    }
+
+    func test_needsBinds_event_is_emitted_for_units_with_colon_binds() async {
+        let units = lex("select * from emp where id = :id;")
+        let executor = FakeConnectionExecutor(responses: [
+            .success(UnitResult(outcome: .statementSucceeded(rowCount: 1, dbmsOutput: [], preview: nil), elapsed: .zero))
+        ])
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
+
+        var collected: [ScriptRunnerEvent] = []
+        for await ev in runner.start() {
+            collected.append(ev)
+            if case .needsBinds(let request) = ev {
+                XCTAssertEqual(request.names, [":id"])
+                request.resume([":id": .int(42)])
+            }
+        }
+
+        let executions = await executor.observedExecutions()
+        XCTAssertEqual(executions.count, 1)
+        XCTAssertEqual(executions[0].binds[":id"], .int(42))
+    }
+
+    func test_needsBinds_resume_nil_cancels_the_run() async {
+        let units = lex("""
+            select * from emp where id = :id;
+            select 'never reached' from dual;
+            """)
+        let executor = FakeConnectionExecutor(responses: [])
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
+
+        var sawCancelled = false
+        for await ev in runner.start() {
+            if case .needsBinds(let request) = ev {
+                request.resume(nil)
+            }
+            if case .cancelled = ev { sawCancelled = true }
+        }
+        XCTAssertTrue(sawCancelled)
+        let executions = await executor.observedExecutions()
+        XCTAssertTrue(executions.isEmpty, "no unit should have run when bind prompt was cancelled")
+    }
+
+    func test_show_errors_after_create_emits_compile_errors_entry() async {
+        let units = lex("""
+            CREATE OR REPLACE PROCEDURE p IS BEGIN xx; END;
+            /
+            SHOW ERRORS
+            """)
+        XCTAssertEqual(units.count, 2, "lexer should split into PL/SQL block + SHOW ERRORS directive")
+
+        let executor = FakeConnectionExecutor(responses: [
+            .success(UnitResult(outcome: .statementSucceeded(rowCount: nil, dbmsOutput: [], preview: nil), elapsed: .zero))
+        ])
+        let target = CompileErrorTarget(owner: nil, name: "P", type: "PROCEDURE")
+        await executor.setCompileErrors(for: target, [
+            CompileErrorRow(line: 1, position: 24, sequence: 1, attribute: "ERROR", text: "PLS-00201: identifier 'XX' must be declared")
+        ])
+
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
+        var compileEntry: (CompileErrorTarget?, [CompileErrorRow])?
+        for await ev in runner.start() {
+            if case .unitFinished(_, let r) = ev,
+               case .directiveCompileErrors(let t, let errs) = r.outcome {
+                compileEntry = (t, errs)
+            }
+        }
+        XCTAssertNotNil(compileEntry)
+        XCTAssertEqual(compileEntry?.0, target)
+        XCTAssertEqual(compileEntry?.1.first?.text, "PLS-00201: identifier 'XX' must be declared")
+    }
+
+    func test_show_errors_without_prior_create_emits_empty_entry() async {
+        let units = lex("SHOW ERRORS")
+        let executor = FakeConnectionExecutor(responses: [])
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
+
+        var entries: [UnitResult.Outcome] = []
+        for await ev in runner.start() {
+            if case .unitFinished(_, let r) = ev { entries.append(r.outcome) }
+        }
+        XCTAssertEqual(entries.count, 1)
+        if case .directiveCompileErrors(let target, let errs) = entries[0] {
+            XCTAssertNil(target)
+            XCTAssertTrue(errs.isEmpty)
+        } else {
+            XCTFail("expected directiveCompileErrors")
+        }
+    }
+
     func test_dbms_output_passes_through_unmodified() async {
         let units = lex("BEGIN DBMS_OUTPUT.PUT_LINE('hi'); END;\n/")
         let executor = FakeConnectionExecutor(responses: [
@@ -136,7 +282,7 @@ final class ScriptRunnerDriverTests: XCTestCase {
     }
 
     private func collect(units: [CommandUnit], executor: any ConnectionExecutor) async -> [ScriptRunnerEvent] {
-        let runner = ScriptRunner(units: units, executor: executor)
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
         var events: [ScriptRunnerEvent] = []
         for await ev in runner.start() {
             events.append(ev)
@@ -157,9 +303,19 @@ actor FakeConnectionExecutor: ConnectionExecutor {
     private var responses: [Response]
     private var executions: [PreparedUnit] = []
     private var cancelled = false
+    /// `SHOW ERRORS` returns the canned rows for the matching target.
+    var compileErrorsByTarget: [CompileErrorTarget: [CompileErrorRow]] = [:]
 
     init(responses: [Response]) {
         self.responses = responses
+    }
+
+    func fetchCompileErrors(for target: CompileErrorTarget) async throws -> [CompileErrorRow] {
+        compileErrorsByTarget[target] ?? []
+    }
+
+    func setCompileErrors(for target: CompileErrorTarget, _ rows: [CompileErrorRow]) {
+        compileErrorsByTarget[target] = rows
     }
 
     func execute(_ prepared: PreparedUnit) async throws -> UnitResult {

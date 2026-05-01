@@ -27,7 +27,6 @@ enum DirectiveOutcome: Equatable, Sendable {
     case noted(text: String)
 }
 
-@MainActor
 enum SqlPlusInterpreter {
     /// Apply `directive` to `env`. Returns the outcome the runner should
     /// reflect in its output stream.

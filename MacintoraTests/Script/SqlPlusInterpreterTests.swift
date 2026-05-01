@@ -6,7 +6,6 @@
 import XCTest
 @testable import Macintora
 
-@MainActor
 final class SqlPlusInterpreterTests: XCTestCase {
 
     func test_define_inserts_uppercased_key() {

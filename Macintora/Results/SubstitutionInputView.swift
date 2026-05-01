@@ -24,6 +24,16 @@ struct PendingSubstitutionRequest: Identifiable, Equatable {
     }
 }
 
+/// Set on `ResultsController` when the runner needs `:bind` values for the
+/// current SQL/PLSQL unit. View layer presents a `BindVarInputView` and
+/// calls back into `resolvePendingBinds(_:)` (or with `nil` to cancel).
+struct PendingBindRequest: Identifiable, Sendable {
+    let id: UUID
+    let unitIndex: Int
+    let names: Set<String>
+    let resume: @Sendable ([String: BindValue]?) -> Void
+}
+
 struct SubstitutionInputView: View {
     let request: PendingSubstitutionRequest
     /// `nil` = user cancelled.
@@ -65,15 +75,18 @@ struct SubstitutionInputView: View {
                     onSubmit(nil)
                 }
                 .keyboardShortcut(.cancelAction)
+                .accessibilityIdentifier("script.substitutionSheet.cancel")
                 Button("Run") {
                     onSubmit(values)
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("script.substitutionSheet.run")
             }
         }
         .padding()
         .frame(minWidth: 420, idealWidth: 480)
+        .accessibilityIdentifier("script.substitutionSheet")
         .onAppear {
             // Seed any prefilled defaults exactly once.
             for (k, v) in request.prefilled where values[k] == nil {

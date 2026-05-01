@@ -57,7 +57,12 @@ struct ResultViewWrapper: View {
             if resultsController.isScriptMode {
                 ScriptOutputView(
                     model: resultsController.scriptOutput,
-                    onRevealSource: onRevealSource
+                    onRevealSource: onRevealSource,
+                    onPromotePreview: { entry in
+                        if let preview = entry.preview {
+                            resultsController.promote(preview: preview, sqlText: entry.text)
+                        }
+                    }
                 )
             } else {
                 queryResultToolbar

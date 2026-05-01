@@ -32,6 +32,8 @@
 		490E96E22FA429FB00DDF37F /* ScriptLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E12FA429FB00DDF37F /* ScriptLoaderTests.swift */; };
 		490E96E42FA42AC500DDF37F /* ScriptRunnerDirectivesLiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E32FA42AC500DDF37F /* ScriptRunnerDirectivesLiveTests.swift */; };
 		490E96E62FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E52FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift */; };
+		490E96E82FA43A8E00DDF37F /* ScriptBindPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E72FA43A8E00DDF37F /* ScriptBindPromptView.swift */; };
+		490E96EA2FA43C6300DDF37F /* ScriptRunnerUXTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E92FA43C6300DDF37F /* ScriptRunnerUXTests.swift */; };
 		49438678273753A000D7D464 /* ResultViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49438677273753A000D7D464 /* ResultViewModel.swift */; };
 		4944594C28D51D31007AB2BF /* SBMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594B28D51D31007AB2BF /* SBMainView.swift */; };
 		4944594E28D539D2007AB2BF /* SBVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594D28D539D2007AB2BF /* SBVM.swift */; };
@@ -188,6 +190,8 @@
 		490E96E12FA429FB00DDF37F /* ScriptLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptLoaderTests.swift; sourceTree = "<group>"; };
 		490E96E32FA42AC500DDF37F /* ScriptRunnerDirectivesLiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptRunnerDirectivesLiveTests.swift; sourceTree = "<group>"; };
 		490E96E52FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarToggleCrashRegressionTests.swift; sourceTree = "<group>"; };
+		490E96E72FA43A8E00DDF37F /* ScriptBindPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptBindPromptView.swift; sourceTree = "<group>"; };
+		490E96E92FA43C6300DDF37F /* ScriptRunnerUXTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptRunnerUXTests.swift; sourceTree = "<group>"; };
 		49438677273753A000D7D464 /* ResultViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResultViewModel.swift; sourceTree = "<group>"; };
 		4944594B28D51D31007AB2BF /* SBMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBMainView.swift; sourceTree = "<group>"; };
 		4944594D28D539D2007AB2BF /* SBVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBVM.swift; sourceTree = "<group>"; };
@@ -542,6 +546,7 @@
 				490E96CF2FA4255F00DDF37F /* ScriptOutputView.swift */,
 				490E96D32FA4260600DDF37F /* OracleScriptExecutor.swift */,
 				490E96D72FA4288400DDF37F /* SubstitutionInputView.swift */,
+				490E96E72FA43A8E00DDF37F /* ScriptBindPromptView.swift */,
 			);
 			path = Results;
 			sourceTree = "<group>";
@@ -614,6 +619,7 @@
 			children = (
 				BB0000020000000000000000 /* MacintoraUITests.swift */,
 				490E96E52FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift */,
+				490E96E92FA43C6300DDF37F /* ScriptRunnerUXTests.swift */,
 			);
 			path = MacintoraUITests;
 			sourceTree = "<group>";
@@ -884,6 +890,7 @@
 				AA0000360000000000000000 /* ConnectionStore.swift in Sources */,
 				AA0000B00000000000000000 /* ConnectionStoreEnvironment.swift in Sources */,
 				490E96DA2FA4296000DDF37F /* SqlPlusEnvironment.swift in Sources */,
+				490E96E82FA43A8E00DDF37F /* ScriptBindPromptView.swift in Sources */,
 				AA0000B20000000000000000 /* ConnectionsManagerView.swift in Sources */,
 				AA0000B40000000000000000 /* ConnectionEditorForm.swift in Sources */,
 				AA0000B70000000000000000 /* TnsImportPrompt.swift in Sources */,
@@ -904,6 +911,7 @@
 			files = (
 				BB0000010000000000000000 /* MacintoraUITests.swift in Sources */,
 				490E96E62FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift in Sources */,
+				490E96EA2FA43C6300DDF37F /* ScriptRunnerUXTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

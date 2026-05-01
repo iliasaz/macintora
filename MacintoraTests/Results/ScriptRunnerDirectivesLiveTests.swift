@@ -35,7 +35,7 @@ final class ScriptRunnerDirectivesLiveTests: XCTestCase {
             logger: Logging.Logger(label: "macintora.tests.directives"),
             dbmsOutputEnabled: false
         )
-        let runner = ScriptRunner(units: units, executor: executor)
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
 
         var dbmsLines: [String] = []
         for await event in runner.start() {
@@ -61,9 +61,10 @@ final class ScriptRunnerDirectivesLiveTests: XCTestCase {
             conn: conn,
             logger: Logging.Logger(label: "macintora.tests.directives")
         )
-        // Mirrors `ResultsController` setting `stopOnError: true` when env's
-        // whenever is `.exit(...)`.
-        let runner = ScriptRunner(units: units, executor: executor, options: .init(stopOnError: true))
+        // The runner halts on error when env.whenever is `.exit(...)`.
+        let env = SqlPlusEnvironment()
+        env.whenever = .exit(.failure, commitOrRollback: nil)
+        let runner = ScriptRunner(units: units, executor: executor, env: env)
 
         var observed: [(Int, UnitResult.Outcome)] = []
         for await event in runner.start() {
@@ -84,31 +85,18 @@ final class ScriptRunnerDirectivesLiveTests: XCTestCase {
         let conn = try await openLiveConnection()
         defer { Task { try? await conn.close() } }
 
-        // Mirror `ResultsController`'s pre-walk: apply the DEFINE via the
-        // interpreter, substitute the SELECT, then run.
-        let env = SqlPlusEnvironment()
+        // The runner applies DEFINE inline as it walks the units, so the
+        // subsequent SELECT picks up the value via SubstitutionResolver.
         let units = ScriptLexer.split("""
         DEFINE thing = USER
         SELECT &thing AS who FROM dual;
         """).units
 
-        var preparedUnits: [CommandUnit] = []
-        for unit in units {
-            switch unit.kind {
-            case .sqlplus(let directive):
-                _ = SqlPlusInterpreter.apply(directive, env: env)
-                preparedUnits.append(unit)
-            case .sql, .plsqlBlock:
-                let resolved = SubstitutionResolver.resolve(unit.text, defines: env.defines).text
-                preparedUnits.append(CommandUnit(kind: unit.kind, originalRange: unit.originalRange, text: resolved))
-            }
-        }
-
         let executor = OracleScriptExecutor(
             conn: conn,
             logger: Logging.Logger(label: "macintora.tests.directives")
         )
-        let runner = ScriptRunner(units: preparedUnits, executor: executor, options: .init(stopOnError: false))
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
 
         var rows: [[String]] = []
         for await event in runner.start() {

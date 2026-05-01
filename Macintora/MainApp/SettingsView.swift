@@ -34,6 +34,15 @@ struct SettingsView: View {
     }
 }
 
+/// Storage keys for the Script Runner-related settings. Centralised so both
+/// `EditorSettings` (the SwiftUI form) and `ResultsController` (the
+/// consumer) reference the same `@AppStorage` keys.
+enum ScriptRunnerDefaults {
+    static let dbmsOutputInline = "scriptRunner.dbmsOutputInline"
+    static let miniGridRowCap = "scriptRunner.miniGridRowCap"
+    static let alwaysStopOnError = "scriptRunner.alwaysStopOnError"
+}
+
 struct EditorSettings: View {
     @AppStorage("formatterPath") private var formatterPath = "\(FileManager.default.homeDirectoryForCurrentUser.path)/Macintora/formatter"
     @AppStorage("shellPath") private var shellPath = "/bin/zsh"
@@ -43,6 +52,9 @@ struct EditorSettings: View {
     @AppStorage("wordWrap") private var wordWrap = false
     @AppStorage("editorTheme") private var editorThemeRaw: String = EditorTheme.default.rawValue
     @AppStorage(TimestampDisplayMode.storageKey) private var timestampDisplayModeRaw: String = TimestampDisplayMode.mixed.rawValue
+    @AppStorage(ScriptRunnerDefaults.dbmsOutputInline) private var scriptDbmsOutputInline: Bool = true
+    @AppStorage(ScriptRunnerDefaults.miniGridRowCap) private var scriptMiniGridRowCap: Int = 200
+    @AppStorage(ScriptRunnerDefaults.alwaysStopOnError) private var scriptAlwaysStopOnError: Bool = false
 
     private var editorThemeBinding: Binding<EditorTheme> {
         Binding(
@@ -91,6 +103,17 @@ struct EditorSettings: View {
                     ForEach(TimestampDisplayMode.allCases) { mode in
                         Text(mode.displayName).tag(mode)
                     }
+                }
+
+                Section("Script Runner") {
+                    Toggle("Show DBMS_OUTPUT inline", isOn: $scriptDbmsOutputInline)
+                        .help("Default value of SET SERVEROUTPUT for new scripts.")
+                    Stepper(value: $scriptMiniGridRowCap, in: 50...2000, step: 50) {
+                        Text("Mini-grid row cap: \(scriptMiniGridRowCap)")
+                    }
+                    .help("Max rows captured for inline SELECT preview. Promote to grid for more.")
+                    Toggle("Stop on first error (override WHENEVER)", isOn: $scriptAlwaysStopOnError)
+                        .help("When on, any failed unit halts the script regardless of WHENEVER SQLERROR.")
                 }
             }
             Spacer()

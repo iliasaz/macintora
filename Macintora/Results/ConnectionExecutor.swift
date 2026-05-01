@@ -34,4 +34,10 @@ protocol ConnectionExecutor: Sendable {
     /// should be safe to call concurrently with `execute`.
     @concurrent
     func cancel() async
+
+    /// Fetch compile errors from `USER_ERRORS` for the given target. Returns
+    /// `[]` when there are none. Used to back the SQL*Plus `SHOW ERRORS`
+    /// directive.
+    @concurrent
+    func fetchCompileErrors(for target: CompileErrorTarget) async throws -> [CompileErrorRow]
 }

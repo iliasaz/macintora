@@ -11,8 +11,12 @@
 
 import Foundation
 
-@MainActor
-final class SqlPlusEnvironment {
+/// Owned by `ScriptRunner` for the duration of a run; mutation happens
+/// exclusively on the runner's actor. The `@unchecked Sendable` conformance
+/// is sound because the runner is the single writer and reads from the bridge
+/// happen *after* `scriptFinished` is yielded (i.e. once the run loop has
+/// released the env).
+final class SqlPlusEnvironment: @unchecked Sendable {
     /// Currently-defined substitution variables (uppercased keys).
     var defines: [String: String] = [:]
 

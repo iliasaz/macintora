@@ -110,6 +110,13 @@ final class MainDocumentVM: ObservableObject, @unchecked Sendable {
     let dbName: String
     private var pingTask: Task<Void, Never>?
 
+    /// The on-disk URL of this document, propagated by `MainDocumentView`
+    /// from the SwiftUI `DocumentGroup`'s configuration. `nil` for untitled
+    /// documents. Used by `ResultsController` for document-relative
+    /// `@file.sql` resolution.
+    @MainActor
+    var fileURL: URL?
+
     private let oracleLogger: Logging.Logger = {
         var logger = Logging.Logger(label: "com.iliasazonov.macintora.oracle")
         logger.logLevel = .notice

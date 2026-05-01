@@ -22,13 +22,42 @@ final class ResultsController {
     /// Set when the runner needs values for unresolved `&` / `&&` variables;
     /// observed by `MainDocumentView` to present `SubstitutionInputView`.
     var pendingSubstitution: PendingSubstitutionRequest?
+    /// Set when the runner needs `:bind` values for the current SQL/PLSQL
+    /// unit; observed by `MainDocumentView` to present a `BindVarInputView`.
+    var pendingBindRequest: PendingBindRequest?
     /// Session-sticky `&&` values, persisted for this document's lifetime.
     private var sessionDefines: [String: String] = [:]
     private var pendingResolve: (([String: String]?) -> Void)?
 
+    /// User-level "halt on first error regardless of WHENEVER" override.
+    /// Read from UserDefaults via `ScriptRunnerDefaults.alwaysStopOnError`
+    /// at runScript time; defaults to false so the script's WHENEVER
+    /// directive drives behaviour.
+    var alwaysStopOnError: Bool {
+        UserDefaults.standard.bool(forKey: ScriptRunnerDefaults.alwaysStopOnError)
+    }
+
+    /// Default initial value for the runner env's `serverOutput` flag.
+    /// `SET SERVEROUTPUT` directives in the script can flip it pre-run via
+    /// the executor's pre-scan.
+    var scriptDbmsOutputDefault: Bool {
+        if UserDefaults.standard.object(forKey: ScriptRunnerDefaults.dbmsOutputInline) == nil {
+            return true
+        }
+        return UserDefaults.standard.bool(forKey: ScriptRunnerDefaults.dbmsOutputInline)
+    }
+
+    /// Cap for inline `RowsPreview`. Falls back to `RowsPreview.defaultRowCap`
+    /// when unset.
+    var scriptMiniGridRowCap: Int {
+        let v = UserDefaults.standard.integer(forKey: ScriptRunnerDefaults.miniGridRowCap)
+        return v > 0 ? v : RowsPreview.defaultRowCap
+    }
+
     private var scriptRunner: ScriptRunner?
     private var scriptRunnerTask: Task<Void, Never>?
     private var scriptUnits: [CommandUnit] = []
+    private var scriptEnv: SqlPlusEnvironment?
     private var scriptSource: String = ""
 
     init(document: MainDocumentVM) {
@@ -136,55 +165,35 @@ final class ResultsController {
             return
         }
 
-        // 2. Build env, seed with session defines.
+        // 2. Build env, seed with session defines + user default for
+        //    serverOutput.
         let env = SqlPlusEnvironment()
         env.defines = sessionDefines
+        env.serverOutput = scriptDbmsOutputDefault
 
-        // 3. Sequentially apply directives (mutating env) and substitute SQL
-        //    units' text using env.defines at that point. Each unit's
-        //    `originalRange` stays in the un-substituted top-level source
-        //    (or, for included units, ranges into their own file — those
-        //    won't navigate back to the editor but won't crash either).
-        var preparedUnits: [CommandUnit] = []
-        for unit in flattened {
-            switch unit.kind {
-            case .sqlplus(let directive):
-                _ = SqlPlusInterpreter.apply(directive, env: env)
-                preparedUnits.append(unit)
-            case .sql, .plsqlBlock:
-                let textToSend: String
-                if env.defineEnabled {
-                    textToSend = SubstitutionResolver.resolve(unit.text, defines: env.defines).text
-                } else {
-                    textToSend = unit.text
-                }
-                preparedUnits.append(CommandUnit(
-                    kind: unit.kind,
-                    originalRange: unit.originalRange,
-                    text: textToSend
-                ))
-            }
-        }
+        // 3. Pre-scan SET SERVEROUTPUT to seed the executor's DBMS_OUTPUT
+        //    capture. (Mid-run mutation isn't honored — the executor captures
+        //    the value at construction. Tracked as a known limitation.)
+        let initialServerOutput = preScanServerOutput(units: flattened, default: env.serverOutput)
 
-        // 4. Configure executor + runner from final env state.
-        let stopOnError: Bool
-        if case .exit = env.whenever { stopOnError = true } else { stopOnError = false }
-
-        scriptUnits = preparedUnits
+        scriptUnits = flattened
+        scriptEnv = env
         scriptSource = scriptText
         isScriptMode = true
         isExecuting = true
-        scriptOutput.beginRun(totalUnits: preparedUnits.count)
+        scriptOutput.beginRun(totalUnits: flattened.count)
 
         let executor = OracleScriptExecutor(
             conn: conn,
             logger: logger,
-            dbmsOutputEnabled: env.serverOutput
+            dbmsOutputEnabled: initialServerOutput,
+            previewCap: scriptMiniGridRowCap
         )
         let runner = ScriptRunner(
-            units: preparedUnits,
+            units: flattened,
             executor: executor,
-            options: .init(stopOnError: stopOnError)
+            env: env,
+            options: .init(alwaysStopOnError: alwaysStopOnError)
         )
         scriptRunner = runner
 
@@ -193,15 +202,34 @@ final class ResultsController {
             for await event in stream {
                 self.handleScriptEvent(event)
             }
+            self.persistStickyDefines()
             self.isExecuting = false
         }
     }
 
+    private func preScanServerOutput(units: [CommandUnit], default initial: Bool) -> Bool {
+        var value = initial
+        for unit in units {
+            if case .sqlplus(.set(.serverOutput(let on))) = unit.kind {
+                value = on
+            }
+        }
+        return value
+    }
+
+    private func persistStickyDefines() {
+        guard let env = scriptEnv else { return }
+        for name in env.stickyNames {
+            if let v = env.defines[name] { sessionDefines[name] = v }
+        }
+        scriptEnv = nil
+    }
+
     private func documentBaseURL() -> URL? {
-        // The document file URL isn't directly exposed on `MainDocumentVM`
-        // today; `@/@@` resolution falls back to `nil` until a future phase
-        // surfaces it. Absolute paths still work via the loader's fallback.
-        nil
+        // `@file.sql` resolves against the document's directory. For
+        // untitled (unsaved) documents this is nil, in which case
+        // `ScriptLoader` only succeeds for absolute paths.
+        document?.fileURL?.deletingLastPathComponent()
     }
 
     /// Cancel an in-flight script. Idempotent.
@@ -221,9 +249,17 @@ final class ResultsController {
             let unit = scriptUnits.indices.contains(index) ? scriptUnits[index] : nil
             scriptOutput.append(makeEntry(unitIndex: index, unit: unit, result: result))
 
-        case .needsBinds, .needsSubstitutions:
-            // Phase 5 wires consolidated prompts; for now the runner never
-            // emits these (stubbed out).
+        case .needsBinds(let request):
+            pendingBindRequest = PendingBindRequest(
+                id: UUID(),
+                unitIndex: request.unitIndex,
+                names: request.names,
+                resume: request.resume
+            )
+
+        case .needsSubstitutions:
+            // Up-front substitution prompt is handled in `runScript`; the
+            // runner doesn't currently emit this event mid-run.
             break
 
         case .cancelled:
@@ -237,6 +273,39 @@ final class ResultsController {
             isExecuting = false
             scriptRunner = nil
         }
+    }
+
+    /// Resume a pending bind prompt with `values` (or `nil` to cancel).
+    func resolvePendingBinds(_ values: [String: BindValue]?) {
+        guard let request = pendingBindRequest else { return }
+        pendingBindRequest = nil
+        request.resume(values)
+    }
+
+    /// Copy a `RowsPreview` into the legacy `ResultViewModel`'s grid and
+    /// switch out of script mode so the user sees the full grid view.
+    /// Used by the "Open in full grid" affordance on `MiniGridView`.
+    func promote(preview: RowsPreview, sqlText: String) {
+        let resultVM = results["current"]!
+        let labels = ["#"] + preview.columns
+        let rows = preview.rows.enumerated().map { (i, values) -> DisplayRow in
+            var fields: [DisplayField] = []
+            for (colIdx, columnName) in preview.columns.enumerated() {
+                let valueString = colIdx < values.count ? values[colIdx] : ""
+                fields.append(DisplayField(
+                    name: columnName,
+                    valueString: valueString,
+                    sortKey: .text(valueString)
+                ))
+            }
+            return DisplayRow(id: i, fields: fields)
+        }
+        resultVM.objectWillChange.send()
+        resultVM.columnLabels = labels
+        resultVM.rows = rows
+        resultVM.currentSql = sqlText
+        resultVM.isFailed = false
+        isScriptMode = false
     }
 
     private func makeEntry(unitIndex: Int, unit: CommandUnit?, result: UnitResult) -> ScriptOutputEntry {
@@ -263,6 +332,9 @@ final class ResultsController {
                 }
             }
             return .directive(.init(id: id, text: text, elapsed: result.elapsed))
+
+        case .directiveCompileErrors(let target, let errors):
+            return .note(.init(id: id, kind: errors.isEmpty ? .info : .warning, text: formatCompileErrors(target: target, errors: errors)))
 
         case .statementSucceeded(let rowCount, let dbmsOutput, let preview):
             return .succeeded(.init(
@@ -305,6 +377,20 @@ final class ResultsController {
         var logger = Logging.Logger(label: "com.iliasazonov.macintora.script")
         logger.logLevel = .notice
         return logger
+    }
+
+    private func formatCompileErrors(target: CompileErrorTarget?, errors: [CompileErrorRow]) -> String {
+        guard let target else {
+            return "SHOW ERRORS: no recently compiled object."
+        }
+        let header = "Errors for \(target.type) \(target.name)"
+        if errors.isEmpty {
+            return header + "\nNo errors."
+        }
+        let body = errors.map { row in
+            "\(row.line)/\(row.position)\t\(row.attribute): \(row.text)"
+        }.joined(separator: "\n")
+        return header + "\n" + body
     }
 
     func displayError(_ error: any Error) {

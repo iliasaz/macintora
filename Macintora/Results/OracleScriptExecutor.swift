@@ -62,6 +62,38 @@ struct OracleScriptExecutor: ConnectionExecutor, Sendable {
         // the in-flight `try await` on the row iterator.
     }
 
+    @concurrent
+    func fetchCompileErrors(for target: CompileErrorTarget) async throws -> [CompileErrorRow] {
+        // USER_ERRORS for the current schema. Owner-qualified targets aren't
+        // supported by USER_ERRORS; for now we always read from the current
+        // session's user (matching SQL*Plus's SHOW ERRORS behaviour, which
+        // queries USER_ERRORS even when CREATE was schema-qualified).
+        let sql = """
+        SELECT line, position, sequence, attribute, text \
+        FROM user_errors \
+        WHERE name = :name AND type = :type \
+        ORDER BY sequence
+        """
+        var bindings = OracleBindings(capacity: 2)
+        bindings.append(target.name, context: .default, bindName: "name")
+        bindings.append(target.type, context: .default, bindName: "type")
+        let statement = OracleStatement(unsafeSQL: sql, binds: bindings)
+        let stream = try await conn.execute(statement, logger: logger)
+
+        var rows: [CompileErrorRow] = []
+        for try await row in stream {
+            let decoded = try row.decode((Int?, Int?, Int?, String?, String?).self)
+            rows.append(CompileErrorRow(
+                line: decoded.0 ?? 0,
+                position: decoded.1 ?? 0,
+                sequence: decoded.2 ?? 0,
+                attribute: decoded.3 ?? "ERROR",
+                text: decoded.4 ?? ""
+            ))
+        }
+        return rows
+    }
+
     // MARK: - Statement execution
 
     @concurrent

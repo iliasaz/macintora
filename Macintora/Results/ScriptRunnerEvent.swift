@@ -13,6 +13,11 @@ struct UnitResult: Equatable, Sendable {
     enum Outcome: Equatable, Sendable {
         /// SQL*Plus directive successfully applied (no DB call needed).
         case directiveAcknowledged
+        /// `SHOW ERRORS` directive: zero or more compile errors retrieved
+        /// from `USER_ERRORS` for the most recently compiled object.
+        /// `target` is the object the errors apply to (or nil if there
+        /// hasn't been a CREATE in the script yet).
+        case directiveCompileErrors(target: CompileErrorTarget?, errors: [CompileErrorRow])
         /// SQL/PL-SQL statement ran successfully. `preview` carries a bounded
         /// snapshot of returned rows (nil for non-SELECT).
         case statementSucceeded(rowCount: Int?, dbmsOutput: [String], preview: RowsPreview?)
@@ -24,6 +29,22 @@ struct UnitResult: Equatable, Sendable {
     let outcome: Outcome
     /// Wall-clock duration of the unit (excluding bind / substitution prompts).
     let elapsed: Duration
+}
+
+/// One row from `USER_ERRORS` for the most-recently-compiled stored object.
+struct CompileErrorRow: Equatable, Hashable, Sendable {
+    let line: Int
+    let position: Int
+    let sequence: Int
+    let attribute: String   // "ERROR" / "WARNING"
+    let text: String
+}
+
+/// Identifier for the object SHOW ERRORS is reporting on.
+struct CompileErrorTarget: Equatable, Hashable, Sendable {
+    let owner: String?
+    let name: String
+    let type: String
 }
 
 /// A request from the runner to gather data from the user. The runner pauses

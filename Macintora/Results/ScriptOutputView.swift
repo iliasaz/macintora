@@ -36,6 +36,7 @@ struct ScriptOutputView: View {
                 .padding(.vertical, 8)
             }
         }
+        .accessibilityIdentifier("scriptOutput.pane")
     }
 }
 

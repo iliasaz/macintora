@@ -97,6 +97,7 @@ struct MainDocumentView: View {
                     )
                     .frame(maxWidth: .infinity, minHeight: 200, idealHeight: 280, maxHeight: .infinity)
                     .modifier(SubstitutionSheetModifier(controller: resultsController))
+                    .modifier(BindPromptSheetModifier(controller: resultsController))
                 }
             }
         }
@@ -285,6 +286,20 @@ private struct SubstitutionSheetModifier: ViewModifier {
         content.sheet(item: $controller.pendingSubstitution) { request in
             SubstitutionInputView(request: request) { values in
                 controller.resolvePendingSubstitution(values)
+            }
+        }
+    }
+}
+
+/// Same `@Bindable` pattern as `SubstitutionSheetModifier`, but for the
+/// per-unit `:bind` prompt the runner emits via `needsBinds` events.
+private struct BindPromptSheetModifier: ViewModifier {
+    @Bindable var controller: ResultsController
+
+    func body(content: Content) -> some View {
+        content.sheet(item: $controller.pendingBindRequest) { request in
+            ScriptBindPromptView(request: request) { values in
+                controller.resolvePendingBinds(values)
             }
         }
     }

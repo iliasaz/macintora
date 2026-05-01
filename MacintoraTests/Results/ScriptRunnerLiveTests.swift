@@ -45,7 +45,7 @@ final class ScriptRunnerLiveTests: XCTestCase {
             logger: Logging.Logger(label: "macintora.tests.script.live"),
             dbmsOutputEnabled: true
         )
-        let runner = ScriptRunner(units: units, executor: executor, options: .init(stopOnError: false))
+        let runner = ScriptRunner(units: units, executor: executor, env: SqlPlusEnvironment())
 
         var events: [ScriptRunnerEvent] = []
         for await event in runner.start() {
