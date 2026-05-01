@@ -59,12 +59,16 @@ final class OracleEndpointTests: XCTestCase {
         XCTAssertEqual(config.mode, .default)
     }
 
-    func test_configurationFallsBackToKeychainPassword() throws {
+    func test_configurationFallsBackToKeychainPassword() async throws {
         let keychain = uniqueKeychain()
         var conn = SavedConnection(name: "PROD", host: "h", service: .serviceName("p"))
         conn.savePasswordInKeychain = true
         store.upsert(conn)
-        try keychain.setPassword("from-keychain", for: conn.id, kind: .databasePassword)
+        // Hop off main — `SecItem*` warns when called on the main thread.
+        let connID = conn.id
+        try await Task.detached(priority: .userInitiated) {
+            try keychain.setPassword("from-keychain", for: connID, kind: .databasePassword)
+        }.value
 
         let details = ConnectionDetails(
             savedConnectionID: conn.id, username: "scott", password: "", tns: "PROD"
@@ -72,7 +76,7 @@ final class OracleEndpointTests: XCTestCase {
         // We can't read back the password from the configuration directly, but
         // we can confirm the call doesn't throw `.missingPassword`.
         XCTAssertNoThrow(try OracleEndpoint.configuration(for: details, store: store, keychain: keychain))
-        keychain.deleteAll(for: conn.id)
+        await Task.detached { keychain.deleteAll(for: connID) }.value
     }
 
     func test_configurationThrowsOnMissingPassword() {

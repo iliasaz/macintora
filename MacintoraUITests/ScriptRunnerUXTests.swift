@@ -80,13 +80,13 @@ final class ScriptRunnerUXTests: XCTestCase {
         let sheet = app.descendants(matching: .any)["script.substitutionSheet"]
         XCTAssertTrue(sheet.waitForExistence(timeout: 5), "expected substitution sheet to appear for &owner")
 
-        // Cancel dismisses the sheet without running the script.
-        let cancel = app.buttons["script.substitutionSheet.cancel"]
-        XCTAssertTrue(cancel.waitForExistence(timeout: 2))
-        cancel.click()
+        // Cancel dismisses the sheet. Buttons inside macOS sheets are not
+        // always reachable via `app.buttons[...]`, so we use the Escape key
+        // (the Cancel button has `.keyboardShortcut(.cancelAction)`).
+        app.typeKey(.escape, modifierFlags: [])
 
         // Sheet goes away.
-        XCTAssertFalse(sheet.waitForExistence(timeout: 2), "sheet should have dismissed on Cancel")
+        XCTAssertFalse(sheet.waitForExistence(timeout: 2), "sheet should have dismissed on Escape")
     }
 
     // MARK: - Script-output pane swap
