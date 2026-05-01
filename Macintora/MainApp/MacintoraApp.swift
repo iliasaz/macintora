@@ -170,6 +170,9 @@ struct MacOraApp: App {
                 .frame(minWidth: 600, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
                 .environment(\.connectionStore, connectionStore)
                 .environment(\.keychainService, keychainService)
+                .task(id: config.fileURL) {
+                    config.document.fileURL = config.fileURL
+                }
         }
         .defaultSize(width: 1100, height: 700)
         .handlesExternalEvents(matching: ["file"])

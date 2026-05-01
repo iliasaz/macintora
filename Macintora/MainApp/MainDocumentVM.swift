@@ -110,6 +110,13 @@ final class MainDocumentVM: ObservableObject, @unchecked Sendable {
     let dbName: String
     private var pingTask: Task<Void, Never>?
 
+    /// The on-disk URL of this document, propagated by `MainDocumentView`
+    /// from the SwiftUI `DocumentGroup`'s configuration. `nil` for untitled
+    /// documents. Used by `ResultsController` for document-relative
+    /// `@file.sql` resolution.
+    @MainActor
+    var fileURL: URL?
+
     private let oracleLogger: Logging.Logger = {
         var logger = Logging.Logger(label: "com.iliasazonov.macintora.oracle")
         logger.logLevel = .notice
@@ -454,6 +461,28 @@ from dual;\n\n
     func runCurrentSQL(for editorSelectionRange: Range<String.Index>) {
         guard let sql = getCurrentSql(for: editorSelectionRange) else { resultsController?.isExecuting = false; return }
         resultsController?.runSQL(RunnableSQL(sql: sql))
+    }
+
+    // MARK: - Script run modes (Phase 4 engine; Phase 5 wires menus / shortcuts)
+
+    /// Run the entire document as a script.
+    @MainActor
+    func runScript() {
+        resultsController?.runScript(source: model.text, range: nil)
+    }
+
+    /// Run from `caret` to the end of the document.
+    @MainActor
+    func runScriptFromCursor(_ caret: String.Index) {
+        let source = model.text
+        guard caret <= source.endIndex else { return }
+        resultsController?.runScript(source: source, range: caret..<source.endIndex)
+    }
+
+    /// Run the explicit selection as a script.
+    @MainActor
+    func runScriptSelection(_ range: Range<String.Index>) {
+        resultsController?.runScript(source: model.text, range: range)
     }
 
     @MainActor

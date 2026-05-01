@@ -13,16 +13,20 @@ import os
 struct ResultViewWrapper: View {
     @ObservedObject var queryResults: ResultViewModel
     var resultsController: ResultsController
+    /// Phase 5 callback: navigate from a failed Script Output entry back to
+    /// the editor using a UTF-16 range in the original script source.
+    var onRevealSource: ((Range<Int>) -> Void)? = nil
     @State private var dbTimeStr = ""
     @State private var dbTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     @State private var isDbTimerRunning = false
     @AppStorage("serverTimeSeconds") private var serverTimeSeconds = false
-    
+
     let dateFormatter: DateFormatter = DateFormatter()
 
-    
-    init(resultsController: ResultsController) {
+
+    init(resultsController: ResultsController, onRevealSource: ((Range<Int>) -> Void)? = nil) {
         self.resultsController = resultsController
+        self.onRevealSource = onRevealSource
         queryResults = resultsController.results["current"]!
         dateFormatter.calendar = Calendar(identifier: .iso8601)
         dateFormatter.dateFormat = serverTimeSeconds ? "yyyy-MM-dd HH:mm:ss" : "yyyy-MM-dd HH:mm"
@@ -50,26 +54,36 @@ struct ResultViewWrapper: View {
     
     var body: some View {
         VStack {
-//            let _ = log.viewCycle.debug("Redrawing ResultViewWrapper, queryResults: \(queryResults.bindVarVM)")
-            queryResultToolbar
-            GeometryReader { geo in
-                HStack {
-                    ZStack {
-                        ResultView(model: self.queryResults )
-                            .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity)
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle())
-                            .frame(minHeight: 100)
-                            .hidden(!queryResults.resultsController.isExecuting)
+            if resultsController.isScriptMode {
+                ScriptOutputView(
+                    model: resultsController.scriptOutput,
+                    onRevealSource: onRevealSource,
+                    onPromotePreview: { entry in
+                        if let preview = entry.preview {
+                            resultsController.promote(preview: preview, sqlText: entry.text)
+                        }
                     }
-                    if queryResults.showingBindVarInputView {
-                        BindVarInputView(bindVarVM: $queryResults.bindVarVM, runAction: runWithBinds, cancelAction: {queryResults.showingBindVarInputView = false})
-                            .frame(width: queryResults.showingBindVarInputView ? geo.size.width/3 : 0, alignment: .trailing)
-//                                .hidden(!queryResults.showingBindVarInputView)
+                )
+            } else {
+                queryResultToolbar
+                GeometryReader { geo in
+                    HStack {
+                        ZStack {
+                            ResultView(model: self.queryResults )
+                                .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity)
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                                .frame(minHeight: 100)
+                                .hidden(!queryResults.resultsController.isExecuting)
+                        }
+                        if queryResults.showingBindVarInputView {
+                            BindVarInputView(bindVarVM: $queryResults.bindVarVM, runAction: runWithBinds, cancelAction: {queryResults.showingBindVarInputView = false})
+                                .frame(width: queryResults.showingBindVarInputView ? geo.size.width/3 : 0, alignment: .trailing)
+                        }
+
+                        RunningLogView(attributedText: queryResults.runningLogStr)
+                            .frame(width: queryResults.showingLog ? geo.size.width/3 : 0, alignment: .trailing)
                     }
-                    
-                    RunningLogView(attributedText: queryResults.runningLogStr)
-                        .frame(width: queryResults.showingLog ? geo.size.width/3 : 0, alignment: .trailing)
                 }
             }
         }

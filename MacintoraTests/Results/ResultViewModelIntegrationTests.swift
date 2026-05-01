@@ -21,7 +21,7 @@ import XCTest
 @MainActor
 final class ResultViewModelIntegrationTests: XCTestCase {
 
-    private static let fixtureURL = URL(fileURLWithPath: "/Users/ilia/Documents/macintora/local.macintora")
+    nonisolated private static let fixtureURL = URL(fileURLWithPath: "/Users/ilia/Documents/macintora/local.macintora")
 
     override func setUpWithError() throws {
         continueAfterFailure = false
