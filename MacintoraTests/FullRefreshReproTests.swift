@@ -21,7 +21,7 @@ final class FullRefreshReproTests: XCTestCase {
             throw XCTSkip("Saved password for c4-local not available in keychain")
         }
 
-        var details = ConnectionDetails(
+        let details = ConnectionDetails(
             savedConnectionID: saved.id,
             username: saved.defaultUsername,
             password: pwd,

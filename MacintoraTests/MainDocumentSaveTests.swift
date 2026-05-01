@@ -40,7 +40,7 @@ final class MainDocumentSaveTests: XCTestCase {
     /// `Task.detached` mirrors what SwiftUI's file-coordination machinery does
     /// during save/autosave. It must not trap, regardless of actor isolation.
     func test_snapshotFromNonMainActor() async throws {
-        let doc = await MainDocumentVM(text: "off-main test")
+        let doc = MainDocumentVM(text: "off-main test")
 
         let snap = try await Task.detached(priority: .utility) {
             try doc.snapshot(contentType: .macora)
@@ -110,7 +110,7 @@ final class MainDocumentSaveTests: XCTestCase {
     /// Full round-trip: type into a new doc, save it to disk, reopen via the
     /// init-from-data path, verify contents survived.
     func test_newDocumentSaveReopenRoundTrip() async throws {
-        let doc = await MainDocumentVM(text: "starting content")
+        let doc = MainDocumentVM(text: "starting content")
         await MainActor.run {
             doc.model.text = "typed some more text"
             doc.mainConnection.mainConnDetails.username = "dana"
