@@ -7,6 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		490E96B62FA4217200DDF37F /* SqlPlusDirective.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96B52FA4217200DDF37F /* SqlPlusDirective.swift */; };
+		490E96B82FA4217700DDF37F /* ScriptError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96B72FA4217700DDF37F /* ScriptError.swift */; };
+		490E96BA2FA4225300DDF37F /* ScriptLexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96B92FA4225300DDF37F /* ScriptLexer.swift */; };
+		490E96BC2FA422AF00DDF37F /* ScriptLexerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96BB2FA422AF00DDF37F /* ScriptLexerTests.swift */; };
+		490E96BE2FA4239500DDF37F /* OffsetMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96BD2FA4239500DDF37F /* OffsetMap.swift */; };
+		490E96C02FA423B000DDF37F /* SubstitutionResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96BF2FA423B000DDF37F /* SubstitutionResolver.swift */; };
+		490E96C22FA423CE00DDF37F /* SubstitutionResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96C12FA423CE00DDF37F /* SubstitutionResolverTests.swift */; };
+		490E96C42FA4246E00DDF37F /* ScriptRunnerEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96C32FA4246E00DDF37F /* ScriptRunnerEvent.swift */; };
+		490E96C62FA4247700DDF37F /* ConnectionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96C52FA4247700DDF37F /* ConnectionExecutor.swift */; };
+		490E96C82FA4248800DDF37F /* ScriptRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96C72FA4248800DDF37F /* ScriptRunner.swift */; };
+		490E96CA2FA424A500DDF37F /* ScriptRunnerDriverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96C92FA424A500DDF37F /* ScriptRunnerDriverTests.swift */; };
+		490E96CC2FA4250C00DDF37F /* ScriptOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96CB2FA4250C00DDF37F /* ScriptOutput.swift */; };
+		490E96CE2FA4253D00DDF37F /* MiniGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96CD2FA4253D00DDF37F /* MiniGridView.swift */; };
+		490E96D02FA4255F00DDF37F /* ScriptOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96CF2FA4255F00DDF37F /* ScriptOutputView.swift */; };
+		490E96D22FA4256F00DDF37F /* ScriptOutputModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96D12FA4256F00DDF37F /* ScriptOutputModelTests.swift */; };
+		490E96D42FA4260600DDF37F /* OracleScriptExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96D32FA4260600DDF37F /* OracleScriptExecutor.swift */; };
+		490E96D62FA426F500DDF37F /* ScriptRunnerLiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96D52FA426F500DDF37F /* ScriptRunnerLiveTests.swift */; };
+		490E96D82FA4288400DDF37F /* SubstitutionInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96D72FA4288400DDF37F /* SubstitutionInputView.swift */; };
+		490E96DA2FA4296000DDF37F /* SqlPlusEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96D92FA4296000DDF37F /* SqlPlusEnvironment.swift */; };
+		490E96DC2FA4296F00DDF37F /* SqlPlusInterpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96DB2FA4296F00DDF37F /* SqlPlusInterpreter.swift */; };
+		490E96DE2FA4298800DDF37F /* ScriptLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96DD2FA4298800DDF37F /* ScriptLoader.swift */; };
+		490E96E02FA429E100DDF37F /* SqlPlusInterpreterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96DF2FA429E100DDF37F /* SqlPlusInterpreterTests.swift */; };
+		490E96E22FA429FB00DDF37F /* ScriptLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E12FA429FB00DDF37F /* ScriptLoaderTests.swift */; };
+		490E96E42FA42AC500DDF37F /* ScriptRunnerDirectivesLiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E32FA42AC500DDF37F /* ScriptRunnerDirectivesLiveTests.swift */; };
+		490E96E62FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E52FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift */; };
 		49438678273753A000D7D464 /* ResultViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49438677273753A000D7D464 /* ResultViewModel.swift */; };
 		4944594C28D51D31007AB2BF /* SBMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594B28D51D31007AB2BF /* SBMainView.swift */; };
 		4944594E28D539D2007AB2BF /* SBVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594D28D539D2007AB2BF /* SBVM.swift */; };
@@ -138,6 +163,31 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		490E96B52FA4217200DDF37F /* SqlPlusDirective.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SqlPlusDirective.swift; sourceTree = "<group>"; };
+		490E96B72FA4217700DDF37F /* ScriptError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptError.swift; sourceTree = "<group>"; };
+		490E96B92FA4225300DDF37F /* ScriptLexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptLexer.swift; sourceTree = "<group>"; };
+		490E96BB2FA422AF00DDF37F /* ScriptLexerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptLexerTests.swift; sourceTree = "<group>"; };
+		490E96BD2FA4239500DDF37F /* OffsetMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OffsetMap.swift; sourceTree = "<group>"; };
+		490E96BF2FA423B000DDF37F /* SubstitutionResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstitutionResolver.swift; sourceTree = "<group>"; };
+		490E96C12FA423CE00DDF37F /* SubstitutionResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstitutionResolverTests.swift; sourceTree = "<group>"; };
+		490E96C32FA4246E00DDF37F /* ScriptRunnerEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptRunnerEvent.swift; sourceTree = "<group>"; };
+		490E96C52FA4247700DDF37F /* ConnectionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionExecutor.swift; sourceTree = "<group>"; };
+		490E96C72FA4248800DDF37F /* ScriptRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptRunner.swift; sourceTree = "<group>"; };
+		490E96C92FA424A500DDF37F /* ScriptRunnerDriverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptRunnerDriverTests.swift; sourceTree = "<group>"; };
+		490E96CB2FA4250C00DDF37F /* ScriptOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptOutput.swift; sourceTree = "<group>"; };
+		490E96CD2FA4253D00DDF37F /* MiniGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniGridView.swift; sourceTree = "<group>"; };
+		490E96CF2FA4255F00DDF37F /* ScriptOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptOutputView.swift; sourceTree = "<group>"; };
+		490E96D12FA4256F00DDF37F /* ScriptOutputModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptOutputModelTests.swift; sourceTree = "<group>"; };
+		490E96D32FA4260600DDF37F /* OracleScriptExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OracleScriptExecutor.swift; sourceTree = "<group>"; };
+		490E96D52FA426F500DDF37F /* ScriptRunnerLiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptRunnerLiveTests.swift; sourceTree = "<group>"; };
+		490E96D72FA4288400DDF37F /* SubstitutionInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstitutionInputView.swift; sourceTree = "<group>"; };
+		490E96D92FA4296000DDF37F /* SqlPlusEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SqlPlusEnvironment.swift; sourceTree = "<group>"; };
+		490E96DB2FA4296F00DDF37F /* SqlPlusInterpreter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SqlPlusInterpreter.swift; sourceTree = "<group>"; };
+		490E96DD2FA4298800DDF37F /* ScriptLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptLoader.swift; sourceTree = "<group>"; };
+		490E96DF2FA429E100DDF37F /* SqlPlusInterpreterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SqlPlusInterpreterTests.swift; sourceTree = "<group>"; };
+		490E96E12FA429FB00DDF37F /* ScriptLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptLoaderTests.swift; sourceTree = "<group>"; };
+		490E96E32FA42AC500DDF37F /* ScriptRunnerDirectivesLiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptRunnerDirectivesLiveTests.swift; sourceTree = "<group>"; };
+		490E96E52FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarToggleCrashRegressionTests.swift; sourceTree = "<group>"; };
 		49438677273753A000D7D464 /* ResultViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResultViewModel.swift; sourceTree = "<group>"; };
 		4944594B28D51D31007AB2BF /* SBMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBMainView.swift; sourceTree = "<group>"; };
 		4944594D28D539D2007AB2BF /* SBVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBVM.swift; sourceTree = "<group>"; };
@@ -281,6 +331,32 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		490E96B32FA4211C00DDF37F /* Script */ = {
+			isa = PBXGroup;
+			children = (
+				490E96B52FA4217200DDF37F /* SqlPlusDirective.swift */,
+				490E96B72FA4217700DDF37F /* ScriptError.swift */,
+				490E96B92FA4225300DDF37F /* ScriptLexer.swift */,
+				490E96BD2FA4239500DDF37F /* OffsetMap.swift */,
+				490E96BF2FA423B000DDF37F /* SubstitutionResolver.swift */,
+				490E96D92FA4296000DDF37F /* SqlPlusEnvironment.swift */,
+				490E96DB2FA4296F00DDF37F /* SqlPlusInterpreter.swift */,
+				490E96DD2FA4298800DDF37F /* ScriptLoader.swift */,
+			);
+			path = Script;
+			sourceTree = "<group>";
+		};
+		490E96B42FA4216800DDF37F /* Script */ = {
+			isa = PBXGroup;
+			children = (
+				490E96BB2FA422AF00DDF37F /* ScriptLexerTests.swift */,
+				490E96C12FA423CE00DDF37F /* SubstitutionResolverTests.swift */,
+				490E96DF2FA429E100DDF37F /* SqlPlusInterpreterTests.swift */,
+				490E96E12FA429FB00DDF37F /* ScriptLoaderTests.swift */,
+			);
+			path = Script;
+			sourceTree = "<group>";
+		};
 		4944594A28D51CE5007AB2BF /* SessionBrowser */ = {
 			isa = PBXGroup;
 			children = (
@@ -342,6 +418,7 @@
 				AA0000F10000000000000000 /* FullRefreshReproTests.swift */,
 				49D0ECF22F9C1E070047540A /* Editor */,
 				49D0ED042F9C34410047540A /* Results */,
+				490E96B42FA4216800DDF37F /* Script */,
 			);
 			path = MacintoraTests;
 			sourceTree = "<group>";
@@ -426,6 +503,7 @@
 				49B55F3D270ADD8D00CFB3C7 /* Macintora.entitlements */,
 				49B55F39270ADD8D00CFB3C7 /* Preview Content */,
 				49D0ECE92F9C1D480047540A /* Editor */,
+				490E96B32FA4211C00DDF37F /* Script */,
 			);
 			path = Macintora;
 			sourceTree = "<group>";
@@ -456,6 +534,14 @@
 				4947FEA5286FA39D00AEBE60 /* TableViewWithPasteboard.swift */,
 				4999469327E1777700C62AB7 /* LogView.swift */,
 				4947FEA9286FA73B00AEBE60 /* RunnableSQL.swift */,
+				490E96C32FA4246E00DDF37F /* ScriptRunnerEvent.swift */,
+				490E96C52FA4247700DDF37F /* ConnectionExecutor.swift */,
+				490E96C72FA4248800DDF37F /* ScriptRunner.swift */,
+				490E96CB2FA4250C00DDF37F /* ScriptOutput.swift */,
+				490E96CD2FA4253D00DDF37F /* MiniGridView.swift */,
+				490E96CF2FA4255F00DDF37F /* ScriptOutputView.swift */,
+				490E96D32FA4260600DDF37F /* OracleScriptExecutor.swift */,
+				490E96D72FA4288400DDF37F /* SubstitutionInputView.swift */,
 			);
 			path = Results;
 			sourceTree = "<group>";
@@ -485,6 +571,10 @@
 			isa = PBXGroup;
 			children = (
 				49D0ED052F9C346B0047540A /* ResultViewModelIntegrationTests.swift */,
+				490E96C92FA424A500DDF37F /* ScriptRunnerDriverTests.swift */,
+				490E96D12FA4256F00DDF37F /* ScriptOutputModelTests.swift */,
+				490E96D52FA426F500DDF37F /* ScriptRunnerLiveTests.swift */,
+				490E96E32FA42AC500DDF37F /* ScriptRunnerDirectivesLiveTests.swift */,
 			);
 			path = Results;
 			sourceTree = "<group>";
@@ -523,6 +613,7 @@
 			isa = PBXGroup;
 			children = (
 				BB0000020000000000000000 /* MacintoraUITests.swift */,
+				490E96E52FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift */,
 			);
 			path = MacintoraUITests;
 			sourceTree = "<group>";
@@ -669,9 +760,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				490E96D62FA426F500DDF37F /* ScriptRunnerLiveTests.swift in Sources */,
+				490E96C22FA423CE00DDF37F /* SubstitutionResolverTests.swift in Sources */,
 				49D0ECF42F9C1E1E0047540A /* EditorSelectionBridgeTests.swift in Sources */,
 				4982889F28B41F3A00A28B04 /* MacintoraTests.swift in Sources */,
 				AA0000130000000000000000 /* TnsParserTests.swift in Sources */,
+				490E96BC2FA422AF00DDF37F /* ScriptLexerTests.swift in Sources */,
+				490E96CA2FA424A500DDF37F /* ScriptRunnerDriverTests.swift in Sources */,
 				AA0000150000000000000000 /* OracleEndpointTests.swift in Sources */,
 				AA0000170000000000000000 /* DisplayRowTests.swift in Sources */,
 				AA0000190000000000000000 /* AppDBErrorTests.swift in Sources */,
@@ -679,10 +774,14 @@
 				AA00001B0000000000000000 /* MainDocumentSaveTests.swift in Sources */,
 				AA00001D0000000000000000 /* DocumentFlowTests.swift in Sources */,
 				AA0000380000000000000000 /* SavedConnectionTests.swift in Sources */,
+				490E96D22FA4256F00DDF37F /* ScriptOutputModelTests.swift in Sources */,
 				AA00003A0000000000000000 /* JDBCURLParserTests.swift in Sources */,
+				490E96E22FA429FB00DDF37F /* ScriptLoaderTests.swift in Sources */,
 				AA00003C0000000000000000 /* KeychainServiceTests.swift in Sources */,
+				490E96E42FA42AC500DDF37F /* ScriptRunnerDirectivesLiveTests.swift in Sources */,
 				AA00003E0000000000000000 /* ConnectionStoreTests.swift in Sources */,
 				AA0001020000000000000000 /* SessionRestorerTests.swift in Sources */,
+				490E96E02FA429E100DDF37F /* SqlPlusInterpreterTests.swift in Sources */,
 				AA0000400000000000000000 /* ConnectionDetailsCodableTests.swift in Sources */,
 				AA0000C00000000000000000 /* LegacyDocumentMigrationTests.swift in Sources */,
 				AA0000F00000000000000000 /* FullRefreshReproTests.swift in Sources */,
@@ -701,6 +800,7 @@
 				498288F728B7DCB000A28B04 /* DBIndexDetailView.swift in Sources */,
 				49D0ECF12F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift in Sources */,
 				49F481F0294A84A1005DC77F /* PersistencePreview.swift in Sources */,
+				490E96DC2FA4296F00DDF37F /* SqlPlusInterpreter.swift in Sources */,
 				498288C928B7DC5700A28B04 /* DBCacheIndex+CoreDataProperties.swift in Sources */,
 				498288CC28B7DC5700A28B04 /* DBCacheObject+CoreDataClass.swift in Sources */,
 				49EAEFA728C83685008F0B80 /* DBCacheTrigger+CoreDataProperties.swift in Sources */,
@@ -709,6 +809,7 @@
 				498288F528B7DCB000A28B04 /* DBCacheListEntryView.swift in Sources */,
 				498288E928B7DCB000A28B04 /* WindowModifier.swift in Sources */,
 				4947FEAC2870F8E400AEBE60 /* BindVarInputView.swift in Sources */,
+				490E96C02FA423B000DDF37F /* SubstitutionResolver.swift in Sources */,
 				498288CD28B7DC5700A28B04 /* Item+CoreDataClass.swift in Sources */,
 				498288C428B7DC5700A28B04 /* DBCacheSource+CoreDataClass.swift in Sources */,
 				498288F928B7DCB000A28B04 /* DBCacheVM.swift in Sources */,
@@ -720,12 +821,16 @@
 				49B55F60270ADFE300CFB3C7 /* MainModel.swift in Sources */,
 				498288EC28B7DCB000A28B04 /* SwiftUIWindow.swift in Sources */,
 				498288AC28B7DBE500A28B04 /* DatabaseCacheModel.xcdatamodeld in Sources */,
+				490E96CE2FA4253D00DDF37F /* MiniGridView.swift in Sources */,
 				49438678273753A000D7D464 /* ResultViewModel.swift in Sources */,
 				498288FD28B7DCB000A28B04 /* TableIndexListView.swift in Sources */,
+				490E96DE2FA4298800DDF37F /* ScriptLoader.swift in Sources */,
 				498288C628B7DC5700A28B04 /* ConnDatabase+CoreDataProperties.swift in Sources */,
+				490E96BE2FA4239500DDF37F /* OffsetMap.swift in Sources */,
 				49B55F32270ADD8B00CFB3C7 /* MacintoraApp.swift in Sources */,
 				498288EA28B7DCB000A28B04 /* HorizontalLabelStyle.swift in Sources */,
 				498288C228B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataClass.swift in Sources */,
+				490E96B62FA4217200DDF37F /* SqlPlusDirective.swift in Sources */,
 				4944594C28D51D31007AB2BF /* SBMainView.swift in Sources */,
 				498288C828B7DC5700A28B04 /* DBCacheTableColumn+CoreDataClass.swift in Sources */,
 				498288FB28B7DCB000A28B04 /* FormattedView.swift in Sources */,
@@ -747,8 +852,10 @@
 				49EAEFAB28C9331C008F0B80 /* SourceView.swift in Sources */,
 				49C62C2427E010AE00DE69E4 /* ConnectionListView.swift in Sources */,
 				498288F228B7DCB000A28B04 /* DBCacheSearchCriteria.swift in Sources */,
+				490E96C82FA4248800DDF37F /* ScriptRunner.swift in Sources */,
 				498288C128B7DC5700A28B04 /* DBCacheIndex+CoreDataClass.swift in Sources */,
 				496FF1A12775259900CC0AD2 /* ResultViewWrapper.swift in Sources */,
+				490E96BA2FA4225300DDF37F /* ScriptLexer.swift in Sources */,
 				4944595028D68EFE007AB2BF /* SessionView.swift in Sources */,
 				498288C528B7DC5700A28B04 /* DBCacheTable+CoreDataProperties.swift in Sources */,
 				498288FE28B7DCB000A28B04 /* Persistence.swift in Sources */,
@@ -761,7 +868,9 @@
 				49EB5E0C29528995003A0E23 /* DBCacheMainView.swift in Sources */,
 				49EAEFA528C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift in Sources */,
 				AA00000D0000000000000000 /* TnsEntry.swift in Sources */,
+				490E96C42FA4246E00DDF37F /* ScriptRunnerEvent.swift in Sources */,
 				AA0000030000000000000000 /* TnsParser.swift in Sources */,
+				490E96CC2FA4250C00DDF37F /* ScriptOutput.swift in Sources */,
 				AA0000050000000000000000 /* OracleEndpoint.swift in Sources */,
 				AA0000070000000000000000 /* AppDBError.swift in Sources */,
 				AA0000090000000000000000 /* DisplayRow.swift in Sources */,
@@ -769,13 +878,19 @@
 				AA00000F0000000000000000 /* OracleEventLoopGroup.swift in Sources */,
 				AA0000110000000000000000 /* BindValue.swift in Sources */,
 				AA0000A00000000000000000 /* SavedConnection.swift in Sources */,
+				490E96D42FA4260600DDF37F /* OracleScriptExecutor.swift in Sources */,
 				AA0000320000000000000000 /* JDBCURLParser.swift in Sources */,
 				AA0000340000000000000000 /* KeychainService.swift in Sources */,
 				AA0000360000000000000000 /* ConnectionStore.swift in Sources */,
 				AA0000B00000000000000000 /* ConnectionStoreEnvironment.swift in Sources */,
+				490E96DA2FA4296000DDF37F /* SqlPlusEnvironment.swift in Sources */,
 				AA0000B20000000000000000 /* ConnectionsManagerView.swift in Sources */,
 				AA0000B40000000000000000 /* ConnectionEditorForm.swift in Sources */,
 				AA0000B70000000000000000 /* TnsImportPrompt.swift in Sources */,
+				490E96C62FA4247700DDF37F /* ConnectionExecutor.swift in Sources */,
+				490E96B82FA4217700DDF37F /* ScriptError.swift in Sources */,
+				490E96D82FA4288400DDF37F /* SubstitutionInputView.swift in Sources */,
+				490E96D02FA4255F00DDF37F /* ScriptOutputView.swift in Sources */,
 				49D0ECED2F9C1D9D0047540A /* EditorLanguage.swift in Sources */,
 				49D0ECEB2F9C1D970047540A /* EditorSelectionBridge.swift in Sources */,
 				49D0ED202F9C40000047540A /* EditorTheme.swift in Sources */,
@@ -788,6 +903,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BB0000010000000000000000 /* MacintoraUITests.swift in Sources */,
+				490E96E62FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

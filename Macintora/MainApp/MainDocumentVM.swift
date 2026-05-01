@@ -456,6 +456,28 @@ from dual;\n\n
         resultsController?.runSQL(RunnableSQL(sql: sql))
     }
 
+    // MARK: - Script run modes (Phase 4 engine; Phase 5 wires menus / shortcuts)
+
+    /// Run the entire document as a script.
+    @MainActor
+    func runScript() {
+        resultsController?.runScript(source: model.text, range: nil)
+    }
+
+    /// Run from `caret` to the end of the document.
+    @MainActor
+    func runScriptFromCursor(_ caret: String.Index) {
+        let source = model.text
+        guard caret <= source.endIndex else { return }
+        resultsController?.runScript(source: source, range: caret..<source.endIndex)
+    }
+
+    /// Run the explicit selection as a script.
+    @MainActor
+    func runScriptSelection(_ range: Range<String.Index>) {
+        resultsController?.runScript(source: model.text, range: range)
+    }
+
     @MainActor
     func stopRunningSQL() {
         if !(resultsController?.isExecuting ?? false) {

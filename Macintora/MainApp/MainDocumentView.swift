@@ -55,12 +55,20 @@ struct MainDocumentView: View {
     
     var body: some View {
         NavigationSplitView {
-            ConnectionListView(
-                connectionStatus: $document.isConnected,
-                details: $document.mainConnection.mainConnDetails,
-                connect: { document.connect(store: store, keychain: keychain) },
-                disconnect: document.disconnect
-            )
+            // Wrap in `ScrollView` to stabilise NavigationSplitView's safe-area
+            // inset propagation. Without it, toggling the sidebar drove
+            // `_NSSplitViewItemViewWrapper.updateConstraints` into an
+            // infinite loop ("more Update Constraints in Window passes than
+            // there are views in the window") which crashed the app —
+            // regression covered by `SidebarToggleCrashRegressionTests`.
+            ScrollView {
+                ConnectionListView(
+                    connectionStatus: $document.isConnected,
+                    details: $document.mainConnection.mainConnDetails,
+                    connect: { document.connect(store: store, keychain: keychain) },
+                    disconnect: document.disconnect
+                )
+            }
             .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 420)
         } detail: {
             VStack {
@@ -78,8 +86,17 @@ struct MainDocumentView: View {
                         .frame(maxWidth: .infinity, minHeight: 120, idealHeight: 320, maxHeight: .infinity)
                         .focused($focusedView, equals: .codeEditor)
 
-                    ResultViewWrapper(resultsController: resultsController)
-                        .frame(maxWidth: .infinity, minHeight: 200, idealHeight: 280, maxHeight: .infinity)
+                    ResultViewWrapper(
+                        resultsController: resultsController,
+                        onRevealSource: { utf16Range in
+                            if let range = EditorSelectionBridge.range(forUTF16: utf16Range, in: document.model.text) {
+                                editorSelection = range
+                                focusedView = .codeEditor
+                            }
+                        }
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 200, idealHeight: 280, maxHeight: .infinity)
+                    .modifier(SubstitutionSheetModifier(controller: resultsController))
                 }
             }
         }
@@ -147,7 +164,39 @@ struct MainDocumentView: View {
                 .help("Execute current statement")
                 .accessibilityIdentifier("toolbar.run")
                 .accessibilityLabel("Run")
-                
+
+                // run script (whole file)
+                Button {
+                    if document.resultsController?.isExecuting ?? false {
+                        document.stopRunningSQL()
+                    } else {
+                        document.runScript()
+                    }
+                    focusedView = .codeEditor
+                } label: { Image(systemName: "play.square") }
+                    .disabled(document.isConnected != .connected)
+                    .keyboardShortcut("r", modifiers: [.command, .shift])
+                    .help("Run entire script")
+                    .accessibilityIdentifier("toolbar.runScript")
+                    .accessibilityLabel("Run Script")
+
+                // run from cursor / run selection
+                Button {
+                    if document.resultsController?.isExecuting ?? false {
+                        document.stopRunningSQL()
+                    } else if !editorSelection.isEmpty {
+                        document.runScriptSelection(editorSelection)
+                    } else {
+                        document.runScriptFromCursor(editorSelection.lowerBound)
+                    }
+                    focusedView = .codeEditor
+                } label: { Image(systemName: "play.square.stack") }
+                    .disabled(document.isConnected != .connected)
+                    .keyboardShortcut("r", modifiers: [.command, .option])
+                    .help(editorSelection.isEmpty ? "Run script from cursor" : "Run selection as script")
+                    .accessibilityIdentifier("toolbar.runScriptFromCursor")
+                    .accessibilityLabel("Run From Cursor")
+
                 // explain plan
                 Button {
                     if !(document.resultsController?.isExecuting ?? false) {
@@ -223,6 +272,23 @@ struct MainDocumentView: View {
 
 
 
+
+
+/// Owns the substitution-prompt sheet binding via `@Bindable` so SwiftUI can
+/// track stable identity for `pendingSubstitution`. A `Binding(get:set:)`
+/// closure-based binding here was triggering an Auto Layout invalidation
+/// loop inside the surrounding `NavigationSplitView` / `VSplitView`.
+private struct SubstitutionSheetModifier: ViewModifier {
+    @Bindable var controller: ResultsController
+
+    func body(content: Content) -> some View {
+        content.sheet(item: $controller.pendingSubstitution) { request in
+            SubstitutionInputView(request: request) { values in
+                controller.resolvePendingSubstitution(values)
+            }
+        }
+    }
+}
 
 
 struct MacOraDocumentView_Previews: PreviewProvider {

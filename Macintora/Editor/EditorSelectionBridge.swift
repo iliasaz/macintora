@@ -38,4 +38,13 @@ enum EditorSelectionBridge {
     static func endRange(in string: String) -> Range<String.Index> {
         string.endIndex ..< string.endIndex
     }
+
+    /// Convert a UTF-16 offset range to a `Range<String.Index>` over `string`.
+    /// Used by Script Output's "reveal in editor" affordance, which carries
+    /// failure positions as UTF-16 offsets in the original (un-substituted)
+    /// script source.
+    static func range(forUTF16 utf16Range: Range<Int>, in string: String) -> Range<String.Index>? {
+        let ns = NSRange(location: utf16Range.lowerBound, length: utf16Range.count)
+        return range(for: ns, in: string)
+    }
 }
