@@ -32,6 +32,10 @@ struct MainDocumentView: View {
 
     @State private var resultsController: ResultsController
     @State private var editorSelection: Range<String.Index> = "".startIndex..<"".endIndex
+    /// Built once per worksheet from the document's connection details so the
+    /// expensive CoreData load only happens at view construction. Reconnects
+    /// keep the same store (per-TNS); switching TNS requires a new worksheet.
+    @State private var completionConfig: EditorCompletionConfig?
 
     var selectedObject: String {
         if editorSelection.isEmpty { return "" }
@@ -81,7 +85,8 @@ struct MainDocumentView: View {
                         isSelectable: true,
                         wordWrap: $wordWrapping,
                         showsLineNumbers: true,
-                        highlightsSelectedLine: true
+                        highlightsSelectedLine: true,
+                        completionConfig: completionConfig
                     )
                         .frame(maxWidth: .infinity, minHeight: 120, idealHeight: 320, maxHeight: .infinity)
                         .focused($focusedView, equals: .codeEditor)
@@ -116,6 +121,18 @@ struct MainDocumentView: View {
             document.prepareOnAppear(store: injectedStore, keychain: keychain)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
                 self.focusedView = .codeEditor
+            }
+            if completionConfig == nil {
+                let tns = document.mainConnection.mainConnDetails.tns
+                if !tns.isEmpty {
+                    let controller = PersistenceController(name: tns)
+                    completionConfig = EditorCompletionConfig(
+                        persistenceController: controller,
+                        defaultOwnerProvider: { [weak document] in
+                            document?.mainConnection.mainConnDetails.username.uppercased() ?? ""
+                        }
+                    )
+                }
             }
         }
         

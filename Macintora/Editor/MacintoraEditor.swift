@@ -20,6 +20,21 @@ import SwiftUI
 import STTextView
 import STPluginNeon
 
+/// Per-editor configuration for autocompletion. Pass `nil` to opt out
+/// (read-only viewers in DBBrowser etc.). The worksheet provides one tied
+/// to the active connection's `PersistenceController` and username.
+struct EditorCompletionConfig {
+    let persistenceController: PersistenceController
+    /// Closure so the editor picks up reconnects without rebuilding the view.
+    let defaultOwnerProvider: @MainActor () -> String
+
+    init(persistenceController: PersistenceController,
+         defaultOwnerProvider: @escaping @MainActor () -> String) {
+        self.persistenceController = persistenceController
+        self.defaultOwnerProvider = defaultOwnerProvider
+    }
+}
+
 struct MacintoraEditor: View {
     @Binding var text: String
     @Binding var selection: Range<String.Index>
@@ -30,6 +45,7 @@ struct MacintoraEditor: View {
     let showsLineNumbers: Bool
     let highlightsSelectedLine: Bool
     let accessibilityIdentifier: String
+    let completionConfig: EditorCompletionConfig?
 
     @AppStorage("editorTheme") private var editorThemeRaw: String = EditorTheme.default.rawValue
 
@@ -42,7 +58,8 @@ struct MacintoraEditor: View {
         wordWrap: Binding<Bool> = .constant(false),
         showsLineNumbers: Bool = true,
         highlightsSelectedLine: Bool = true,
-        accessibilityIdentifier: String = "editor.main"
+        accessibilityIdentifier: String = "editor.main",
+        completionConfig: EditorCompletionConfig? = nil
     ) {
         self._text = text
         self._selection = selection
@@ -53,6 +70,7 @@ struct MacintoraEditor: View {
         self.showsLineNumbers = showsLineNumbers
         self.highlightsSelectedLine = highlightsSelectedLine
         self.accessibilityIdentifier = accessibilityIdentifier
+        self.completionConfig = completionConfig
     }
 
     private var editorTheme: EditorTheme {
@@ -70,7 +88,8 @@ struct MacintoraEditor: View {
             showsLineNumbers: showsLineNumbers,
             highlightsSelectedLine: highlightsSelectedLine,
             accessibilityIdentifier: accessibilityIdentifier,
-            theme: editorTheme
+            theme: editorTheme,
+            completionConfig: completionConfig
         )
         .id(editorTheme)
     }
@@ -87,6 +106,7 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
     let highlightsSelectedLine: Bool
     let accessibilityIdentifier: String
     let theme: EditorTheme
+    let completionConfig: EditorCompletionConfig?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, selection: $selection)
@@ -108,9 +128,24 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
         textView.setAccessibilityIdentifier(accessibilityIdentifier)
         textView.setAccessibilityRole(.textArea)
 
+        // Always create the SQLTreeStore and install Neon with a tree-update
+        // callback, even when the host hasn't (yet) opted in to autocompletion.
+        // The CompletionCoordinator is built lazily in `updateNSView` once
+        // `completionConfig` arrives — typical for SwiftUI worksheets where
+        // `.onAppear` builds the config AFTER `makeNSView` runs.
+        let treeStore = SQLTreeStore()
+        context.coordinator.treeStore = treeStore
+        let onTreeUpdated: NeonPlugin.TreeUpdateHandler = { [weak treeStore] tree in
+            treeStore?.update(tree)
+        }
+        if let config = completionConfig {
+            context.coordinator.installCompletionCoordinator(with: config)
+        }
+
         // Install the Neon syntax-highlighting plugin before the first text
         // assignment so the initial parse fires on the seeded content.
-        textView.addPlugin(language.neonPlugin(theme: theme.neonTheme()))
+        textView.addPlugin(language.neonPlugin(theme: theme.neonTheme(),
+                                               onTreeUpdated: onTreeUpdated))
 
         // Seed initial content without echoing the change back into the binding.
         context.coordinator.isApplyingExternalUpdate = true
@@ -125,6 +160,12 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? STTextView else { return }
+
+        // Promote a late-binding completion config (e.g. MainDocumentView's
+        // `.onAppear` runs after `makeNSView`) to a live CompletionCoordinator.
+        if let config = completionConfig, context.coordinator.completionCoordinator == nil {
+            context.coordinator.installCompletionCoordinator(with: config)
+        }
 
         if textView.isEditable != isEditable { textView.isEditable = isEditable }
         if textView.isSelectable != isSelectable { textView.isSelectable = isSelectable }
