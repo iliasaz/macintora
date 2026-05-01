@@ -137,6 +137,11 @@ private extension MacintoraCompletionItem.Kind {
 // MARK: - Mapping suggestions to STCompletionItem
 
 extension MacintoraCompletionItem {
+    // Oracle stores unquoted identifiers in upper-case, which is what the
+    // popup shows. The inserted text is lower-cased so user-written SQL
+    // stays in the lower-case style the user prefers; quoted identifiers
+    // would need a different policy and are out of scope for v1.
+
     static func make(from t: TableSuggestion) -> MacintoraCompletionItem {
         let kind: Kind
         switch t.objectType {
@@ -147,7 +152,7 @@ extension MacintoraCompletionItem {
         }
         return MacintoraCompletionItem(
             displayText: t.name,
-            insertText: t.name,
+            insertText: t.name.lowercased(),
             secondaryText: "\(t.owner) · \(t.objectType)",
             kind: kind)
     }
@@ -155,7 +160,7 @@ extension MacintoraCompletionItem {
     static func make(from c: ColumnSuggestion) -> MacintoraCompletionItem {
         MacintoraCompletionItem(
             displayText: c.columnName,
-            insertText: c.columnName,
+            insertText: c.columnName.lowercased(),
             secondaryText: c.dataType,
             kind: .column)
     }
@@ -170,7 +175,7 @@ extension MacintoraCompletionItem {
         }
         return MacintoraCompletionItem(
             displayText: o.name,
-            insertText: o.name,
+            insertText: o.name.lowercased(),
             secondaryText: "\(o.owner) · \(o.type)",
             kind: kind)
     }

@@ -30,6 +30,22 @@ struct AliasResolver {
         return AliasResolver().aliases(in: fromNode, source: source)
     }
 
+    /// Test-friendly facade exercising the production path: parses `source`,
+    /// descends to the node under the cursor at `utf16Offset`, and walks
+    /// outward via `aliases(near:source:)`. Use this when the test cares
+    /// about the cursor location (e.g. cursor inside the SELECT-list with
+    /// FROM as a sibling clause).
+    static func parseAndResolve(_ source: String, utf16Offset: Int) -> [String: ResolvedTable?] {
+        let tree = SQLParserHelper.parse(source)
+        let cap = source.utf16.count
+        let units = max(0, min(utf16Offset, cap))
+        let target = UInt32(units * 2)
+        guard let node = tree.rootNode?.descendant(in: target..<target) else {
+            return [:]
+        }
+        return AliasResolver().aliases(near: node, source: source)
+    }
+
     private static func findFromClause(in node: SwiftTreeSitter.Node) -> SwiftTreeSitter.Node? {
         if node.nodeType == "from" { return node }
         for i in 0..<node.namedChildCount {
@@ -45,9 +61,21 @@ struct AliasResolver {
     /// alias-to-table map. Bare table references are present under their own
     /// upper-cased name (Oracle's default identifier folding) so callers can
     /// look them up uniformly.
+    ///
+    /// When the tree path can't locate a `from` (e.g. partial typing like
+    /// `select b.|` makes the parser fail to recognise the trailing FROM
+    /// clause), falls back to a source-text scan scoped to the statement
+    /// containing the cursor so column-completion still works mid-typing
+    /// without picking up a FROM from a sibling statement in the same
+    /// buffer.
     func aliases(near node: SwiftTreeSitter.Node, source: String) -> [String: ResolvedTable?] {
-        guard let fromNode = enclosingFrom(of: node) else { return [:] }
-        return aliases(in: fromNode, source: source)
+        if let fromNode = enclosingFrom(of: node) {
+            let map = aliases(in: fromNode, source: source)
+            if !map.isEmpty { return map }
+        }
+        // node.byteRange is in UTF-16 LE bytes (2 per code unit).
+        let cursorUTF16 = Int(node.byteRange.lowerBound) / 2
+        return Self.aliasesFromSourceText(source, around: cursorUTF16)
     }
 
     /// Same as `aliases(near:source:)` but takes the FROM node directly. Useful
@@ -72,11 +100,49 @@ struct AliasResolver {
 
     // MARK: - Internals
 
+    /// In `tree-sitter-sql-orcl`, `select` and `from` are *siblings* under
+    /// the enclosing `statement` — not parent/child. And cursors at
+    /// end-of-source after partial typing land on `ERROR` nodes that aren't
+    /// inside `statement` at all. We walk up and also recursively search
+    /// each ancestor's subtree so we pick up a `from` on the way out
+    /// regardless of where the cursor settled.
+    ///
+    /// We stop at statement-like boundaries so the search doesn't escape to
+    /// a sibling statement's FROM in the same buffer (`select 42 from dual;
+    /// select * from bills a;` must not resolve `a` against `from dual`).
     private func enclosingFrom(of node: SwiftTreeSitter.Node) -> SwiftTreeSitter.Node? {
         var current: SwiftTreeSitter.Node? = node
         while let n = current {
-            if n.nodeType == "from" { return n }
+            if let from = findDescendant(in: n, ofType: "from") {
+                return from
+            }
+            if Self.isQueryBoundary(n.nodeType) {
+                return nil
+            }
             current = n.parent
+        }
+        return nil
+    }
+
+    /// Node types that mark the boundary of a query block — we don't escape
+    /// past these when hunting for a sibling `from` clause.
+    private static func isQueryBoundary(_ type: String?) -> Bool {
+        switch type {
+        case "statement", "subquery", "block", "plsql_block",
+             "with", "with_query", "common_table_expression":
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func findDescendant(in node: SwiftTreeSitter.Node, ofType type: String) -> SwiftTreeSitter.Node? {
+        if node.nodeType == type { return node }
+        for i in 0..<node.namedChildCount {
+            if let child = node.namedChild(at: i),
+               let found = findDescendant(in: child, ofType: type) {
+                return found
+            }
         }
         return nil
     }
@@ -163,6 +229,106 @@ struct AliasResolver {
             }
         }
         return result
+    }
+
+    /// Source-text fallback used when tree-sitter can't produce a usable
+    /// `from` node — typically when partial typing in the SELECT-list
+    /// (`SELECT b.|`) confuses the grammar and the trailing FROM never
+    /// parses. Looks for the literal `FROM` keyword inside the statement
+    /// containing `cursorUTF16` (delimited by `;`) and pulls comma-
+    /// separated `[schema.]table [[AS] alias]` specs out until it hits a
+    /// terminator (WHERE / GROUP BY / ORDER BY / HAVING / `;`).
+    ///
+    /// `cursorUTF16` defaults to `.max` for backward compatibility (treat
+    /// the entire source as one statement). Doesn't attempt to handle JOIN
+    /// syntax — we'd want a real tokeniser for that — but the common case
+    /// the editor sees mid-typing is the comma-separated form.
+    static func aliasesFromSourceText(_ source: String,
+                                      around cursorUTF16: Int = .max) -> [String: ResolvedTable?] {
+        let nsSource = source as NSString
+        let safeCursor = max(0, min(cursorUTF16, nsSource.length))
+
+        // Statement bounds = last `;` strictly before cursor → next `;` at
+        // or after cursor (or end of source).
+        let beforeCursor = nsSource.substring(to: safeCursor) as NSString
+        let lastSemicolon = beforeCursor.range(of: ";", options: .backwards).location
+        let stmtStart = (lastSemicolon == NSNotFound) ? 0 : lastSemicolon + 1
+
+        let afterCursor = nsSource.substring(from: safeCursor) as NSString
+        let nextSemicolon = afterCursor.range(of: ";").location
+        let stmtEnd = (nextSemicolon == NSNotFound)
+            ? nsSource.length
+            : safeCursor + nextSemicolon
+
+        guard stmtEnd > stmtStart else { return [:] }
+        let stmtRange = NSRange(location: stmtStart, length: stmtEnd - stmtStart)
+        let stmt = nsSource.substring(with: stmtRange)
+
+        guard let fromRange = stmt.range(of: "\\bfrom\\b",
+                                         options: [.regularExpression, .caseInsensitive]) else {
+            return [:]
+        }
+        let afterFrom = stmt[fromRange.upperBound...]
+        let terminator = afterFrom.range(
+            of: "\\b(where|group\\s+by|order\\s+by|having|connect\\s+by|start\\s+with)\\b|;",
+            options: [.regularExpression, .caseInsensitive])
+        let body = terminator.map { afterFrom[..<$0.lowerBound] } ?? afterFrom[...]
+
+        var map: [String: ResolvedTable?] = [:]
+        for relation in body.split(separator: ",") {
+            let trimmed = relation.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            // Tokenise on whitespace; ignore parens / hint blocks for v1.
+            let tokens = trimmed.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+            guard let first = tokens.first else { continue }
+            let dotted = first.split(separator: ".")
+            let owner: String?
+            let name: String
+            switch dotted.count {
+            case 1:
+                owner = nil
+                name = String(dotted[0]).uppercased()
+            case 2:
+                owner = String(dotted[0]).uppercased()
+                name = String(dotted[1]).uppercased()
+            default:
+                // Three-part `db.schema.table` — treat schema as owner.
+                owner = String(dotted[1]).uppercased()
+                name = String(dotted[2]).uppercased()
+            }
+            // Find an alias token after the table reference. Skip an
+            // optional `AS`. The alias must look like an identifier.
+            var aliasName: String? = nil
+            for tokenIndex in 1..<tokens.count {
+                let token = tokens[tokenIndex]
+                if token.lowercased() == "as" { continue }
+                let trimmedToken = token.trimmingCharacters(in: CharacterSet(charactersIn: ".,;()"))
+                if trimmedToken.isEmpty { continue }
+                if Self.looksLikeIdentifier(trimmedToken) {
+                    aliasName = trimmedToken.uppercased()
+                }
+                break
+            }
+            let resolved = ResolvedTable(owner: owner, name: name)
+            if let aliasName, aliasName != name {
+                map[aliasName] = resolved
+            } else {
+                map[name] = resolved
+            }
+        }
+        return map
+    }
+
+    private static func looksLikeIdentifier(_ s: String) -> Bool {
+        guard let first = s.unicodeScalars.first else { return false }
+        guard first.properties.isAlphabetic || first == "_" else { return false }
+        for scalar in s.unicodeScalars {
+            let ok = scalar.properties.isAlphabetic
+                || (scalar.value >= 0x30 && scalar.value <= 0x39)
+                || scalar == "_" || scalar == "$" || scalar == "#"
+            if !ok { return false }
+        }
+        return true
     }
 
     /// Returns the substring of `source` covered by the node's byte range.
