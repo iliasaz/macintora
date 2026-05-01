@@ -95,6 +95,17 @@
 		49D0ECED2F9C1D9D0047540A /* EditorLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECEC2F9C1D9D0047540A /* EditorLanguage.swift */; };
 		49D0ECEF2F9C1DB20047540A /* MacintoraEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECEE2F9C1DB20047540A /* MacintoraEditor.swift */; };
 		49D0ECF12F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECF02F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift */; };
+		49C0100100000001 /* SQLTreeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0000100000001 /* SQLTreeStore.swift */; };
+		49C0100200000002 /* SQLContextAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0000200000002 /* SQLContextAnalyzer.swift */; };
+		49C0100300000003 /* AliasResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0000300000003 /* AliasResolver.swift */; };
+		49C0100400000004 /* CompletionItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0000400000004 /* CompletionItem.swift */; };
+		49C0100500000005 /* CompletionDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0000500000005 /* CompletionDataSource.swift */; };
+		49C0100600000006 /* CompletionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0000600000006 /* CompletionCoordinator.swift */; };
+		49C0100700000007 /* MacintoraEditor+Completion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0000700000007 /* MacintoraEditor+Completion.swift */; };
+		49C0100800000008 /* SQLParserHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0000800000008 /* SQLParserHelper.swift */; };
+		49C0301300000013 /* SQLContextAnalyzerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0301200000013 /* SQLContextAnalyzerTests.swift */; };
+		49C0301500000015 /* AliasResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0301400000015 /* AliasResolverTests.swift */; };
+		49C0301700000017 /* CompletionDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0301600000017 /* CompletionDataSourceTests.swift */; };
 		49D0ECF42F9C1E1E0047540A /* EditorSelectionBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECF32F9C1E1E0047540A /* EditorSelectionBridgeTests.swift */; };
 		49D0ECF62F9C1EB90047540A /* GetCurrentSqlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECF52F9C1EB90047540A /* GetCurrentSqlTests.swift */; };
 		49D0ED062F9C346B0047540A /* ResultViewModelIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ED052F9C346B0047540A /* ResultViewModelIntegrationTests.swift */; };
@@ -257,6 +268,17 @@
 		49D0ECEC2F9C1D9D0047540A /* EditorLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorLanguage.swift; sourceTree = "<group>"; };
 		49D0ECEE2F9C1DB20047540A /* MacintoraEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraEditor.swift; sourceTree = "<group>"; };
 		49D0ECF02F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MacintoraEditor+Coordinator.swift"; sourceTree = "<group>"; };
+		49C0000100000001 /* SQLTreeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLTreeStore.swift; sourceTree = "<group>"; };
+		49C0000200000002 /* SQLContextAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLContextAnalyzer.swift; sourceTree = "<group>"; };
+		49C0000300000003 /* AliasResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AliasResolver.swift; sourceTree = "<group>"; };
+		49C0000400000004 /* CompletionItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionItem.swift; sourceTree = "<group>"; };
+		49C0000500000005 /* CompletionDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionDataSource.swift; sourceTree = "<group>"; };
+		49C0000600000006 /* CompletionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionCoordinator.swift; sourceTree = "<group>"; };
+		49C0000700000007 /* MacintoraEditor+Completion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MacintoraEditor+Completion.swift"; sourceTree = "<group>"; };
+		49C0000800000008 /* SQLParserHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLParserHelper.swift; sourceTree = "<group>"; };
+		49C0301200000013 /* SQLContextAnalyzerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLContextAnalyzerTests.swift; sourceTree = "<group>"; };
+		49C0301400000015 /* AliasResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AliasResolverTests.swift; sourceTree = "<group>"; };
+		49C0301600000017 /* CompletionDataSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionDataSourceTests.swift; sourceTree = "<group>"; };
 		49D0ECF32F9C1E1E0047540A /* EditorSelectionBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSelectionBridgeTests.swift; sourceTree = "<group>"; };
 		49D0ECF52F9C1EB90047540A /* GetCurrentSqlTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetCurrentSqlTests.swift; sourceTree = "<group>"; };
 		49D0ED052F9C346B0047540A /* ResultViewModelIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultViewModelIntegrationTests.swift; sourceTree = "<group>"; };
@@ -559,8 +581,24 @@
 				49D0ED212F9C40000047540A /* EditorTheme.swift */,
 				49D0ECEE2F9C1DB20047540A /* MacintoraEditor.swift */,
 				49D0ECF02F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift */,
+				49C0000700000007 /* MacintoraEditor+Completion.swift */,
+				49C0200000000000 /* Completion */,
 			);
 			path = Editor;
+			sourceTree = "<group>";
+		};
+		49C0200000000000 /* Completion */ = {
+			isa = PBXGroup;
+			children = (
+				49C0000100000001 /* SQLTreeStore.swift */,
+				49C0000200000002 /* SQLContextAnalyzer.swift */,
+				49C0000300000003 /* AliasResolver.swift */,
+				49C0000400000004 /* CompletionItem.swift */,
+				49C0000500000005 /* CompletionDataSource.swift */,
+				49C0000600000006 /* CompletionCoordinator.swift */,
+				49C0000800000008 /* SQLParserHelper.swift */,
+			);
+			path = Completion;
 			sourceTree = "<group>";
 		};
 		49D0ECF22F9C1E070047540A /* Editor */ = {
@@ -568,8 +606,19 @@
 			children = (
 				49D0ECF32F9C1E1E0047540A /* EditorSelectionBridgeTests.swift */,
 				49D0ECF52F9C1EB90047540A /* GetCurrentSqlTests.swift */,
+				49C0300000000010 /* Completion */,
 			);
 			path = Editor;
+			sourceTree = "<group>";
+		};
+		49C0300000000010 /* Completion */ = {
+			isa = PBXGroup;
+			children = (
+				49C0301200000013 /* SQLContextAnalyzerTests.swift */,
+				49C0301400000015 /* AliasResolverTests.swift */,
+				49C0301600000017 /* CompletionDataSourceTests.swift */,
+			);
+			path = Completion;
 			sourceTree = "<group>";
 		};
 		49D0ED042F9C34410047540A /* Results */ = {
@@ -769,6 +818,9 @@
 				490E96D62FA426F500DDF37F /* ScriptRunnerLiveTests.swift in Sources */,
 				490E96C22FA423CE00DDF37F /* SubstitutionResolverTests.swift in Sources */,
 				49D0ECF42F9C1E1E0047540A /* EditorSelectionBridgeTests.swift in Sources */,
+				49C0301300000013 /* SQLContextAnalyzerTests.swift in Sources */,
+				49C0301500000015 /* AliasResolverTests.swift in Sources */,
+				49C0301700000017 /* CompletionDataSourceTests.swift in Sources */,
 				4982889F28B41F3A00A28B04 /* MacintoraTests.swift in Sources */,
 				AA0000130000000000000000 /* TnsParserTests.swift in Sources */,
 				490E96BC2FA422AF00DDF37F /* ScriptLexerTests.swift in Sources */,
@@ -902,6 +954,14 @@
 				49D0ECEB2F9C1D970047540A /* EditorSelectionBridge.swift in Sources */,
 				49D0ED202F9C40000047540A /* EditorTheme.swift in Sources */,
 				49D0ECEF2F9C1DB20047540A /* MacintoraEditor.swift in Sources */,
+				49C0100100000001 /* SQLTreeStore.swift in Sources */,
+				49C0100200000002 /* SQLContextAnalyzer.swift in Sources */,
+				49C0100300000003 /* AliasResolver.swift in Sources */,
+				49C0100400000004 /* CompletionItem.swift in Sources */,
+				49C0100500000005 /* CompletionDataSource.swift in Sources */,
+				49C0100600000006 /* CompletionCoordinator.swift in Sources */,
+				49C0100700000007 /* MacintoraEditor+Completion.swift in Sources */,
+				49C0100800000008 /* SQLParserHelper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

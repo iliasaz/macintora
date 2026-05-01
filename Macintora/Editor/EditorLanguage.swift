@@ -25,10 +25,11 @@ enum EditorLanguage: Sendable, Hashable {
     /// with the app-level `Theme` enum in `MacintoraApp.swift` (a light/dark
     /// `AppStorage` preference).
     @MainActor
-    func neonPlugin(theme: STPluginNeonAppKit.Theme = .default) -> NeonPlugin {
+    func neonPlugin(theme: STPluginNeonAppKit.Theme = .default,
+                    onTreeUpdated: NeonPlugin.TreeUpdateHandler? = nil) -> NeonPlugin {
         switch self {
         case .sql, .plsql:
-            return NeonPlugin(theme: theme, language: .sqlOrcl)
+            return NeonPlugin(theme: theme, language: .sqlOrcl, onTreeUpdated: onTreeUpdated)
         }
     }
 }

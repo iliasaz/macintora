@@ -20,6 +20,21 @@ import SwiftUI
 import STTextView
 import STPluginNeon
 
+/// Per-editor configuration for autocompletion. Pass `nil` to opt out
+/// (read-only viewers in DBBrowser etc.). The worksheet provides one tied
+/// to the active connection's `PersistenceController` and username.
+struct EditorCompletionConfig {
+    let persistenceController: PersistenceController
+    /// Closure so the editor picks up reconnects without rebuilding the view.
+    let defaultOwnerProvider: @MainActor () -> String
+
+    init(persistenceController: PersistenceController,
+         defaultOwnerProvider: @escaping @MainActor () -> String) {
+        self.persistenceController = persistenceController
+        self.defaultOwnerProvider = defaultOwnerProvider
+    }
+}
+
 struct MacintoraEditor: View {
     @Binding var text: String
     @Binding var selection: Range<String.Index>
@@ -30,6 +45,7 @@ struct MacintoraEditor: View {
     let showsLineNumbers: Bool
     let highlightsSelectedLine: Bool
     let accessibilityIdentifier: String
+    let completionConfig: EditorCompletionConfig?
 
     @AppStorage("editorTheme") private var editorThemeRaw: String = EditorTheme.default.rawValue
 
@@ -42,7 +58,8 @@ struct MacintoraEditor: View {
         wordWrap: Binding<Bool> = .constant(false),
         showsLineNumbers: Bool = true,
         highlightsSelectedLine: Bool = true,
-        accessibilityIdentifier: String = "editor.main"
+        accessibilityIdentifier: String = "editor.main",
+        completionConfig: EditorCompletionConfig? = nil
     ) {
         self._text = text
         self._selection = selection
@@ -53,6 +70,7 @@ struct MacintoraEditor: View {
         self.showsLineNumbers = showsLineNumbers
         self.highlightsSelectedLine = highlightsSelectedLine
         self.accessibilityIdentifier = accessibilityIdentifier
+        self.completionConfig = completionConfig
     }
 
     private var editorTheme: EditorTheme {
@@ -70,7 +88,8 @@ struct MacintoraEditor: View {
             showsLineNumbers: showsLineNumbers,
             highlightsSelectedLine: highlightsSelectedLine,
             accessibilityIdentifier: accessibilityIdentifier,
-            theme: editorTheme
+            theme: editorTheme,
+            completionConfig: completionConfig
         )
         .id(editorTheme)
     }
@@ -87,6 +106,7 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
     let highlightsSelectedLine: Bool
     let accessibilityIdentifier: String
     let theme: EditorTheme
+    let completionConfig: EditorCompletionConfig?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, selection: $selection)
@@ -108,9 +128,30 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
         textView.setAccessibilityIdentifier(accessibilityIdentifier)
         textView.setAccessibilityRole(.textArea)
 
+        // When the host opted in to autocompletion, build the completion
+        // stack now and feed parse-tree updates from Neon directly into the
+        // shared `SQLTreeStore`. This avoids running a second tree-sitter
+        // parser inside the host process.
+        let onTreeUpdated: NeonPlugin.TreeUpdateHandler?
+        if let config = completionConfig {
+            let treeStore = SQLTreeStore()
+            let dataSource = CompletionDataSource(persistenceController: config.persistenceController)
+            let coordinator = CompletionCoordinator(
+                treeStore: treeStore,
+                dataSource: dataSource,
+                defaultOwnerProvider: config.defaultOwnerProvider)
+            context.coordinator.completionCoordinator = coordinator
+            onTreeUpdated = { [weak treeStore] tree in
+                treeStore?.update(tree)
+            }
+        } else {
+            onTreeUpdated = nil
+        }
+
         // Install the Neon syntax-highlighting plugin before the first text
         // assignment so the initial parse fires on the seeded content.
-        textView.addPlugin(language.neonPlugin(theme: theme.neonTheme()))
+        textView.addPlugin(language.neonPlugin(theme: theme.neonTheme(),
+                                               onTreeUpdated: onTreeUpdated))
 
         // Seed initial content without echoing the change back into the binding.
         context.coordinator.isApplyingExternalUpdate = true
