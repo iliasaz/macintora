@@ -10,6 +10,18 @@ import os
 
 struct DBDetailObjectMainView: View {
     @Binding var dbObject: DBCacheObject
+
+    private var hasProcedureContent: Bool {
+        switch dbObject.type {
+        case OracleObjectType.package.rawValue,
+             OracleObjectType.procedure.rawValue,
+             OracleObjectType.function.rawValue:
+            return true
+        default:
+            return false
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0.0) {
             Form {
@@ -28,7 +40,11 @@ struct DBDetailObjectMainView: View {
                     .stroke(.quaternary, lineWidth: 2)
             )
             .padding([.top, .leading, .trailing])
-            Spacer()
+            if hasProcedureContent {
+                PackageProceduresListView(dbObject: dbObject)
+            } else {
+                Spacer()
+            }
         }
     }
 }

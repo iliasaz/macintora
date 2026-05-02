@@ -44,12 +44,22 @@ struct WindowLayoutPersister: NSViewRepresentable {
             // We're on the main actor here, so reading it is fine.
             guard !didConfigure, let window = unsafe self.window else { return }
             didConfigure = true
+            // Skip persistence wiring entirely under XCTest. The autosave
+            // round-trip can replay an off-screen frame from a prior session
+            // (e.g., a disconnected secondary display), which sends AppKit's
+            // constraint engine into a runaway update-pass loop and aborts
+            // the host app before the test runner finishes bootstrapping.
+            if Self.isRunningInTestHost { return }
             configureWindow(window)
             // Defer split-view discovery: SwiftUI may not have laid out the
             // NSSplitView descendants by the time this view enters the window.
             DispatchQueue.main.async { [weak self] in
                 self?.configureSplitViews()
             }
+        }
+
+        private static var isRunningInTestHost: Bool {
+            ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
         }
 
         override func viewWillMove(toWindow newWindow: NSWindow?) {
@@ -79,6 +89,35 @@ struct WindowLayoutPersister: NSViewRepresentable {
                 window.setFrame(NSRect(x: x, y: y, width: w, height: h), display: true)
             }
             window.setFrameAutosaveName(windowAutosaveName)
+            // setFrameAutosaveName has already replayed any persisted frame.
+            // If the persisted frame lived on a now-disconnected display, the
+            // window can land entirely off-screen — at which point AppKit's
+            // constraint engine thrashes ("more Update Constraints in Window
+            // passes than there are views") and may even throw. Detect that
+            // and snap the window back onto a visible screen.
+            ensureFrameIsOnScreen(window)
+        }
+
+        /// If the window's frame doesn't intersect any connected screen by a
+        /// reasonable margin, recenter it on the main screen at the default
+        /// size and rewrite the autosave entry so the next launch is clean.
+        private func ensureFrameIsOnScreen(_ window: NSWindow) {
+            let frame = window.frame
+            let screens = NSScreen.screens
+            let minVisibleArea: CGFloat = 100 * 100
+            let onScreen = screens.contains { screen in
+                let intersection = frame.intersection(screen.visibleFrame)
+                guard !intersection.isNull else { return false }
+                return intersection.width * intersection.height >= minVisibleArea
+            }
+            guard !onScreen, let target = NSScreen.main ?? screens.first else { return }
+            let visible = target.visibleFrame
+            let width = min(frame.width > 0 ? frame.width : 1100, visible.width)
+            let height = min(frame.height > 0 ? frame.height : 700, visible.height)
+            let originX = visible.minX + (visible.width - width) / 2
+            let originY = visible.minY + (visible.height - height) / 2
+            window.setFrame(NSRect(x: originX, y: originY, width: width, height: height), display: true)
+            window.saveFrame(usingName: windowAutosaveName)
         }
 
         // MARK: - Split-view dividers

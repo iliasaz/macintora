@@ -110,6 +110,45 @@ final class CompletionDataSourceTests: XCTestCase {
         XCTAssertEqual(result.first?.owner, "HR")
     }
 
+    // MARK: - Procedures
+
+    func test_procedures_listsPackageMembers_skipsSelfRow() async {
+        seedAccountsPackage()
+        let result = await dataSource.procedures(
+            packageName: "ACCOUNTS_PKG", owner: "HR", search: "", limit: 10)
+        // Three subprograms: get_balance (function), debit (procedure with two
+        // overloads). The SUBPROGRAM_ID = 0 self-row is excluded.
+        XCTAssertEqual(Set(result.map(\.procedureName)), Set(["GET_BALANCE", "DEBIT"]))
+    }
+
+    func test_procedures_classifiesFunctionByReturnRow() async {
+        seedAccountsPackage()
+        let result = await dataSource.procedures(
+            packageName: "ACCOUNTS_PKG", owner: "HR", search: "GET", limit: 10)
+        let getBalance = result.first { $0.procedureName == "GET_BALANCE" }
+        XCTAssertEqual(getBalance?.kind, "FUNCTION")
+        XCTAssertEqual(getBalance?.returnType, "NUMBER")
+    }
+
+    func test_procedures_classifiesProcedureWhenNoReturnRow() async {
+        seedAccountsPackage()
+        let result = await dataSource.procedures(
+            packageName: "ACCOUNTS_PKG", owner: "HR", search: "DEBIT", limit: 10)
+        XCTAssertFalse(result.isEmpty)
+        XCTAssertTrue(result.allSatisfy { $0.kind == "PROCEDURE" })
+        XCTAssertTrue(result.allSatisfy { $0.returnType == nil })
+    }
+
+    func test_procedureArguments_filtersByOverload_excludesReturnRow() async {
+        seedAccountsPackage()
+        let args = await dataSource.procedureArguments(
+            owner: "HR", packageName: "ACCOUNTS_PKG",
+            procedureName: "DEBIT", overload: "1")
+        // Overload 1 has a single AMOUNT parameter; overload 2 has two.
+        XCTAssertEqual(args.map(\.argumentName), ["AMOUNT"])
+        XCTAssertTrue(args.allSatisfy { $0.position > 0 })
+    }
+
     // MARK: - Seed helpers
 
     private func seed() {
@@ -147,5 +186,80 @@ final class CompletionDataSourceTests: XCTestCase {
         row.owner_ = owner
         row.name_ = name
         row.type_ = type
+    }
+
+    /// Seeds a package `HR.ACCOUNTS_PKG` with three subprograms:
+    /// - `GET_BALANCE` (FUNCTION): return NUMBER, one IN parameter ACCT_ID.
+    /// - `DEBIT` overload 1 (PROCEDURE): one IN parameter AMOUNT.
+    /// - `DEBIT` overload 2 (PROCEDURE): two parameters AMOUNT and CURRENCY.
+    /// Plus a SUBPROGRAM_ID=0 self-row that the data source must skip.
+    private func seedAccountsPackage() {
+        let ctx = persistence.container.viewContext
+
+        addProcedure(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG",
+                     name: nil, subprogramId: 0, overload: nil,
+                     parentType: "PACKAGE")
+        addProcedure(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG",
+                     name: "GET_BALANCE", subprogramId: 1, overload: nil,
+                     parentType: "PACKAGE")
+        addProcedure(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG",
+                     name: "DEBIT", subprogramId: 2, overload: "1",
+                     parentType: "PACKAGE")
+        addProcedure(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG",
+                     name: "DEBIT", subprogramId: 2, overload: "2",
+                     parentType: "PACKAGE")
+
+        // GET_BALANCE return row + IN parameter.
+        addArgument(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG", proc: "GET_BALANCE",
+                    overload: nil, position: 0, sequence: 1, name: nil,
+                    dataType: "NUMBER", inOut: "OUT")
+        addArgument(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG", proc: "GET_BALANCE",
+                    overload: nil, position: 1, sequence: 2, name: "ACCT_ID",
+                    dataType: "NUMBER", inOut: "IN")
+
+        // DEBIT overload 1 — single parameter.
+        addArgument(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG", proc: "DEBIT",
+                    overload: "1", position: 1, sequence: 1, name: "AMOUNT",
+                    dataType: "NUMBER", inOut: "IN")
+
+        // DEBIT overload 2 — two parameters.
+        addArgument(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG", proc: "DEBIT",
+                    overload: "2", position: 1, sequence: 1, name: "AMOUNT",
+                    dataType: "NUMBER", inOut: "IN")
+        addArgument(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG", proc: "DEBIT",
+                    overload: "2", position: 2, sequence: 2, name: "CURRENCY",
+                    dataType: "VARCHAR2", inOut: "IN")
+
+        try! ctx.save()
+    }
+
+    private func addProcedure(in ctx: NSManagedObjectContext,
+                              owner: String, pkg: String, name: String?,
+                              subprogramId: Int32, overload: String?,
+                              parentType: String) {
+        let row = DBCacheProcedure(context: ctx)
+        row.owner_ = owner
+        row.objectName_ = pkg
+        row.procedureName_ = name
+        row.objectType_ = parentType
+        row.subprogramId = subprogramId
+        row.overload_ = overload
+    }
+
+    private func addArgument(in ctx: NSManagedObjectContext,
+                             owner: String, pkg: String, proc: String,
+                             overload: String?, position: Int16, sequence: Int16,
+                             name: String?, dataType: String, inOut: String) {
+        let row = DBCacheProcedureArgument(context: ctx)
+        row.owner_ = owner
+        row.objectName_ = pkg
+        row.procedureName_ = proc
+        row.overload_ = overload
+        row.position = position
+        row.sequence = sequence
+        row.dataLevel = 0
+        row.argumentName_ = name
+        row.dataType_ = dataType
+        row.inOut_ = inOut
     }
 }

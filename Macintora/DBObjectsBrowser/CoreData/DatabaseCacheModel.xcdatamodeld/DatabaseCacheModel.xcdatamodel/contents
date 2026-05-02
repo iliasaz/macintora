@@ -146,6 +146,61 @@
             <fetchIndexElement property="objectOwner" type="Binary" order="ascending"/>
         </fetchIndex>
     </entity>
+    <entity name="DBCacheProcedure" representedClassName="DBCacheProcedure" syncable="YES">
+        <attribute name="authID_" optional="YES" attributeType="String"/>
+        <attribute name="implTypeName_" optional="YES" attributeType="String"/>
+        <attribute name="implTypeOwner_" optional="YES" attributeType="String"/>
+        <attribute name="isAggregate" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isDeterministic" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isParallel" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isPipelined" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isResultCache" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="objectName_" optional="YES" attributeType="String"/>
+        <attribute name="objectType_" optional="YES" attributeType="String"/>
+        <attribute name="overload_" optional="YES" attributeType="String"/>
+        <attribute name="owner_" optional="YES" attributeType="String"/>
+        <attribute name="procedureName_" optional="YES" attributeType="String"/>
+        <attribute name="subprogramId" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <fetchIndex name="byPackage">
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="objectName_" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="bySubprogram">
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="objectName_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="subprogramId" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="DBCacheProcedureArgument" representedClassName="DBCacheProcedureArgument" syncable="YES">
+        <attribute name="argumentName_" optional="YES" attributeType="String"/>
+        <attribute name="charLength" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="dataLength" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="dataLevel" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="dataPrecision" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="dataScale" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="dataType_" optional="YES" attributeType="String"/>
+        <attribute name="defaultValue_" optional="YES" attributeType="String"/>
+        <attribute name="defaulted" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="inOut_" optional="YES" attributeType="String"/>
+        <attribute name="objectName_" optional="YES" attributeType="String"/>
+        <attribute name="overload_" optional="YES" attributeType="String"/>
+        <attribute name="owner_" optional="YES" attributeType="String"/>
+        <attribute name="plsType_" optional="YES" attributeType="String"/>
+        <attribute name="position" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="procedureName_" optional="YES" attributeType="String"/>
+        <attribute name="sequence" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="subprogramId" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="typeName_" optional="YES" attributeType="String"/>
+        <attribute name="typeOwner_" optional="YES" attributeType="String"/>
+        <attribute name="typeSubname_" optional="YES" attributeType="String"/>
+        <fetchIndex name="byProcedure">
+            <fetchIndexElement property="owner_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="objectName_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="procedureName_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="overload_" type="Binary" order="ascending"/>
+            <fetchIndexElement property="sequence" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
     <entity name="Item" representedClassName="Item" syncable="YES">
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
     </entity>

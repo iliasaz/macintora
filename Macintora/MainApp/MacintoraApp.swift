@@ -60,6 +60,12 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // When the app is launched as an XCTest host, skip session restore
+        // and snapshot wiring entirely. Otherwise the test launch would
+        // clobber the user's persisted session list with whatever the test
+        // bundle happens to leave behind.
+        if Self.isRunningInTestHost { return }
+
         // `OperationQueue.main` runs callbacks on the main thread, but the
         // closure type isn't compile-time MainActor — wrap each body with
         // `MainActor.assumeIsolated`.
@@ -79,6 +85,10 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
         restoreSessionIfNeeded()
     }
 
+    private static var isRunningInTestHost: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         // SwiftUI's DocumentGroup typically auto-creates the Untitled doc
         // before this hook fires on cold launch, so its return value is
@@ -89,6 +99,7 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         // Final save on clean ⌘Q. Force through even if a restore was still
         // in flight so we capture the user's actual final state.
+        if Self.isRunningInTestHost { return }
         restoreInProgress = false
         snapshotSession()
     }

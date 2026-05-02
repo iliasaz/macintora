@@ -116,6 +116,11 @@
 		49EAEFA328C0493F008F0B80 /* DBDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA228C0493F008F0B80 /* DBDetailView.swift */; };
 		49EAEFA528C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA428C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift */; };
 		49EAEFA728C83685008F0B80 /* DBCacheTrigger+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA628C83685008F0B80 /* DBCacheTrigger+CoreDataProperties.swift */; };
+		49B0C0DE0000000000000011 /* DBCacheProcedure+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000001 /* DBCacheProcedure+CoreDataClass.swift */; };
+		49B0C0DE0000000000000012 /* DBCacheProcedure+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000002 /* DBCacheProcedure+CoreDataProperties.swift */; };
+		49B0C0DE0000000000000013 /* DBCacheProcedureArgument+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000003 /* DBCacheProcedureArgument+CoreDataClass.swift */; };
+		49B0C0DE0000000000000014 /* DBCacheProcedureArgument+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000004 /* DBCacheProcedureArgument+CoreDataProperties.swift */; };
+		49B0C0DE0000000000000015 /* PackageProceduresListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000005 /* PackageProceduresListView.swift */; };
 		49EAEFA928C93263008F0B80 /* DBTriggerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA828C93263008F0B80 /* DBTriggerDetailView.swift */; };
 		49EAEFAB28C9331C008F0B80 /* SourceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFAA28C9331C008F0B80 /* SourceView.swift */; };
 		49EAEFC728CD5822008F0B80 /* TableTriggerListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */; };
@@ -290,6 +295,11 @@
 		49EAEFA228C0493F008F0B80 /* DBDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBDetailView.swift; sourceTree = "<group>"; };
 		49EAEFA428C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheTrigger+CoreDataClass.swift"; sourceTree = "<group>"; };
 		49EAEFA628C83685008F0B80 /* DBCacheTrigger+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheTrigger+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		49B0C0DE0000000000000001 /* DBCacheProcedure+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheProcedure+CoreDataClass.swift"; sourceTree = "<group>"; };
+		49B0C0DE0000000000000002 /* DBCacheProcedure+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheProcedure+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		49B0C0DE0000000000000003 /* DBCacheProcedureArgument+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheProcedureArgument+CoreDataClass.swift"; sourceTree = "<group>"; };
+		49B0C0DE0000000000000004 /* DBCacheProcedureArgument+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheProcedureArgument+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		49B0C0DE0000000000000005 /* PackageProceduresListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackageProceduresListView.swift; sourceTree = "<group>"; };
 		49EAEFA828C93263008F0B80 /* DBTriggerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBTriggerDetailView.swift; sourceTree = "<group>"; };
 		49EAEFAA28C9331C008F0B80 /* SourceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceView.swift; sourceTree = "<group>"; };
 		49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTriggerListView.swift; sourceTree = "<group>"; };
@@ -421,6 +431,7 @@
 				498288E428B7DCB000A28B04 /* TableIndexListView.swift */,
 				498288D028B7DCB000A28B04 /* WindowModifier.swift */,
 				49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */,
+				49B0C0DE0000000000000005 /* PackageProceduresListView.swift */,
 				498288AD28B7DC5700A28B04 /* CoreData */,
 			);
 			path = DBObjectsBrowser;
@@ -493,6 +504,10 @@
 				498288BD28B7DC5700A28B04 /* DBCacheTable+CoreDataClass.swift */,
 				49EAEFA428C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift */,
 				498288BE28B7DC5700A28B04 /* DBCacheSource+CoreDataProperties.swift */,
+				49B0C0DE0000000000000001 /* DBCacheProcedure+CoreDataClass.swift */,
+				49B0C0DE0000000000000002 /* DBCacheProcedure+CoreDataProperties.swift */,
+				49B0C0DE0000000000000003 /* DBCacheProcedureArgument+CoreDataClass.swift */,
+				49B0C0DE0000000000000004 /* DBCacheProcedureArgument+CoreDataProperties.swift */,
 			);
 			path = CoreData;
 			sourceTree = "<group>";
@@ -928,6 +943,11 @@
 				498288CE28B7DC5700A28B04 /* DBCacheTable+CoreDataClass.swift in Sources */,
 				49EB5E0C29528995003A0E23 /* DBCacheMainView.swift in Sources */,
 				49EAEFA528C83633008F0B80 /* DBCacheTrigger+CoreDataClass.swift in Sources */,
+				49B0C0DE0000000000000011 /* DBCacheProcedure+CoreDataClass.swift in Sources */,
+				49B0C0DE0000000000000012 /* DBCacheProcedure+CoreDataProperties.swift in Sources */,
+				49B0C0DE0000000000000013 /* DBCacheProcedureArgument+CoreDataClass.swift in Sources */,
+				49B0C0DE0000000000000014 /* DBCacheProcedureArgument+CoreDataProperties.swift in Sources */,
+				49B0C0DE0000000000000015 /* PackageProceduresListView.swift in Sources */,
 				AA00000D0000000000000000 /* TnsEntry.swift in Sources */,
 				490E96C42FA4246E00DDF37F /* ScriptRunnerEvent.swift in Sources */,
 				AA0000030000000000000000 /* TnsParser.swift in Sources */,
