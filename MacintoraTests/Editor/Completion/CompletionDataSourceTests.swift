@@ -149,6 +149,212 @@ final class CompletionDataSourceTests: XCTestCase {
         XCTAssertTrue(args.allSatisfy { $0.position > 0 })
     }
 
+    // MARK: - Quick View: resolveSchemaObject
+
+    func test_resolveSchemaObject_explicitOwner_findsExactRow() async {
+        let resolved = await dataSource.resolveSchemaObject(
+            owner: "HR", name: "EMPLOYEES", preferredOwner: "")
+        XCTAssertEqual(resolved?.owner, "HR")
+        XCTAssertEqual(resolved?.name, "EMPLOYEES")
+        XCTAssertEqual(resolved?.objectType, "TABLE")
+    }
+
+    func test_resolveSchemaObject_caseInsensitive() async {
+        // Lowercase input — the cache stores upper-case names, the resolver
+        // must normalise.
+        let resolved = await dataSource.resolveSchemaObject(
+            owner: "hr", name: "employees", preferredOwner: "")
+        XCTAssertEqual(resolved?.owner, "HR")
+        XCTAssertEqual(resolved?.name, "EMPLOYEES")
+    }
+
+    func test_resolveSchemaObject_noOwner_prefersConnectedSchema() async {
+        // EMP_BILLS exists only in BILLING; EMPLOYEES exists only in HR.
+        // When the cursor lacked a schema qualifier, the connected schema
+        // (preferredOwner) wins ties.
+        addObject(in: persistence.container.viewContext,
+                  owner: "BILLING", name: "EMPLOYEES", type: "VIEW")
+        try! persistence.container.viewContext.save()
+
+        let resolved = await dataSource.resolveSchemaObject(
+            owner: nil, name: "EMPLOYEES", preferredOwner: "HR")
+        XCTAssertEqual(resolved?.owner, "HR",
+                       "Tie between HR.EMPLOYEES and BILLING.EMPLOYEES must resolve to the connected schema")
+    }
+
+    func test_resolveSchemaObject_returnsNilForUnknown() async {
+        let resolved = await dataSource.resolveSchemaObject(
+            owner: "HR", name: "DOES_NOT_EXIST", preferredOwner: "")
+        XCTAssertNil(resolved)
+    }
+
+    // MARK: - Quick View: tableDetail
+
+    func test_tableDetail_assemblesColumnsIndexesTriggers() async {
+        seedEmployeesTableExtras()
+        guard let detail = await dataSource.tableDetail(
+            owner: "HR", name: "EMPLOYEES", highlightedColumn: nil)
+        else { return XCTFail("tableDetail returned nil for seeded HR.EMPLOYEES") }
+
+        XCTAssertFalse(detail.isView)
+        XCTAssertEqual(detail.columns.map(\.columnName).sorted(),
+                       ["EMPLOYEE_ID", "FIRST_NAME", "SALARY"])
+        XCTAssertEqual(detail.indexes.map(\.name), ["EMP_PK"])
+        XCTAssertEqual(detail.triggers.map(\.name), ["EMP_AUDIT_TRG"])
+        XCTAssertNil(detail.highlightedColumn)
+    }
+
+    func test_tableDetail_passesThroughHighlightedColumn() async {
+        seedEmployeesTableExtras()
+        let detail = await dataSource.tableDetail(
+            owner: "HR", name: "EMPLOYEES", highlightedColumn: "salary")
+        // Highlighted column is upper-cased so the SwiftUI `id` lookup matches.
+        XCTAssertEqual(detail?.highlightedColumn, "SALARY")
+    }
+
+    func test_tableDetail_typeFormatting_oracleStyle() async {
+        seedEmployeesTableExtras()
+        let detail = await dataSource.tableDetail(
+            owner: "HR", name: "EMPLOYEES", highlightedColumn: nil)
+        let firstName = detail?.columns.first { $0.columnName == "FIRST_NAME" }
+        // Seeded with length=120 → VARCHAR2(120).
+        XCTAssertEqual(firstName?.dataTypeFormatted, "VARCHAR2(120)")
+        let salary = detail?.columns.first { $0.columnName == "SALARY" }
+        // Seeded with precision=10, scale=2 → NUMBER(10,2).
+        XCTAssertEqual(salary?.dataTypeFormatted, "NUMBER(10,2)")
+    }
+
+    func test_tableDetail_view_carriesSqlText() async {
+        seedActiveEmployeesView()
+        let detail = await dataSource.tableDetail(
+            owner: "HR", name: "ACTIVE_EMPLOYEES", highlightedColumn: nil)
+        XCTAssertTrue(detail?.isView ?? false)
+        XCTAssertEqual(detail?.sqlText, "SELECT * FROM employees WHERE active = 1")
+    }
+
+    func test_tableDetail_returnsEmptyContainersForCacheMiss() async {
+        // Object exists but no DBCacheTable / column / index / trigger rows.
+        addObject(in: persistence.container.viewContext,
+                  owner: "HR", name: "BARE_OBJECT", type: "TABLE")
+        try! persistence.container.viewContext.save()
+
+        let detail = await dataSource.tableDetail(
+            owner: "HR", name: "BARE_OBJECT", highlightedColumn: nil)
+        XCTAssertNotNil(detail, "tableDetail returns a payload even when the row is metadata-only")
+        XCTAssertTrue(detail?.columns.isEmpty ?? false)
+        XCTAssertTrue(detail?.indexes.isEmpty ?? false)
+        XCTAssertTrue(detail?.triggers.isEmpty ?? false)
+    }
+
+    // MARK: - Quick View: columnDetail
+
+    func test_columnDetail_findsAndPopulatesFlags() async {
+        seedEmployeesTableExtras()
+        guard let column = await dataSource.columnDetail(
+            tableOwner: "HR", tableName: "EMPLOYEES", columnName: "SALARY")
+        else { return XCTFail("columnDetail returned nil") }
+        XCTAssertEqual(column.column.columnName, "SALARY")
+        XCTAssertEqual(column.column.dataTypeFormatted, "NUMBER(10,2)")
+        XCTAssertFalse(column.column.isNullable)
+    }
+
+    func test_columnDetail_returnsNilForMissingColumn() async {
+        seedEmployeesTableExtras()
+        let column = await dataSource.columnDetail(
+            tableOwner: "HR", tableName: "EMPLOYEES", columnName: "NOPE")
+        XCTAssertNil(column)
+    }
+
+    // MARK: - Quick View: packageDetail
+
+    func test_packageDetail_assemblesProceduresWithReturnTypes() async {
+        seedAccountsPackage()
+        guard let pkg = await dataSource.packageDetail(
+            owner: "HR", name: "ACCOUNTS_PKG")
+        else { return XCTFail("packageDetail returned nil") }
+
+        XCTAssertEqual(pkg.objectType, "PACKAGE")
+        let names = pkg.procedures.map(\.name)
+        XCTAssertEqual(names.sorted(), ["DEBIT", "DEBIT", "GET_BALANCE"],
+                       "Both DEBIT overloads must appear as separate entries")
+
+        let getBalance = pkg.procedures.first { $0.name == "GET_BALANCE" }
+        XCTAssertEqual(getBalance?.kind, "FUNCTION")
+        XCTAssertEqual(getBalance?.returnType, "NUMBER")
+        XCTAssertEqual(getBalance?.parameters.map(\.name) ?? [], ["ACCT_ID"])
+
+        let debitOverload2 = pkg.procedures.first {
+            $0.name == "DEBIT" && $0.overload == "2"
+        }
+        XCTAssertEqual(debitOverload2?.parameters.map(\.name) ?? [], ["AMOUNT", "CURRENCY"])
+    }
+
+    func test_packageDetail_skipsPackageSelfRow() async {
+        seedAccountsPackage()
+        let pkg = await dataSource.packageDetail(owner: "HR", name: "ACCOUNTS_PKG")
+        // The SUBPROGRAM_ID = 0 self-row has procedureName_ = nil and must
+        // never appear in the rendered list.
+        XCTAssertFalse(pkg?.procedures.contains { $0.name.isEmpty } ?? true)
+    }
+
+    // MARK: - Quick View: procedureDetail
+
+    func test_procedureDetail_packageMember_pickFirstOverload() async {
+        seedAccountsPackage()
+        // Both DEBIT overloads exist; passing nil should pick the lowest
+        // subprogram_id, matching ALL_PROCEDURES order.
+        let proc = await dataSource.procedureDetail(
+            owner: "HR", packageName: "ACCOUNTS_PKG",
+            procedureName: "DEBIT", overload: nil)
+        XCTAssertEqual(proc?.kind, "PROCEDURE")
+        XCTAssertEqual(proc?.packageName, "ACCOUNTS_PKG")
+        // overload "1" has one parameter; "2" has two.
+        XCTAssertEqual(proc?.parameters.count, 1)
+    }
+
+    func test_procedureDetail_packageMember_specificOverload() async {
+        seedAccountsPackage()
+        let proc = await dataSource.procedureDetail(
+            owner: "HR", packageName: "ACCOUNTS_PKG",
+            procedureName: "DEBIT", overload: "2")
+        XCTAssertEqual(proc?.parameters.map(\.name), ["AMOUNT", "CURRENCY"])
+    }
+
+    func test_procedureDetail_function_carriesReturnType() async {
+        seedAccountsPackage()
+        let proc = await dataSource.procedureDetail(
+            owner: "HR", packageName: "ACCOUNTS_PKG",
+            procedureName: "GET_BALANCE", overload: nil)
+        XCTAssertEqual(proc?.kind, "FUNCTION")
+        XCTAssertEqual(proc?.returnType, "NUMBER")
+    }
+
+    func test_procedureDetail_returnsNilForUnknownMember() async {
+        seedAccountsPackage()
+        let proc = await dataSource.procedureDetail(
+            owner: "HR", packageName: "ACCOUNTS_PKG",
+            procedureName: "NOPE", overload: nil)
+        XCTAssertNil(proc)
+    }
+
+    // MARK: - Quick View: unknownObjectDetail
+
+    func test_unknownObjectDetail_carriesObjectMetadata() async {
+        let ctx = persistence.container.viewContext
+        let row = DBCacheObject(context: ctx)
+        row.owner_ = "HR"
+        row.name_ = "EMP_PK"
+        row.type_ = "INDEX"
+        row.isValid = true
+        row.lastDDLDate = Date(timeIntervalSince1970: 1_700_000_000)
+        try! ctx.save()
+
+        let payload = await dataSource.unknownObjectDetail(owner: "HR", name: "EMP_PK")
+        XCTAssertEqual(payload?.objectType, "INDEX")
+        XCTAssertEqual(payload?.lastDDLDate, Date(timeIntervalSince1970: 1_700_000_000))
+        XCTAssertTrue(payload?.isValid ?? false)
+    }
+
     // MARK: - Seed helpers
 
     private func seed() {
@@ -261,5 +467,90 @@ final class CompletionDataSourceTests: XCTestCase {
         row.argumentName_ = name
         row.dataType_ = dataType
         row.inOut_ = inOut
+    }
+
+    /// Seeds the rows the Quick View `tableDetail` fetcher consumes:
+    /// a `DBCacheTable` for HR.EMPLOYEES (so isView/sqltext are populated),
+    /// fully-typed columns, one index, and one trigger.
+    private func seedEmployeesTableExtras() {
+        let ctx = persistence.container.viewContext
+
+        let table = DBCacheTable(context: ctx)
+        table.owner_ = "HR"
+        table.name_ = "EMPLOYEES"
+        table.isView = false
+        table.isPartitioned = false
+
+        // Replace the bare-bones columns from `seed()` with typed copies so
+        // formatDataType has dimensions to render. Delete-then-recreate keeps
+        // the test independent of the seed's exact field set.
+        let existing = (try? ctx.fetch(DBCacheTableColumn.fetchRequest()))?
+            .filter { $0.owner_ == "HR" && $0.tableName_ == "EMPLOYEES" } ?? []
+        for column in existing { ctx.delete(column) }
+
+        addTypedColumn(in: ctx, owner: "HR", table: "EMPLOYEES",
+                       column: "EMPLOYEE_ID", type: "NUMBER",
+                       length: 0, precision: 6, scale: 0,
+                       isNullable: false, columnID: 1)
+        addTypedColumn(in: ctx, owner: "HR", table: "EMPLOYEES",
+                       column: "FIRST_NAME", type: "VARCHAR2",
+                       length: 120, precision: 0, scale: 0,
+                       isNullable: true, columnID: 2)
+        addTypedColumn(in: ctx, owner: "HR", table: "EMPLOYEES",
+                       column: "SALARY", type: "NUMBER",
+                       length: 0, precision: 10, scale: 2,
+                       isNullable: false, columnID: 3)
+
+        let index = DBCacheIndex(context: ctx)
+        index.owner_ = "HR"
+        index.name_ = "EMP_PK"
+        index.tableOwner_ = "HR"
+        index.tableName_ = "EMPLOYEES"
+        index.isUnique = true
+        index.isValid = true
+        index.type_ = "NORMAL"
+
+        let trigger = DBCacheTrigger(context: ctx)
+        trigger.owner_ = "HR"
+        trigger.name_ = "EMP_AUDIT_TRG"
+        trigger.objectOwner = "HR"
+        trigger.objectName = "EMPLOYEES"
+        trigger.event_ = "UPDATE"
+        trigger.isEnabled = true
+
+        try! ctx.save()
+    }
+
+    /// Seeds an HR.ACTIVE_EMPLOYEES view so `tableDetail` has a row whose
+    /// `isView == true` and `sqltext` is populated.
+    private func seedActiveEmployeesView() {
+        let ctx = persistence.container.viewContext
+
+        addObject(in: ctx, owner: "HR", name: "ACTIVE_EMPLOYEES", type: "VIEW")
+        let view = DBCacheTable(context: ctx)
+        view.owner_ = "HR"
+        view.name_ = "ACTIVE_EMPLOYEES"
+        view.isView = true
+        view.sqltext = "SELECT * FROM employees WHERE active = 1"
+
+        try! ctx.save()
+    }
+
+    private func addTypedColumn(in ctx: NSManagedObjectContext,
+                                owner: String, table: String, column: String,
+                                type: String, length: Int32,
+                                precision: Int32, scale: Int32,
+                                isNullable: Bool, columnID: Int) {
+        let row = DBCacheTableColumn(context: ctx)
+        row.owner_ = owner
+        row.tableName_ = table
+        row.columnName_ = column
+        row.dataType_ = type
+        row.length = length
+        row.precision = precision == 0 ? nil : NSNumber(value: precision)
+        row.scale = scale == 0 ? nil : NSNumber(value: scale)
+        row.isNullable = isNullable
+        row.columnID = NSNumber(value: columnID)
+        row.internalColumnID = Int16(columnID)
     }
 }

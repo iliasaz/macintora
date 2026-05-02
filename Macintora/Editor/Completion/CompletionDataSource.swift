@@ -493,8 +493,12 @@ actor CompletionDataSource {
                                                  upperOwner, upperName)
             indexRequest.sortDescriptors = [NSSortDescriptor(key: "name_", ascending: true)]
 
+            // `DBCacheTrigger` keys the parent table via `objectOwner` /
+            // `objectName` (no trailing underscore on either) — it stores the
+            // ALL_TRIGGERS BASE_OBJECT columns rather than mirroring the
+            // table-side naming.
             let triggerRequest = DBCacheTrigger.fetchRequest()
-            triggerRequest.predicate = NSPredicate(format: "tableOwner = %@ AND objectName_ = %@",
+            triggerRequest.predicate = NSPredicate(format: "objectOwner = %@ AND objectName = %@",
                                                    upperOwner, upperName)
             triggerRequest.sortDescriptors = [NSSortDescriptor(key: "name_", ascending: true)]
 
