@@ -267,10 +267,14 @@ struct MainDocumentMenuCommands: Commands {
 
             Divider()
 
+            // Disabled gating reads the box's identity (nil = no focused
+            // editor capable of Quick View) rather than `box.trigger` —
+            // see the long comment in `EditorQuickViewBox` for the
+            // constraint-loop crash that observable trigger reads caused.
             Button("Quick View") {
                 quickViewBox?.trigger?()
             }
-            .disabled(quickViewBox?.trigger == nil)
+            .disabled(quickViewBox == nil)
             .quickViewShortcut(quickViewHotkey)
         }
     }

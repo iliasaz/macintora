@@ -86,12 +86,14 @@ final class QuickViewUITests: XCTestCase {
             add(att)
         }
 
-        // Cleanup: NSPopover.behavior == .transient dismisses on click-
-        // outside (the canonical macOS contract). Click somewhere harmless
-        // so the popover doesn't bleed into the next test in this suite.
-        // Note: we deliberately don't assert dismissal — that's AppKit's
-        // contract, not ours.
-        window.toolbars.firstMatch.click()
+        // Cleanup: dismiss the popover so it doesn't bleed into the next
+        // test. NSPopover.behavior == .transient dismisses on click-outside;
+        // clicking back into the editor reliably triggers that even when
+        // the window is positioned off-screen on the test runner. We don't
+        // assert the dismissal — that's AppKit's contract, not ours.
+        if textView.isHittable {
+            textView.click()
+        }
     }
 
     /// ⌘I with the cursor on whitespace must NOT open a popover — the

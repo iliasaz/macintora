@@ -19,12 +19,27 @@
 import Foundation
 import SwiftUI
 
+/// Plain reference-type holder — intentionally **not** `@Observable`.
+///
+/// The trigger closure is rebound from `updateNSView`'s install path each
+/// time the editor's coordinator wires Quick View. If this class were
+/// observable, every rebind would invalidate `MainDocumentMenuCommands`
+/// (which reads `box.trigger` for `.disabled(...)`), and that invalidation
+/// cascading through the @FocusedSceneValue subscription was enough to
+/// drive `_NSSplitViewItemViewWrapper.updateConstraints` into the
+/// "more Update Constraints passes than views" loop AppKit aborts on —
+/// the same crash signature as `SidebarToggleCrashRegressionTests`.
+///
+/// The menu command instead disables on box identity (nil vs non-nil),
+/// which is settled at focus-publish time and doesn't re-fire on closure
+/// reassignment.
 @MainActor
-@Observable
 final class EditorQuickViewBox {
     /// Set by the editor's coordinator after Quick View has been wired.
-    /// Reading nil means no editor is currently capable of Quick View
-    /// (read-only viewer, completion config not yet installed, etc.).
+    /// nil during the brief window before `installQuickViewController`
+    /// runs — pressing ⌘I in that window is a silent no-op (the closure
+    /// invocation simply does nothing), which is preferable to the menu
+    /// re-render storm that observability would cause.
     var trigger: (() -> Void)?
 }
 
