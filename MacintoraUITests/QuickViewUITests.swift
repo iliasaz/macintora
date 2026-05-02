@@ -96,6 +96,50 @@ final class QuickViewUITests: XCTestCase {
         }
     }
 
+    /// Esc dismisses the popover even when it shows the "not cached"
+    /// placeholder — that path has no interactive SwiftUI elements before
+    /// issue #13 wires the Open in Browser button, so the responder
+    /// chain wouldn't receive `cancelOperation(_:)` without an explicit
+    /// `acceptsFirstResponder = true` override on the hosting controller.
+    /// Regression test for that fix.
+    @MainActor
+    func test_escape_dismissesNotCachedPopover() throws {
+        let app = launchAppWithFixture()
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.waitForExistence(timeout: 10))
+
+        let textView = window.textViews.firstMatch
+        XCTAssertTrue(textView.waitForExistence(timeout: 5))
+
+        // Type a token guaranteed not to exist in any cache so the popover
+        // shows the "not cached" placeholder. The token is also unlikely
+        // to match against any auto-completed identifier.
+        textView.click()
+        textView.typeKey("a", modifierFlags: .command)
+        textView.typeKey(.delete, modifierFlags: [])
+        textView.typeText("select * from ZZZ_NEVER_CACHED_OBJ_X9")
+
+        window.typeKey("i", modifierFlags: .command)
+
+        let popover = app.popovers.firstMatch
+        XCTAssertTrue(
+            popover.waitForExistence(timeout: 4),
+            "Quick View popover (not-cached state) did not appear after ⌘I"
+        )
+
+        // Esc must now dismiss without needing a mouse click anywhere.
+        app.typeKey(XCUIKeyboardKey.escape, modifierFlags: [])
+
+        // Polling — the popover dismiss is animated (NSPopover.animates).
+        let dismissed = !popover.exists
+            || (0..<10).contains { _ in
+                Thread.sleep(forTimeInterval: 0.1)
+                return !popover.exists
+            }
+        XCTAssertFalse(popover.exists,
+                       "Esc must dismiss the not-cached popover; popover.exists=\(popover.exists), waited=\(dismissed)")
+    }
+
     /// ⌘I with the cursor on whitespace must NOT open a popover — the
     /// resolver returns `.unresolved` and the controller short-circuits
     /// before fetching any cache row. Regression test for the "no-op when

@@ -32,7 +32,7 @@ final class QuickViewPresenter: NSObject {
 
     private weak var textView: STTextView?
     private var popover: NSPopover?
-    private var hostingController: NSHostingController<QuickViewContent>?
+    private var hostingController: QuickViewHostingController?
 
     init(textView: STTextView) {
         self.textView = textView
@@ -56,12 +56,13 @@ final class QuickViewPresenter: NSObject {
             close()
         }
 
-        let hosting = NSHostingController(rootView: content)
+        let hosting = QuickViewHostingController(rootView: content)
         hosting.sizingOptions = [.preferredContentSize]
         let popover = NSPopover()
         popover.contentViewController = hosting
         popover.behavior = .transient   // dismiss on click-outside / Esc
         popover.animates = true
+        hosting.popover = popover
         self.popover = popover
         self.hostingController = hosting
 
@@ -70,6 +71,14 @@ final class QuickViewPresenter: NSObject {
         // we anchor relative to the textView itself so the popover follows
         // scrolling correctly until it's dismissed.
         popover.show(relativeTo: rect, of: textView, preferredEdge: .maxY)
+
+        // Make the hosting view the popover window's first responder so
+        // Esc reaches our `cancelOperation` override below — without this,
+        // a popover whose SwiftUI tree has no interactive elements (the
+        // "not cached" placeholder before issue #13 wires the Open in
+        // Browser button) leaves no responder for AppKit to deliver Esc
+        // to, and the only way to dismiss is click-outside.
+        hosting.view.window?.makeFirstResponder(hosting)
     }
 
     func close() {
@@ -80,6 +89,27 @@ final class QuickViewPresenter: NSObject {
 
     var isVisible: Bool {
         popover?.isShown ?? false
+    }
+}
+
+/// `NSHostingController` subclass that closes its popover on Esc.
+///
+/// `NSPopover.behavior == .transient` already dismisses on click-outside,
+/// but Esc handling depends on the popover window having a first responder
+/// in the responder chain that responds to `cancelOperation(_:)`. SwiftUI's
+/// hosting view chains responder through interactive subviews (Lists,
+/// Buttons), so payloads with rich content dismiss correctly. The "not
+/// cached" / "unknown object" placeholders have no interactive elements
+/// today; without this subclass they trapped Esc and required a mouse
+/// click to dismiss.
+@MainActor
+final class QuickViewHostingController: NSHostingController<QuickViewContent> {
+    weak var popover: NSPopover?
+
+    override var acceptsFirstResponder: Bool { true }
+
+    override func cancelOperation(_ sender: Any?) {
+        popover?.close()
     }
 }
 
