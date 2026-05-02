@@ -231,9 +231,15 @@ struct MainDocumentMenuCommands: Commands {
 //    @FocusedValue(\.cacheConnectionDetails) var cacheConnectionDetails: ConnectionDetails?
     @FocusedValue(\.selectedObjectName) var selectedObjectName: String?
     @FocusedValue(\.mainConnection) var mainConnection
+    @FocusedValue(\.editorQuickViewBox) var quickViewBox
     @Environment(\.openWindow) var openWindow
 
     @Environment(\.openSettings) private var openSettings
+
+    @AppStorage(QuickViewHotkey.storageKey) private var quickViewHotkeyRaw: String = QuickViewHotkey.default.rawValue
+    private var quickViewHotkey: QuickViewHotkey {
+        QuickViewHotkey(rawValue: quickViewHotkeyRaw) ?? .default
+    }
 
     var body: some Commands {
         CommandMenu("Database") {
@@ -258,6 +264,14 @@ struct MainDocumentMenuCommands: Commands {
                 .disabled(mainConnection?.mainConnDetails == nil)
                 .presentedWindowStyle(TitleBarWindowStyle())
                 .keyboardShortcut("s", modifiers: [.command, .control, .shift])
+
+            Divider()
+
+            Button("Quick View") {
+                quickViewBox?.trigger?()
+            }
+            .disabled(quickViewBox?.trigger == nil)
+            .quickViewShortcut(quickViewHotkey)
         }
     }
 }
