@@ -135,8 +135,12 @@ final class QuickViewController {
     /// fetcher and packages the result as a `QuickViewPayload`. Returns
     /// `.notCached(reference:)` when no cache row matches — the popover's
     /// "not cached" state is the source of user feedback.
+    ///
+    /// `internal` so the test target can exercise the orchestration logic
+    /// directly without instantiating an STTextView; the production caller
+    /// is `trigger(textView:utf16Offset:anchor:)` above.
     @concurrent
-    nonisolated private static func fetchPayload(
+    nonisolated static func fetchPayload(
         for reference: ResolvedDBReference,
         preferredOwner: String,
         dataSource: CompletionDataSource
@@ -164,9 +168,16 @@ final class QuickViewController {
                                                            columnName: columnName) {
                 return .column(payload)
             }
+            // For the parent-table fallback we require *some* concrete
+            // evidence the table exists — at minimum one cached column.
+            // Otherwise `tableDetail` returns an empty-containers payload
+            // for a totally-uncached table and we'd render a misleading
+            // "0 columns / 0 indexes" popover instead of the honest
+            // "not cached" placeholder.
             if let table = await dataSource.tableDetail(owner: tableOwner ?? preferredOwner,
                                                         name: tableName,
-                                                        highlightedColumn: columnName) {
+                                                        highlightedColumn: columnName),
+               !table.columns.isEmpty {
                 return .table(table)
             }
             return .notCached(reference: reference)

@@ -20,6 +20,11 @@
 		49DB100A0000000A /* STDBObjectQuickViewPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000A0000000A /* STDBObjectQuickViewPlugin.swift */; };
 		49DB100B0000000B /* EditorQuickViewBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000B0000000B /* EditorQuickViewBox.swift */; };
 		49DB300C0000000C /* ObjectAtCursorResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000C0000000C /* ObjectAtCursorResolverTests.swift */; };
+		49DB301000000010 /* QuickViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001000000010 /* QuickViewControllerTests.swift */; };
+		49DB301100000011 /* QuickViewHotkeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001100000011 /* QuickViewHotkeyTests.swift */; };
+		49DB301200000012 /* EditorQuickViewBoxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001200000012 /* EditorQuickViewBoxTests.swift */; };
+		49DB301300000013 /* QuickViewContentRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001300000013 /* QuickViewContentRenderTests.swift */; };
+		49DB301500000015 /* QuickViewEndToEndTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001500000015 /* QuickViewEndToEndTests.swift */; };
 		490E96B62FA4217200DDF37F /* SqlPlusDirective.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96B52FA4217200DDF37F /* SqlPlusDirective.swift */; };
 		490E96B82FA4217700DDF37F /* ScriptError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96B72FA4217700DDF37F /* ScriptError.swift */; };
 		490E96BA2FA4225300DDF37F /* ScriptLexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96B92FA4225300DDF37F /* ScriptLexer.swift */; };
@@ -172,6 +177,7 @@
 		AA0001000000000000000000 /* SessionRestorer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001010000000000000000 /* SessionRestorer.swift */; };
 		AA0001020000000000000000 /* SessionRestorerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001030000000000000000 /* SessionRestorerTests.swift */; };
 		BB0000010000000000000000 /* MacintoraUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000000 /* MacintoraUITests.swift */; };
+		49DB401400000014 /* QuickViewUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001400000014 /* QuickViewUITests.swift */; };
 		C1C1C1C100000000000000A1 /* STTextView in Frameworks */ = {isa = PBXBuildFile; productRef = B1B1B1B100000000000000A1 /* STTextView */; };
 		C2C2C2C200000000000000B2 /* STTextView-Plugin-Neon in Frameworks */ = {isa = PBXBuildFile; productRef = B2B2B2B200000000000000B2 /* STTextView-Plugin-Neon */; };
 		C3C3C3C300000000000000C3 /* STTextKitPlus in Frameworks */ = {isa = PBXBuildFile; productRef = B3B3B3B300000000000000C3 /* STTextKitPlus */; };
@@ -310,6 +316,11 @@
 		49DB000A0000000A /* STDBObjectQuickViewPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STDBObjectQuickViewPlugin.swift; sourceTree = "<group>"; };
 		49DB000B0000000B /* EditorQuickViewBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorQuickViewBox.swift; sourceTree = "<group>"; };
 		49DB000C0000000C /* ObjectAtCursorResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectAtCursorResolverTests.swift; sourceTree = "<group>"; };
+		49DB001000000010 /* QuickViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewControllerTests.swift; sourceTree = "<group>"; };
+		49DB001100000011 /* QuickViewHotkeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewHotkeyTests.swift; sourceTree = "<group>"; };
+		49DB001200000012 /* EditorQuickViewBoxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorQuickViewBoxTests.swift; sourceTree = "<group>"; };
+		49DB001300000013 /* QuickViewContentRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewContentRenderTests.swift; sourceTree = "<group>"; };
+		49DB001500000015 /* QuickViewEndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewEndToEndTests.swift; sourceTree = "<group>"; };
 		49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainDocumentVM.swift; sourceTree = "<group>"; };
 		49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionListView.swift; sourceTree = "<group>"; };
 		49CE5FEF27279F3A009C2A94 /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
@@ -363,6 +374,7 @@
 		AA0001010000000000000000 /* SessionRestorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRestorer.swift; sourceTree = "<group>"; };
 		AA0001030000000000000000 /* SessionRestorerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRestorerTests.swift; sourceTree = "<group>"; };
 		BB0000020000000000000000 /* MacintoraUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraUITests.swift; sourceTree = "<group>"; };
+		49DB001400000014 /* QuickViewUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewUITests.swift; sourceTree = "<group>"; };
 		BB0000030000000000000000 /* MacintoraUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacintoraUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -645,6 +657,26 @@
 			path = Completion;
 			sourceTree = "<group>";
 		};
+		49DB001E0000001E /* Plugins */ = {
+			isa = PBXGroup;
+			children = (
+				49DB001F0000001F /* QuickView */,
+			);
+			path = Plugins;
+			sourceTree = "<group>";
+		};
+		49DB001F0000001F /* QuickView */ = {
+			isa = PBXGroup;
+			children = (
+				49DB001000000010 /* QuickViewControllerTests.swift */,
+				49DB001100000011 /* QuickViewHotkeyTests.swift */,
+				49DB001200000012 /* EditorQuickViewBoxTests.swift */,
+				49DB001300000013 /* QuickViewContentRenderTests.swift */,
+				49DB001500000015 /* QuickViewEndToEndTests.swift */,
+			);
+			path = QuickView;
+			sourceTree = "<group>";
+		};
 		49CE5FEE27279F09009C2A94 /* Results */ = {
 			isa = PBXGroup;
 			children = (
@@ -690,6 +722,7 @@
 				49D0ECF32F9C1E1E0047540A /* EditorSelectionBridgeTests.swift */,
 				49D0ECF52F9C1EB90047540A /* GetCurrentSqlTests.swift */,
 				49C0300000000010 /* Completion */,
+				49DB001E0000001E /* Plugins */,
 			);
 			path = Editor;
 			sourceTree = "<group>";
@@ -742,6 +775,7 @@
 				BB0000020000000000000000 /* MacintoraUITests.swift */,
 				490E96E52FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift */,
 				490E96E92FA43C6300DDF37F /* ScriptRunnerUXTests.swift */,
+				49DB001400000014 /* QuickViewUITests.swift */,
 			);
 			path = MacintoraUITests;
 			sourceTree = "<group>";
@@ -895,6 +929,11 @@
 				49C0301500000015 /* AliasResolverTests.swift in Sources */,
 				49C0301700000017 /* CompletionDataSourceTests.swift in Sources */,
 				49DB300C0000000C /* ObjectAtCursorResolverTests.swift in Sources */,
+				49DB301000000010 /* QuickViewControllerTests.swift in Sources */,
+				49DB301100000011 /* QuickViewHotkeyTests.swift in Sources */,
+				49DB301200000012 /* EditorQuickViewBoxTests.swift in Sources */,
+				49DB301300000013 /* QuickViewContentRenderTests.swift in Sources */,
+				49DB301500000015 /* QuickViewEndToEndTests.swift in Sources */,
 				4982889F28B41F3A00A28B04 /* MacintoraTests.swift in Sources */,
 				AA0000130000000000000000 /* TnsParserTests.swift in Sources */,
 				490E96BC2FA422AF00DDF37F /* ScriptLexerTests.swift in Sources */,
@@ -1064,6 +1103,7 @@
 				BB0000010000000000000000 /* MacintoraUITests.swift in Sources */,
 				490E96E62FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift in Sources */,
 				490E96EA2FA43C6300DDF37F /* ScriptRunnerUXTests.swift in Sources */,
+				49DB401400000014 /* QuickViewUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
