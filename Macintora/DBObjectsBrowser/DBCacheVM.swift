@@ -167,6 +167,47 @@ struct SourceRowDTO: Sendable {
     let text: String
 }
 
+struct ProcedureDTO: Sendable {
+    let owner: String
+    let objectName: String
+    let procedureName: String?
+    let objectType: String
+    let subprogramId: Int
+    let overload: String?
+    let isAggregate: Bool
+    let isPipelined: Bool
+    let isParallel: Bool
+    let isDeterministic: Bool
+    let isResultCache: Bool
+    let authID: String?
+    let implTypeOwner: String?
+    let implTypeName: String?
+}
+
+struct ProcedureArgumentDTO: Sendable {
+    let owner: String
+    let objectName: String
+    let procedureName: String
+    let overload: String?
+    let subprogramId: Int
+    let position: Int
+    let sequence: Int
+    let dataLevel: Int
+    let argumentName: String?
+    let dataType: String?
+    let inOut: String?
+    let dataLength: Int
+    let dataPrecision: Int?
+    let dataScale: Int?
+    let charLength: Int
+    let defaulted: Bool
+    let defaultValue: String?
+    let typeOwner: String?
+    let typeName: String?
+    let typeSubname: String?
+    let plsType: String?
+}
+
 // MARK: - Row access helpers
 
 extension OracleRandomAccessRow {
@@ -266,6 +307,8 @@ final class DBCacheVM: nonisolated ObservableObject {
                 try await deleteAll(from: "DBCacheIndexColumn")
                 try await deleteAll(from: "DBCacheIndex")
                 try await deleteAll(from: "DBCacheSource")
+                try await deleteAll(from: "DBCacheProcedureArgument")
+                try await deleteAll(from: "DBCacheProcedure")
                 try await deleteAll(from: "DBCacheObject")
                 try await deleteAll(from: "DBCacheTrigger")
             } catch {
@@ -506,6 +549,9 @@ from dba_objects o
                     } else {
                         await self.processChunkOfObjects(objstemp, objectType: objectType)
                     }
+                    if objectType == .package || objectType == .procedure || objectType == .function {
+                        await self.processProceduresChunk(objstemp)
+                    }
                     await cacheState.completeSession()
                     objs.removeAll()
                 }
@@ -521,6 +567,9 @@ from dba_objects o
                     await self.processSourceChunk(objstemp)
                 } else {
                     await self.processChunkOfObjects(objstemp, objectType: objectType)
+                }
+                if objectType == .package || objectType == .procedure || objectType == .function {
+                    await self.processProceduresChunk(objstemp)
                 }
                 await cacheState.completeSession()
                 objs.removeAll()
@@ -1059,6 +1108,204 @@ from dba_objects o
         }
     }
 
+    // MARK: - Procedures and arguments
+
+    func processProceduresChunk(_ objs: [OracleObject]) async {
+        guard !objs.isEmpty, objs.count < 1000 else { return }
+        let procedures = (try? await fetchProcedures(objs)) ?? []
+        let arguments = (try? await fetchProcedureArguments(objs)) ?? []
+        await persistProcedures(procedures, arguments: arguments, objs: objs)
+    }
+
+    private func fetchProcedures(_ objs: [OracleObject]) async throws -> [ProcedureDTO] {
+        guard !objs.isEmpty else { return [] }
+        var sql = "select owner, object_name, procedure_name, object_type, subprogram_id, overload, aggregate, pipelined, parallel, deterministic, result_cache, authid, impltypeowner, impltypename from all_procedures where (owner, object_name) in ("
+        var bindings = OracleBindings()
+        var placeholders: [String] = []
+        for (i, obj) in objs.enumerated() {
+            placeholders.append("(:o\(i), :n\(i))")
+            bindings.append(obj.owner, context: .default, bindName: "o\(i)")
+            bindings.append(obj.name, context: .default, bindName: "n\(i)")
+        }
+        sql += placeholders.joined(separator: ",")
+        sql += ")"
+
+        let logger = oracleLogger
+        let finalSQL = sql
+        let finalBindings = bindings
+        return try await withClient { conn in
+            var options = StatementOptions()
+            options.prefetchRows = 5000
+            let stream = try await conn.execute(
+                OracleStatement(unsafeSQL: finalSQL, binds: finalBindings),
+                options: options,
+                logger: logger
+            )
+            var rows: [ProcedureDTO] = []
+            for try await row in stream {
+                let rr = row.makeRandomAccess()
+                guard let owner = rr.optString("OWNER"),
+                      let name = rr.optString("OBJECT_NAME") else { continue }
+                rows.append(ProcedureDTO(
+                    owner: owner,
+                    objectName: name,
+                    procedureName: rr.optString("PROCEDURE_NAME"),
+                    objectType: rr.optString("OBJECT_TYPE") ?? "",
+                    subprogramId: rr.optInt("SUBPROGRAM_ID") ?? 0,
+                    overload: rr.optString("OVERLOAD"),
+                    isAggregate: rr.optString("AGGREGATE") == "YES",
+                    isPipelined: rr.optString("PIPELINED") == "YES",
+                    isParallel: rr.optString("PARALLEL") == "YES",
+                    isDeterministic: rr.optString("DETERMINISTIC") == "YES",
+                    isResultCache: rr.optString("RESULT_CACHE") == "YES",
+                    authID: rr.optString("AUTHID"),
+                    implTypeOwner: rr.optString("IMPLTYPEOWNER"),
+                    implTypeName: rr.optString("IMPLTYPENAME")
+                ))
+            }
+            return rows
+        }
+    }
+
+    private func fetchProcedureArguments(_ objs: [OracleObject]) async throws -> [ProcedureArgumentDTO] {
+        guard !objs.isEmpty else { return [] }
+        var sql = "select owner, package_name, object_name, subprogram_id, overload, argument_name, position, sequence, data_level, data_type, in_out, data_length, data_precision, data_scale, char_length, defaulted, default_value, type_owner, type_name, type_subname, pls_type from all_arguments where (owner, nvl(package_name, object_name)) in ("
+        var bindings = OracleBindings()
+        var placeholders: [String] = []
+        for (i, obj) in objs.enumerated() {
+            placeholders.append("(:o\(i), :n\(i))")
+            bindings.append(obj.owner, context: .default, bindName: "o\(i)")
+            bindings.append(obj.name, context: .default, bindName: "n\(i)")
+        }
+        sql += placeholders.joined(separator: ",")
+        sql += ") order by owner, package_name nulls first, object_name, subprogram_id, sequence"
+
+        let logger = oracleLogger
+        let finalSQL = sql
+        let finalBindings = bindings
+        return try await withClient { conn in
+            var options = StatementOptions()
+            options.prefetchRows = 10_000
+            let stream = try await conn.execute(
+                OracleStatement(unsafeSQL: finalSQL, binds: finalBindings),
+                options: options,
+                logger: logger
+            )
+            var rows: [ProcedureArgumentDTO] = []
+            for try await row in stream {
+                let rr = row.makeRandomAccess()
+                guard let owner = rr.optString("OWNER") else { continue }
+                let packageName = rr.optString("PACKAGE_NAME")
+                let memberName = rr.optString("OBJECT_NAME") ?? ""
+                let parentName = packageName ?? memberName
+                rows.append(ProcedureArgumentDTO(
+                    owner: owner,
+                    objectName: parentName,
+                    procedureName: memberName,
+                    overload: rr.optString("OVERLOAD"),
+                    subprogramId: rr.optInt("SUBPROGRAM_ID") ?? 0,
+                    position: rr.optInt("POSITION") ?? 0,
+                    sequence: rr.optInt("SEQUENCE") ?? 0,
+                    dataLevel: rr.optInt("DATA_LEVEL") ?? 0,
+                    argumentName: rr.optString("ARGUMENT_NAME"),
+                    dataType: rr.optString("DATA_TYPE"),
+                    inOut: rr.optString("IN_OUT"),
+                    dataLength: rr.optInt("DATA_LENGTH") ?? 0,
+                    dataPrecision: rr.optInt("DATA_PRECISION"),
+                    dataScale: rr.optInt("DATA_SCALE"),
+                    charLength: rr.optInt("CHAR_LENGTH") ?? 0,
+                    defaulted: rr.optString("DEFAULTED") == "Y",
+                    defaultValue: rr.optString("DEFAULT_VALUE"),
+                    typeOwner: rr.optString("TYPE_OWNER"),
+                    typeName: rr.optString("TYPE_NAME"),
+                    typeSubname: rr.optString("TYPE_SUBNAME"),
+                    plsType: rr.optString("PLS_TYPE")
+                ))
+            }
+            return rows
+        }
+    }
+
+    private func persistProcedures(_ procedures: [ProcedureDTO], arguments: [ProcedureArgumentDTO], objs: [OracleObject]) async {
+        await self.backgroundPerform { context in
+            // Drop prior rows for the in-scope (owner, objectName) pairs so
+            // overload removal and signature changes are handled atomically.
+            for obj in objs {
+                try? self.deleteProcedures(forOwner: obj.owner, name: obj.name, in: context)
+                try? self.deleteProcedureArguments(forOwner: obj.owner, name: obj.name, in: context)
+            }
+            for proc in procedures {
+                let entity = DBCacheProcedure(context: context)
+                entity.owner_ = proc.owner
+                entity.objectName_ = proc.objectName
+                entity.procedureName_ = proc.procedureName
+                entity.objectType_ = proc.objectType
+                entity.subprogramId = Int32(proc.subprogramId)
+                entity.overload_ = proc.overload
+                entity.isAggregate = proc.isAggregate
+                entity.isPipelined = proc.isPipelined
+                entity.isParallel = proc.isParallel
+                entity.isDeterministic = proc.isDeterministic
+                entity.isResultCache = proc.isResultCache
+                entity.authID_ = proc.authID
+                entity.implTypeOwner_ = proc.implTypeOwner
+                entity.implTypeName_ = proc.implTypeName
+            }
+            for arg in arguments {
+                let entity = DBCacheProcedureArgument(context: context)
+                entity.owner_ = arg.owner
+                entity.objectName_ = arg.objectName
+                entity.procedureName_ = arg.procedureName
+                entity.overload_ = arg.overload
+                entity.subprogramId = Int32(arg.subprogramId)
+                entity.position = Int16(arg.position)
+                entity.sequence = Int16(arg.sequence)
+                entity.dataLevel = Int16(arg.dataLevel)
+                entity.argumentName_ = arg.argumentName
+                entity.dataType_ = arg.dataType
+                entity.inOut_ = arg.inOut
+                entity.dataLength = Int32(arg.dataLength)
+                entity.dataPrecision = Int16(arg.dataPrecision ?? 0)
+                entity.dataScale = Int16(arg.dataScale ?? 0)
+                entity.charLength = Int32(arg.charLength)
+                entity.defaulted = arg.defaulted
+                entity.defaultValue_ = arg.defaultValue
+                entity.typeOwner_ = arg.typeOwner
+                entity.typeName_ = arg.typeName
+                entity.typeSubname_ = arg.typeSubname
+                entity.plsType_ = arg.plsType
+            }
+            self.processObjects(objs, context: context)
+            try? context.save()
+        }
+    }
+
+    nonisolated func deleteProcedures(forOwner owner: String, name: String, in context: NSManagedObjectContext) throws {
+        let fetchRequest: NSFetchRequest<any NSFetchRequestResult> = NSFetchRequest(entityName: "DBCacheProcedure")
+        fetchRequest.predicate = NSPredicate(format: "owner_ = %@ and objectName_ = %@", owner, name)
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        deleteRequest.resultType = .resultTypeObjectIDs
+        let batchDelete = try context.execute(deleteRequest) as? NSBatchDeleteResult
+        guard let deleteResult = batchDelete?.result else { return }
+        let changes: [AnyHashable: Any] = [NSDeletedObjectsKey: deleteResult as! [NSManagedObjectID]]
+        if !changes.isEmpty {
+            NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
+        }
+    }
+
+    nonisolated func deleteProcedureArguments(forOwner owner: String, name: String, in context: NSManagedObjectContext) throws {
+        let fetchRequest: NSFetchRequest<any NSFetchRequestResult> = NSFetchRequest(entityName: "DBCacheProcedureArgument")
+        fetchRequest.predicate = NSPredicate(format: "owner_ = %@ and objectName_ = %@", owner, name)
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        deleteRequest.resultType = .resultTypeObjectIDs
+        let batchDelete = try context.execute(deleteRequest) as? NSBatchDeleteResult
+        guard let deleteResult = batchDelete?.result else { return }
+        let changes: [AnyHashable: Any] = [NSDeletedObjectsKey: deleteResult as! [NSManagedObjectID]]
+        if !changes.isEmpty {
+            NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
+        }
+    }
+
     // MARK: - Cleanup dropped objects
 
     func cleanupDroppedObjects() async {
@@ -1204,10 +1451,13 @@ from dba_objects o
             log.cache.error("refreshObject failed: \(error.localizedDescription, privacy: .public)")
         }
         if let obj = fetchedObj {
-            if currentObj.type == .package || currentObj.type == .type {
+            if currentObj.type == .package || currentObj.type == .type || currentObj.type == .procedure || currentObj.type == .function {
                 await self.processSourceChunk([obj])
             } else {
                 await self.processChunkOfObjects([obj], objectType: obj.type)
+            }
+            if currentObj.type == .package || currentObj.type == .procedure || currentObj.type == .function {
+                await self.processProceduresChunk([obj])
             }
         } else {
             await dropLocalObject(currentObj)
@@ -1251,11 +1501,15 @@ from dba_objects o
             let index = (try? context.fetch(request))?.first
             try? deleteIndexColumns(for: index, in: context)
             dropManagedObject(index, with: context)
-        case .type, .package:
+        case .type, .package, .procedure, .function:
             let request = DBCacheSource.fetchRequest()
             request.predicate = NSPredicate(format: "name_ = %@ and owner_ = %@", obj.name, obj.owner)
             let src = (try? context.fetch(request))?.first
             dropManagedObject(src, with: context)
+            if OracleObjectType(rawValue: obj.type) != .type {
+                try? deleteProcedureArguments(forOwner: obj.owner, name: obj.name, in: context)
+                try? deleteProcedures(forOwner: obj.owner, name: obj.name, in: context)
+            }
         default:
             break
         }

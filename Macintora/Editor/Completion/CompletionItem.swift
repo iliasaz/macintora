@@ -35,6 +35,36 @@ struct ObjectSuggestion: Sendable, Hashable {
     let type: String   // "TABLE" / "VIEW" / "PACKAGE" / "PROCEDURE" / etc.
 }
 
+struct ProcedureSuggestion: Sendable, Hashable {
+    let owner: String
+    /// Package name for package members; the standalone proc/func name otherwise.
+    let packageName: String
+    let procedureName: String
+    let overload: String?
+    let subprogramId: Int
+    /// `"PROCEDURE"` or `"FUNCTION"` — the ALL_PROCEDURES.OBJECT_TYPE of the
+    /// parent (PACKAGE for members) is on `parentType`.
+    let kind: String
+    let parentType: String
+    /// Non-nil when the row is a function — read off the `position == 0`
+    /// argument row.
+    let returnType: String?
+}
+
+struct ProcedureArgumentSuggestion: Sendable, Hashable {
+    let owner: String
+    let packageName: String
+    let procedureName: String
+    let overload: String?
+    let position: Int
+    let argumentName: String?
+    let dataType: String
+    /// `"IN"` / `"OUT"` / `"IN/OUT"`.
+    let inOut: String
+    let defaulted: Bool
+    let defaultValue: String?
+}
+
 // MARK: - STCompletionItem implementation
 
 /// Single row in the completion popup. Marked `@unchecked Sendable` because
@@ -49,6 +79,8 @@ final class MacintoraCompletionItem: NSObject, STCompletionItem, @unchecked Send
         case column
         case schema
         case packageObject
+        case procedure
+        case function
         case generic
     }
 
@@ -129,6 +161,8 @@ private extension MacintoraCompletionItem.Kind {
         case .column: return "list.bullet"
         case .schema: return "person.crop.square"
         case .packageObject: return "shippingbox"
+        case .procedure: return "curlybraces"
+        case .function: return "f.cursive"
         case .generic: return "circle"
         }
     }
@@ -177,6 +211,22 @@ extension MacintoraCompletionItem {
             displayText: o.name,
             insertText: o.name.lowercased(),
             secondaryText: "\(o.owner) · \(o.type)",
+            kind: kind)
+    }
+
+    static func make(from p: ProcedureSuggestion) -> MacintoraCompletionItem {
+        let kind: Kind = p.kind == "FUNCTION" ? .function : .procedure
+        var secondary = p.kind
+        if let overload = p.overload, !overload.isEmpty {
+            secondary += " #\(overload)"
+        }
+        if let returnType = p.returnType, !returnType.isEmpty {
+            secondary += " → \(returnType)"
+        }
+        return MacintoraCompletionItem(
+            displayText: p.procedureName,
+            insertText: p.procedureName.lowercased(),
+            secondaryText: secondary,
             kind: kind)
     }
 }

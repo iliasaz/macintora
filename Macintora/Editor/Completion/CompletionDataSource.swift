@@ -191,6 +191,148 @@ actor CompletionDataSource {
         }
     }
 
+    /// Procedures and functions that belong to `packageName` (for package
+    /// members) or whose own object name equals `packageName` (for standalones).
+    /// `search` is matched as a case-insensitive substring against the member
+    /// name. The kind ("PROCEDURE" / "FUNCTION") and `returnType` are derived
+    /// from a parallel fetch on `DBCacheProcedureArgument` rows where
+    /// `position == 0 && dataLevel == 0` — that row exists only for functions
+    /// and carries the return type, so its absence flags a procedure.
+    func procedures(packageName: String,
+                    owner: String?,
+                    search: String,
+                    limit: Int) async -> [ProcedureSuggestion] {
+        await fetch { ctx -> [ProcedureSuggestion] in
+            let upperPkg = packageName.uppercased()
+            let upperSearch = search.uppercased()
+
+            // 1. Procedures.
+            let procRequest = DBCacheProcedure.fetchRequest()
+            var procPredicates: [NSPredicate] = [
+                NSPredicate(format: "objectName_ = %@", upperPkg),
+                NSPredicate(format: "procedureName_ != nil")
+            ]
+            if let owner {
+                procPredicates.append(NSPredicate(format: "owner_ = %@", owner.uppercased()))
+            }
+            if !upperSearch.isEmpty {
+                procPredicates.append(NSPredicate(format: "procedureName_ CONTAINS[c] %@", upperSearch))
+            }
+            procRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: procPredicates)
+            procRequest.sortDescriptors = [
+                NSSortDescriptor(key: "procedureName_", ascending: true),
+                NSSortDescriptor(key: "overload_", ascending: true)
+            ]
+            procRequest.fetchLimit = max(limit * 4, limit)
+
+            // 2. Return-type rows (one fetch, dictionary-keyed lookup below).
+            let argRequest = DBCacheProcedureArgument.fetchRequest()
+            var argPredicates: [NSPredicate] = [
+                NSPredicate(format: "objectName_ = %@", upperPkg),
+                NSPredicate(format: "position == 0"),
+                NSPredicate(format: "dataLevel == 0"),
+                NSPredicate(format: "argumentName_ == nil")
+            ]
+            if let owner {
+                argPredicates.append(NSPredicate(format: "owner_ = %@", owner.uppercased()))
+            }
+            argRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: argPredicates)
+
+            do {
+                let procRows = try ctx.fetch(procRequest)
+                let argRows = try ctx.fetch(argRequest)
+                struct ReturnKey: Hashable { let owner, name, overload: String }
+                var returnTypes: [ReturnKey: String] = [:]
+                for arg in argRows {
+                    let key = ReturnKey(
+                        owner: arg.owner_ ?? "",
+                        name: arg.procedureName_ ?? "",
+                        overload: arg.overload_ ?? ""
+                    )
+                    returnTypes[key] = arg.dataType_ ?? ""
+                }
+                let suggestions: [ProcedureSuggestion] = procRows.compactMap { row in
+                    guard let procName = row.procedureName_, !procName.isEmpty,
+                          let pkg = row.objectName_ else { return nil }
+                    // Skip the SUBPROGRAM_ID = 0 package-itself row that
+                    // ALL_PROCEDURES emits (procedureName == objectName).
+                    if procName == pkg && (row.objectType_ ?? "") == "PACKAGE" {
+                        return nil
+                    }
+                    let key = ReturnKey(
+                        owner: row.owner_ ?? "",
+                        name: procName,
+                        overload: row.overload_ ?? ""
+                    )
+                    let returnType = returnTypes[key]
+                    return ProcedureSuggestion(
+                        owner: row.owner_ ?? "",
+                        packageName: pkg,
+                        procedureName: procName,
+                        overload: row.overload_,
+                        subprogramId: Int(row.subprogramId),
+                        kind: returnType != nil ? "FUNCTION" : "PROCEDURE",
+                        parentType: row.objectType_ ?? "",
+                        returnType: returnType
+                    )
+                }
+                return self.rankByPrefixThenInfix(suggestions,
+                                                  name: \.procedureName,
+                                                  search: upperSearch,
+                                                  limit: limit)
+            } catch {
+                self.logger.error("procedures fetch failed: \(error.localizedDescription, privacy: .public)")
+                return []
+            }
+        }
+    }
+
+    /// Arguments of a single procedure / function invocation. Excludes the
+    /// `position == 0` return-value row (callers consume return type via
+    /// `procedures(...).returnType`) and `dataLevel > 0` composite expansions.
+    func procedureArguments(owner: String,
+                            packageName: String,
+                            procedureName: String,
+                            overload: String?) async -> [ProcedureArgumentSuggestion] {
+        await fetch { ctx -> [ProcedureArgumentSuggestion] in
+            let request = DBCacheProcedureArgument.fetchRequest()
+            var predicates: [NSPredicate] = [
+                NSPredicate(format: "owner_ = %@", owner.uppercased()),
+                NSPredicate(format: "objectName_ = %@", packageName.uppercased()),
+                NSPredicate(format: "procedureName_ = %@", procedureName.uppercased()),
+                NSPredicate(format: "dataLevel == 0"),
+                NSPredicate(format: "position > 0")
+            ]
+            if let overload, !overload.isEmpty {
+                predicates.append(NSPredicate(format: "overload_ = %@", overload))
+            } else {
+                predicates.append(NSPredicate(format: "overload_ == nil OR overload_ = %@", ""))
+            }
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+            request.sortDescriptors = [NSSortDescriptor(key: "sequence", ascending: true)]
+            do {
+                let rows = try ctx.fetch(request)
+                return rows.map { row in
+                    ProcedureArgumentSuggestion(
+                        owner: row.owner_ ?? "",
+                        packageName: row.objectName_ ?? "",
+                        procedureName: row.procedureName_ ?? "",
+                        overload: row.overload_,
+                        position: Int(row.position),
+                        argumentName: row.argumentName_,
+                        dataType: row.dataType_ ?? "",
+                        inOut: row.inOut_ ?? "IN",
+                        defaulted: row.defaulted,
+                        defaultValue: row.defaultValue_
+                    )
+                }
+            } catch {
+                self.logger.error("procedureArguments fetch failed: \(error.localizedDescription, privacy: .public)")
+                return []
+            }
+        }
+    }
+
     /// Two-tier rank for a list returned by a `CONTAINS[c]` predicate:
     /// 1. name-prefix matches first, infix matches after;
     /// 2. within each tier, rows whose owner equals `preferredOwner` first.
