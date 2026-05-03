@@ -1195,7 +1195,13 @@ from dba_objects o
             for try await row in stream {
                 let rr = row.makeRandomAccess()
                 guard let owner = rr.optString("OWNER") else { continue }
-                let packageName = rr.optString("PACKAGE_NAME")
+                // Coerce empty strings to nil — `oracle-nio` decodes
+                // NULL VARCHAR2 columns as `""` for some bind shapes, and
+                // a literal `??` would treat that as a non-nil value.
+                // Without this, standalone-procedure args (PACKAGE_NAME
+                // genuinely NULL in Oracle) end up with `parentName == ""`
+                // because the fallback to `memberName` never fires.
+                let packageName = rr.optString("PACKAGE_NAME").flatMap { $0.isEmpty ? nil : $0 }
                 let memberName = rr.optString("OBJECT_NAME") ?? ""
                 let parentName = packageName ?? memberName
                 rows.append(ProcedureArgumentDTO(
@@ -1295,7 +1301,18 @@ from dba_objects o
 
     nonisolated func deleteProcedureArguments(forOwner owner: String, name: String, in context: NSManagedObjectContext) throws {
         let fetchRequest: NSFetchRequest<any NSFetchRequestResult> = NSFetchRequest(entityName: "DBCacheProcedureArgument")
-        fetchRequest.predicate = NSPredicate(format: "owner_ = %@ and objectName_ = %@", owner, name)
+        // Match three cache shapes for the same `(owner, name)` pair:
+        //   1. `objectName_ = name` — package-member args and correctly
+        //      persisted standalone args.
+        //   2. `objectName_ IS NULL AND procedureName_ = name` — standalone
+        //      args persisted before the empty-string coercion fix.
+        //   3. `objectName_ = "" AND procedureName_ = name` — same as (2)
+        //      but with empty string instead of NULL.
+        // Without (2)/(3) the legacy duplicates accumulate forever,
+        // since every refresh would insert another copy of each arg.
+        fetchRequest.predicate = NSPredicate(
+            format: "owner_ = %@ AND (objectName_ = %@ OR ((objectName_ == nil OR objectName_ = %@) AND procedureName_ = %@))",
+            owner, name, "", name)
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
         deleteRequest.resultType = .resultTypeObjectIDs
         let batchDelete = try context.execute(deleteRequest) as? NSBatchDeleteResult
