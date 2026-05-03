@@ -110,9 +110,11 @@ struct STDBObjectQuickViewPlugin: STPlugin {
                     // `unsafe` acknowledges SE-0458 — `NSEvent.window` and
                     // `NSResponder.window` are marked `@unsafe` in the
                     // AppKit overlay; we're already main-actor isolated.
-                    guard let window = unsafe textView.window else { return }
                     let eventWindow = unsafe event.window
-                    guard eventWindow === window else { return }
+                    guard Coordinator.shouldTrigger(eventWindow: eventWindow,
+                                                    locationInWindow: event.locationInWindow,
+                                                    textView: textView) else { return }
+                    guard let window = unsafe textView.window else { return }
                     let screenPoint = window.convertPoint(toScreen: event.locationInWindow)
                     let offset = textView.characterIndex(for: screenPoint)
                     guard offset != NSNotFound else { return }
@@ -120,6 +122,29 @@ struct STDBObjectQuickViewPlugin: STPlugin {
                 }
                 return event
             }
+        }
+
+        /// Click-gate predicate. Returns true only when `eventWindow` is the
+        /// text view's window AND the click hit-tests onto the text view (or
+        /// a descendant of it) — `NSEvent.addLocalMonitorForEvents` is
+        /// process-global, so without these gates a ⌘-click in the sidebar,
+        /// toolbar, or another worksheet's editor would also pop. Extracted
+        /// as a static so it's exercised by `QuickViewClickGateTests`
+        /// without synthesizing an `NSEvent`.
+        static func shouldTrigger(eventWindow: NSWindow?,
+                                  locationInWindow: NSPoint,
+                                  textView: NSView) -> Bool {
+            // `unsafe` acknowledges the AppKit overlay's `@unsafe` marker on
+            // `window` accessors. The caller is main-actor isolated.
+            guard let textViewWindow = unsafe textView.window,
+                  let eventWindow,
+                  eventWindow === textViewWindow else {
+                return false
+            }
+            guard let hit = textViewWindow.contentView?.hitTest(locationInWindow) else {
+                return false
+            }
+            return hit === textView || hit.isDescendant(of: textView)
         }
 
         func removeMonitor() {

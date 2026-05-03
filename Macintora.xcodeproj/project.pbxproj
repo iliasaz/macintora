@@ -27,6 +27,7 @@
 		49DB301200000012 /* EditorQuickViewBoxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001200000012 /* EditorQuickViewBoxTests.swift */; };
 		49DB301300000013 /* QuickViewContentRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001300000013 /* QuickViewContentRenderTests.swift */; };
 		49DB301500000015 /* QuickViewEndToEndTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001500000015 /* QuickViewEndToEndTests.swift */; };
+		49DB301600000016 /* QuickViewClickGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001600000016 /* QuickViewClickGateTests.swift */; };
 		490E96B62FA4217200DDF37F /* SqlPlusDirective.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96B52FA4217200DDF37F /* SqlPlusDirective.swift */; };
 		490E96B82FA4217700DDF37F /* ScriptError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96B72FA4217700DDF37F /* ScriptError.swift */; };
 		490E96BA2FA4225300DDF37F /* ScriptLexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96B92FA4225300DDF37F /* ScriptLexer.swift */; };
@@ -325,6 +326,7 @@
 		49DB001200000012 /* EditorQuickViewBoxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorQuickViewBoxTests.swift; sourceTree = "<group>"; };
 		49DB001300000013 /* QuickViewContentRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewContentRenderTests.swift; sourceTree = "<group>"; };
 		49DB001500000015 /* QuickViewEndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewEndToEndTests.swift; sourceTree = "<group>"; };
+		49DB001600000016 /* QuickViewClickGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewClickGateTests.swift; sourceTree = "<group>"; };
 		49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainDocumentVM.swift; sourceTree = "<group>"; };
 		49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionListView.swift; sourceTree = "<group>"; };
 		49CE5FEF27279F3A009C2A94 /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
@@ -679,6 +681,7 @@
 				49DB001200000012 /* EditorQuickViewBoxTests.swift */,
 				49DB001300000013 /* QuickViewContentRenderTests.swift */,
 				49DB001500000015 /* QuickViewEndToEndTests.swift */,
+				49DB001600000016 /* QuickViewClickGateTests.swift */,
 			);
 			path = QuickView;
 			sourceTree = "<group>";
@@ -940,6 +943,7 @@
 				49DB301200000012 /* EditorQuickViewBoxTests.swift in Sources */,
 				49DB301300000013 /* QuickViewContentRenderTests.swift in Sources */,
 				49DB301500000015 /* QuickViewEndToEndTests.swift in Sources */,
+				49DB301600000016 /* QuickViewClickGateTests.swift in Sources */,
 				4982889F28B41F3A00A28B04 /* MacintoraTests.swift in Sources */,
 				AA0000130000000000000000 /* TnsParserTests.swift in Sources */,
 				490E96BC2FA422AF00DDF37F /* ScriptLexerTests.swift in Sources */,
