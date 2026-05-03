@@ -126,6 +126,7 @@
 		49C0301300000013 /* SQLContextAnalyzerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0301200000013 /* SQLContextAnalyzerTests.swift */; };
 		49C0301500000015 /* AliasResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0301400000015 /* AliasResolverTests.swift */; };
 		49C0301700000017 /* CompletionDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0301600000017 /* CompletionDataSourceTests.swift */; };
+		49C0301900000019 /* CompletionCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C0301800000019 /* CompletionCoordinatorTests.swift */; };
 		49C62C1C27DD7BAF00DE69E4 /* MainDocumentVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */; };
 		49C62C2427E010AE00DE69E4 /* ConnectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */; };
 		49CE5FF027279F3A009C2A94 /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CE5FEF27279F3A009C2A94 /* ResultView.swift */; };
@@ -307,6 +308,7 @@
 		49C0301200000013 /* SQLContextAnalyzerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLContextAnalyzerTests.swift; sourceTree = "<group>"; };
 		49C0301400000015 /* AliasResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AliasResolverTests.swift; sourceTree = "<group>"; };
 		49C0301600000017 /* CompletionDataSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionDataSourceTests.swift; sourceTree = "<group>"; };
+		49C0301800000019 /* CompletionCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionCoordinatorTests.swift; sourceTree = "<group>"; };
 		49DB000100000001 /* QuickViewPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewPayload.swift; sourceTree = "<group>"; };
 		49DB000200000002 /* QuickViewColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewColumnView.swift; sourceTree = "<group>"; };
 		49DB000300000003 /* QuickViewTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewTableView.swift; sourceTree = "<group>"; };
@@ -660,6 +662,7 @@
 				49C0301200000013 /* SQLContextAnalyzerTests.swift */,
 				49C0301400000015 /* AliasResolverTests.swift */,
 				49C0301600000017 /* CompletionDataSourceTests.swift */,
+				49C0301800000019 /* CompletionCoordinatorTests.swift */,
 				49DB000C0000000C /* ObjectAtCursorResolverTests.swift */,
 			);
 			path = Completion;
@@ -937,6 +940,7 @@
 				49C0301300000013 /* SQLContextAnalyzerTests.swift in Sources */,
 				49C0301500000015 /* AliasResolverTests.swift in Sources */,
 				49C0301700000017 /* CompletionDataSourceTests.swift in Sources */,
+				49C0301900000019 /* CompletionCoordinatorTests.swift in Sources */,
 				49DB300C0000000C /* ObjectAtCursorResolverTests.swift in Sources */,
 				49DB301000000010 /* QuickViewControllerTests.swift in Sources */,
 				49DB301100000011 /* QuickViewHotkeyTests.swift in Sources */,
