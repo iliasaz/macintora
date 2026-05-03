@@ -350,12 +350,16 @@ actor CompletionDataSource {
             procRequest.fetchLimit = 1
 
             // Function classification: presence of the position == 0 /
-            // dataLevel == 0 / nameless return-type row. Mirrors how
-            // `procedures(...)` decides FUNCTION vs PROCEDURE.
+            // dataLevel == 0 / nameless return-type row. Standalone arg
+            // rows store the proc name in `procedureName_` and may carry
+            // an empty `objectName_`, so pin via `procedureName_` and
+            // relax `objectName_`.
             let argRequest = DBCacheProcedureArgument.fetchRequest()
             argRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
                 NSPredicate(format: "owner_ = %@", upperOwner),
-                NSPredicate(format: "objectName_ = %@", upperName),
+                NSPredicate(format: "objectName_ = %@ OR objectName_ == nil OR objectName_ = %@",
+                            upperName, ""),
+                NSPredicate(format: "procedureName_ = %@", upperName),
                 NSPredicate(format: "position == 0"),
                 NSPredicate(format: "dataLevel == 0"),
                 NSPredicate(format: "argumentName_ == nil")
@@ -432,18 +436,29 @@ actor CompletionDataSource {
             let request = DBCacheProcedureArgument.fetchRequest()
             let upperPkg = packageName.uppercased()
             let upperProc = procedureName.uppercased()
-            // Standalones: callers pass `packageName == procedureName` as a
-            // signal. The arg row's `procedureName_` value can vary by
-            // Oracle version (proc name, NULL, or empty), so accept any
-            // shape — `(owner, objectName_)` already pins the proc.
+            // Callers pass `packageName == procedureName` as the standalone
+            // signal. The cache layout for standalone args is empirically
+            // `objectName_ == ""` and `procedureName_ == procName` (the
+            // ingestion path persists `nvl(PACKAGE_NAME, "")` into
+            // `objectName_` for standalones, even though it should be the
+            // proc name). Accept all observed shapes — proc name in either
+            // field, plus NULL/empty — and pin to `procedureName_ = X`
+            // which is consistently populated. Package members keep the
+            // strict pairwise match.
             let isStandalone = upperPkg == upperProc
-            let nameMatch: NSPredicate = isStandalone
-                ? NSPredicate(format: "procedureName_ = %@ OR procedureName_ == nil OR procedureName_ = %@",
-                              upperProc, "")
-                : NSPredicate(format: "procedureName_ = %@", upperProc)
+            let pkgMatch: NSPredicate
+            let nameMatch: NSPredicate
+            if isStandalone {
+                pkgMatch = NSPredicate(format: "objectName_ = %@ OR objectName_ == nil OR objectName_ = %@",
+                                       upperPkg, "")
+                nameMatch = NSPredicate(format: "procedureName_ = %@", upperProc)
+            } else {
+                pkgMatch = NSPredicate(format: "objectName_ = %@", upperPkg)
+                nameMatch = NSPredicate(format: "procedureName_ = %@", upperProc)
+            }
             var predicates: [NSPredicate] = [
                 NSPredicate(format: "owner_ = %@", owner.uppercased()),
-                NSPredicate(format: "objectName_ = %@", upperPkg),
+                pkgMatch,
                 nameMatch,
                 NSPredicate(format: "dataLevel == 0"),
                 NSPredicate(format: "position > 0")
@@ -457,20 +472,29 @@ actor CompletionDataSource {
             request.sortDescriptors = [NSSortDescriptor(key: "sequence", ascending: true)]
             do {
                 let rows = try ctx.fetch(request)
-                return rows.map { row in
-                    ProcedureArgumentSuggestion(
-                        owner: row.owner_ ?? "",
-                        packageName: row.objectName_ ?? "",
-                        procedureName: row.procedureName_ ?? "",
-                        overload: row.overload_,
-                        position: Int(row.position),
-                        argumentName: row.argumentName_,
-                        dataType: row.dataType_ ?? "",
-                        inOut: row.inOut_ ?? "IN",
-                        defaulted: row.defaulted,
-                        defaultValue: row.defaultValue_
-                    )
+                // Dedup on the natural key — the same standalone proc can
+                // accumulate copies in the cache because the delete-by-name
+                // path keys on the wrong column for standalones (an
+                // upstream bug). Surface each parameter once.
+                var seen = Set<String>()
+                var unique: [ProcedureArgumentSuggestion] = []
+                for row in rows {
+                    let key = "\(row.position)|\(row.sequence)|\(row.overload_ ?? "")|\(row.argumentName_ ?? "")"
+                    if seen.insert(key).inserted {
+                        unique.append(ProcedureArgumentSuggestion(
+                            owner: row.owner_ ?? "",
+                            packageName: row.objectName_ ?? "",
+                            procedureName: row.procedureName_ ?? "",
+                            overload: row.overload_,
+                            position: Int(row.position),
+                            argumentName: row.argumentName_,
+                            dataType: row.dataType_ ?? "",
+                            inOut: row.inOut_ ?? "IN",
+                            defaulted: row.defaulted,
+                            defaultValue: row.defaultValue_))
+                    }
                 }
+                return unique
             } catch {
                 self.logger.error("procedureArguments fetch failed: \(error.localizedDescription, privacy: .public)")
                 return []
@@ -833,21 +857,21 @@ actor CompletionDataSource {
                 let objectRow = try ctx.fetch(objectRequest).first
                 let procRowOverload = procRow.overload_
 
-                // Standalones: arg rows' `procedureName_` may be the proc
-                // name, NULL, or empty depending on Oracle version. Relax
-                // the match for the standalone case (signalled by
-                // `packageName == nil`); package members keep the strict
-                // equality so we don't accidentally collapse overloads
-                // across same-named members of two packages.
+                // Standalone arg rows are stored in this cache with
+                // `objectName_ == ""` and the proc name in
+                // `procedureName_` — pin to `procedureName_` and relax
+                // `objectName_` for the `packageName == nil` branch.
+                // Package members keep the strict pairwise match so we
+                // don't collapse same-named members of two packages.
                 let argRequest = DBCacheProcedureArgument.fetchRequest()
-                let argNameMatch: NSPredicate = packageName == nil
-                    ? NSPredicate(format: "procedureName_ = %@ OR procedureName_ == nil OR procedureName_ = %@",
-                                  upperProc, "")
-                    : NSPredicate(format: "procedureName_ = %@", upperProc)
+                let argPkgMatch: NSPredicate = packageName == nil
+                    ? NSPredicate(format: "objectName_ = %@ OR objectName_ == nil OR objectName_ = %@",
+                                  upperPkgOrSelf, "")
+                    : NSPredicate(format: "objectName_ = %@", upperPkgOrSelf)
                 var argPredicates: [NSPredicate] = [
                     NSPredicate(format: "owner_ = %@", upperOwner),
-                    NSPredicate(format: "objectName_ = %@", upperPkgOrSelf),
-                    argNameMatch,
+                    argPkgMatch,
+                    NSPredicate(format: "procedureName_ = %@", upperProc),
                     NSPredicate(format: "dataLevel == 0")
                 ]
                 if let procRowOverload, !procRowOverload.isEmpty {
@@ -861,11 +885,18 @@ actor CompletionDataSource {
 
                 var returnType: String? = nil
                 var parameters: [QuickViewProcedureArgument] = []
+                // Dedup — standalone args can accumulate copies in this
+                // cache because the upstream delete-by-objectName path
+                // doesn't match the empty `objectName_` they're stored
+                // under, so each refresh layers another set of duplicates.
+                var seenParam = Set<String>()
                 for arg in argRows {
                     if arg.position == 0, arg.argumentName_ == nil {
                         returnType = arg.dataType_
                         continue
                     }
+                    let key = "\(arg.position)|\(arg.sequence)|\(arg.overload_ ?? "")|\(arg.argumentName_ ?? "")"
+                    guard seenParam.insert(key).inserted else { continue }
                     parameters.append(QuickViewProcedureArgument(
                         sequence: Int(arg.sequence),
                         position: Int(arg.position),
