@@ -46,30 +46,34 @@ struct STDBObjectQuickViewPlugin: STPlugin {
         context.events.onContextMenu { [coordinator] location, contentManager in
             _ = coordinator
             let menu = NSMenu()
-            let item = NSMenuItem(
-                title: "Quick View",
-                action: nil,
-                keyEquivalent: "")
-            // Use a local target object so we don't rely on the responder
-            // chain finding our action on STTextView.
-            let target = QuickViewMenuTarget { [weak controller, weak textView] in
+            let utf16Offset = contentManager.offset(
+                from: contentManager.documentRange.location,
+                to: location)
+
+            // "Quick View" item
+            let qvTarget = QuickViewMenuTarget { [weak controller, weak textView] in
                 guard let controller, let textView else { return }
-                let utf16Offset = contentManager.offset(
-                    from: contentManager.documentRange.location,
-                    to: location)
                 controller.triggerAtTextLocation(textView: textView,
                                                  utf16Offset: utf16Offset)
             }
-            item.target = target
-            item.action = #selector(QuickViewMenuTarget.invoke(_:))
-            // `NSMenuItem.target` is a weak reference, so we need a strong
-            // ref to keep the closure alive until the menu is dismissed.
-            // `representedObject` is the canonical strong-ref slot on
-            // NSMenuItem — using it avoids an `objc_setAssociatedObject`
-            // call that Swift 6's strict-memory-safety mode now flags as
-            // unsafe.
-            item.representedObject = target
-            menu.addItem(item)
+            let qvItem = NSMenuItem(title: "Quick View", action: nil, keyEquivalent: "")
+            qvItem.target = qvTarget
+            qvItem.action = #selector(QuickViewMenuTarget.invoke(_:))
+            qvItem.representedObject = qvTarget
+            menu.addItem(qvItem)
+
+            // "Show in DB Browser" item — sibling of Quick View
+            let browserTarget = QuickViewMenuTarget { [weak controller, weak textView] in
+                guard let controller, let textView else { return }
+                controller.openInBrowserAtTextLocation(textView: textView,
+                                                       utf16Offset: utf16Offset)
+            }
+            let browserItem = NSMenuItem(title: "Show in DB Browser", action: nil, keyEquivalent: "")
+            browserItem.target = browserTarget
+            browserItem.action = #selector(QuickViewMenuTarget.invoke(_:))
+            browserItem.representedObject = browserTarget
+            menu.addItem(browserItem)
+
             return menu
         }
     }
@@ -110,7 +114,10 @@ struct STDBObjectQuickViewPlugin: STPlugin {
             // hierarchy `@MainActor`. Local monitors fire on the main
             // thread, so the assumption is the documented contract.
             monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak textView, weak controller] event in
-                guard event.modifierFlags.contains(.command) else { return event }
+                let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                // ⌥⌘+click → Open in DB Browser; ⌘+click → Quick View.
+                // Require at least ⌘; otherwise the event is unrelated.
+                guard flags.contains(.command) else { return event }
                 MainActor.assumeIsolated {
                     guard let textView, let controller else { return }
                     // `unsafe` acknowledges SE-0458 — `NSEvent.window` and
@@ -124,7 +131,13 @@ struct STDBObjectQuickViewPlugin: STPlugin {
                     let screenPoint = window.convertPoint(toScreen: event.locationInWindow)
                     let offset = textView.characterIndex(for: screenPoint)
                     guard offset != NSNotFound else { return }
-                    controller.triggerAtTextLocation(textView: textView, utf16Offset: offset)
+                    if flags.contains(.option) {
+                        // ⌥⌘+click → Open in DB Browser
+                        controller.openInBrowserAtTextLocation(textView: textView, utf16Offset: offset)
+                    } else {
+                        // ⌘+click (no ⌥) → Quick View
+                        controller.triggerAtTextLocation(textView: textView, utf16Offset: offset)
+                    }
                 }
                 return event
             }

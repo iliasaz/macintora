@@ -13,7 +13,7 @@ struct DBCacheSearchCriteria: Equatable {
     static func == (lhs: DBCacheSearchCriteria, rhs: DBCacheSearchCriteria) -> Bool {
         lhs.predicate == rhs.predicate
     }
-    
+
     var searchText = ""
     @AppStorage("prefixList") var prefixList = ["preview": ""] // tns = key: value
     @AppStorage("ownerList") var ownerList = ["preview": ""] // tns = key: value
@@ -25,8 +25,13 @@ struct DBCacheSearchCriteria: Equatable {
     @AppStorage("showTriggers") var showTriggers = true
     @AppStorage("showProcedures") var showProcedures = true
     @AppStorage("showFunctions") var showFunctions = true
-//    var changed = false
-    
+
+    /// When non-nil, overrides the `showXXX` type toggles and filters to
+    /// only this Oracle object type (e.g. "TABLE"). Set by "Open in DB Browser"
+    /// triggers so the list starts focused on the referenced object's type.
+    /// Cleared when the user resets the type filter from `QuickFilterView`.
+    var selectedTypeFilter: String? = nil
+
     private let tns: String
     
     var ownerString: String { get { ownerList[tns] ?? "" } set { ownerList[tns] = newValue} }
@@ -46,26 +51,26 @@ struct DBCacheSearchCriteria: Equatable {
     
     var predicate: NSPredicate {
         var predicates = [NSPredicate]()
-        
-        var typeInclusionList = [String]()
-//        var ownerPrefixExclusionList = ["SYS", "CDR_W"]
 
-        
-        
-        if showTables { typeInclusionList.append("TABLE") }
-        if showTypes { typeInclusionList.append("TYPE") }
-        if showProcedures { typeInclusionList.append("PROCEDURE") }
-        if showFunctions { typeInclusionList.append("FUNCTION") }
-        if showViews { typeInclusionList.append("VIEW") }
-        if showIndexes { typeInclusionList.append("INDEX") }
-        if showPackages { typeInclusionList.append("PACKAGE") }
-        if showTriggers { typeInclusionList.append("TRIGGER") }
-        
-        if !ownerInclusionList.isEmpty {
-            predicates.append(NSPredicate.init(format: "owner_ IN %@", ownerInclusionList))
+        if let forced = selectedTypeFilter {
+            predicates.append(NSPredicate(format: "type_ = %@", forced))
+        } else {
+            var typeInclusionList = [String]()
+            if showTables { typeInclusionList.append("TABLE") }
+            if showTypes { typeInclusionList.append("TYPE") }
+            if showProcedures { typeInclusionList.append("PROCEDURE") }
+            if showFunctions { typeInclusionList.append("FUNCTION") }
+            if showViews { typeInclusionList.append("VIEW") }
+            if showIndexes { typeInclusionList.append("INDEX") }
+            if showPackages { typeInclusionList.append("PACKAGE") }
+            if showTriggers { typeInclusionList.append("TRIGGER") }
+            if !typeInclusionList.isEmpty {
+                predicates.append(NSPredicate(format: "type_ IN %@", typeInclusionList))
+            }
         }
-        if !typeInclusionList.isEmpty {
-            predicates.append(NSPredicate.init(format: "type_ IN %@", typeInclusionList))
+
+        if !ownerInclusionList.isEmpty {
+            predicates.append(NSPredicate(format: "owner_ IN %@", ownerInclusionList))
         }
 //
         if !searchText.isEmpty {

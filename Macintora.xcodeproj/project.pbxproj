@@ -19,6 +19,12 @@
 		49DB100900000009 /* QuickViewHotkey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000900000009 /* QuickViewHotkey.swift */; };
 		49DB100A0000000A /* STDBObjectQuickViewPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000A0000000A /* STDBObjectQuickViewPlugin.swift */; };
 		49DB100B0000000B /* EditorQuickViewBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000B0000000B /* EditorQuickViewBox.swift */; };
+		49DB100F0000000F /* EditorOpenInBrowserBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000F0000000F /* EditorOpenInBrowserBox.swift */; };
+		49B0C0DE0000000000000120 /* DBBrowserInputMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000020 /* DBBrowserInputMapper.swift */; };
+		49B0C0DE0000000000000121 /* DBBrowserWindowRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000021 /* DBBrowserWindowRegistry.swift */; };
+		49B0C0DE0000000000000130 /* DBBrowserInputMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000030 /* DBBrowserInputMapperTests.swift */; };
+		49B0C0DE0000000000000131 /* DBBrowserWindowRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000031 /* DBBrowserWindowRegistryTests.swift */; };
+		49B0C0DE0000000000000132 /* DBCacheVMInitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */; };
 		49DB102000000020 /* WindowFrameSanitiser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002000000020 /* WindowFrameSanitiser.swift */; };
 		49DB302100000021 /* WindowFrameSanitiserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002100000021 /* WindowFrameSanitiserTests.swift */; };
 		49DB300C0000000C /* ObjectAtCursorResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000C0000000C /* ObjectAtCursorResolverTests.swift */; };
@@ -322,6 +328,12 @@
 		49DB000900000009 /* QuickViewHotkey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewHotkey.swift; sourceTree = "<group>"; };
 		49DB000A0000000A /* STDBObjectQuickViewPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STDBObjectQuickViewPlugin.swift; sourceTree = "<group>"; };
 		49DB000B0000000B /* EditorQuickViewBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorQuickViewBox.swift; sourceTree = "<group>"; };
+		49DB000F0000000F /* EditorOpenInBrowserBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorOpenInBrowserBox.swift; sourceTree = "<group>"; };
+		49B0C0DE0000000000000020 /* DBBrowserInputMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserInputMapper.swift; sourceTree = "<group>"; };
+		49B0C0DE0000000000000021 /* DBBrowserWindowRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserWindowRegistry.swift; sourceTree = "<group>"; };
+		49B0C0DE0000000000000030 /* DBBrowserInputMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserInputMapperTests.swift; sourceTree = "<group>"; };
+		49B0C0DE0000000000000031 /* DBBrowserWindowRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserWindowRegistryTests.swift; sourceTree = "<group>"; };
+		49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheVMInitTests.swift; sourceTree = "<group>"; };
 		49DB002000000020 /* WindowFrameSanitiser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFrameSanitiser.swift; sourceTree = "<group>"; };
 		49DB002100000021 /* WindowFrameSanitiserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFrameSanitiserTests.swift; sourceTree = "<group>"; };
 		49DB000C0000000C /* ObjectAtCursorResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectAtCursorResolverTests.swift; sourceTree = "<group>"; };
@@ -482,6 +494,8 @@
 				498288D028B7DCB000A28B04 /* WindowModifier.swift */,
 				49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */,
 				49B0C0DE0000000000000005 /* PackageProceduresListView.swift */,
+				49B0C0DE0000000000000020 /* DBBrowserInputMapper.swift */,
+				49B0C0DE0000000000000021 /* DBBrowserWindowRegistry.swift */,
 				498288AD28B7DC5700A28B04 /* CoreData */,
 			);
 			path = DBObjectsBrowser;
@@ -506,6 +520,7 @@
 				AA0000C10000000000000000 /* LegacyDocumentMigrationTests.swift */,
 				AA0000F10000000000000000 /* FullRefreshReproTests.swift */,
 				49DB002100000021 /* WindowFrameSanitiserTests.swift */,
+				49B0C0DE0000000000000040 /* DBBrowser */,
 				49D0ECF22F9C1E070047540A /* Editor */,
 				49D0ED042F9C34410047540A /* Results */,
 				490E96B42FA4216800DDF37F /* Script */,
@@ -656,6 +671,7 @@
 				49DB000900000009 /* QuickViewHotkey.swift */,
 				49DB000A0000000A /* STDBObjectQuickViewPlugin.swift */,
 				49DB000B0000000B /* EditorQuickViewBox.swift */,
+				49DB000F0000000F /* EditorOpenInBrowserBox.swift */,
 			);
 			path = QuickView;
 			sourceTree = "<group>";
@@ -691,6 +707,16 @@
 				49DB001600000016 /* QuickViewClickGateTests.swift */,
 			);
 			path = QuickView;
+			sourceTree = "<group>";
+		};
+		49B0C0DE0000000000000040 /* DBBrowser */ = {
+			isa = PBXGroup;
+			children = (
+				49B0C0DE0000000000000030 /* DBBrowserInputMapperTests.swift */,
+				49B0C0DE0000000000000031 /* DBBrowserWindowRegistryTests.swift */,
+				49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */,
+			);
+			path = DBBrowser;
 			sourceTree = "<group>";
 		};
 		49CE5FEE27279F09009C2A94 /* Results */ = {
@@ -979,6 +1005,9 @@
 				AA0000F00000000000000000 /* FullRefreshReproTests.swift in Sources */,
 				49D0ECF62F9C1EB90047540A /* GetCurrentSqlTests.swift in Sources */,
 				49141400000000000000A004 /* PlsqlBlockDetectorTests.swift in Sources */,
+				49B0C0DE0000000000000130 /* DBBrowserInputMapperTests.swift in Sources */,
+				49B0C0DE0000000000000131 /* DBBrowserWindowRegistryTests.swift in Sources */,
+				49B0C0DE0000000000000132 /* DBCacheVMInitTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1116,6 +1145,9 @@
 				49DB100900000009 /* QuickViewHotkey.swift in Sources */,
 				49DB100A0000000A /* STDBObjectQuickViewPlugin.swift in Sources */,
 				49DB100B0000000B /* EditorQuickViewBox.swift in Sources */,
+				49DB100F0000000F /* EditorOpenInBrowserBox.swift in Sources */,
+				49B0C0DE0000000000000120 /* DBBrowserInputMapper.swift in Sources */,
+				49B0C0DE0000000000000121 /* DBBrowserWindowRegistry.swift in Sources */,
 				49DB102000000020 /* WindowFrameSanitiser.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

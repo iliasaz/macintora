@@ -8,6 +8,13 @@
 import SwiftUI
 import os
 
+/// Top-level tab selection for `DBDetailView`.
+/// Codable so it round-trips through `DBCacheInputValue` for scene restoration.
+enum DBDetailTab: String, Codable, Hashable, CaseIterable, Sendable {
+    case main
+    case details
+}
+
 struct DBDetailObjectMainView: View {
     @Binding var dbObject: DBCacheObject
 
@@ -68,8 +75,10 @@ struct DBDetailObjectDetailsView: View {
 
 struct DBDetailView: View {
     @Binding var dbObject: DBCacheObject
+    @EnvironmentObject private var cache: DBCacheVM
     @State private var selectedTab: String = "details"
-    
+    @State private var hasAppliedInitialTab = false
+
     var body: some View {
         VStack(alignment: .leading) {
             DBDetailViewHeader(dbObject: $dbObject)
@@ -88,6 +97,14 @@ struct DBDetailView: View {
                         Text("Details")
                     }
                     .tag("details")
+            }
+        }
+        .onAppear {
+            guard !hasAppliedInitialTab else { return }
+            hasAppliedInitialTab = true
+            if let tab = cache.initialDetailTab {
+                selectedTab = tab.rawValue
+                cache.initialDetailTab = nil
             }
         }
     }

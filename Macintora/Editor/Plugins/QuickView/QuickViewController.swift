@@ -85,6 +85,33 @@ final class QuickViewController {
         presenter.close()
     }
 
+    // MARK: - Open in DB Browser triggers
+
+    /// Resolves the token at the editor's current keyboard cursor and dispatches
+    /// to `openInBrowserHandler`. Used by the ⌥⌘B hotkey path.
+    func openInBrowserAtCursor(textView: STTextView) {
+        let offset = textView.selectedRange().location
+        openInBrowser(textView: textView, utf16Offset: offset)
+    }
+
+    /// Resolves the token at `utf16Offset` and dispatches to
+    /// `openInBrowserHandler`. Used by the right-click menu and ⌥⌘+Click.
+    func openInBrowserAtTextLocation(textView: STTextView, utf16Offset: Int) {
+        openInBrowser(textView: textView, utf16Offset: utf16Offset)
+    }
+
+    private func openInBrowser(textView: STTextView, utf16Offset: Int) {
+        let source = textView.text ?? ""
+        let tree   = treeStore.tree
+        let reference = resolver.resolve(utf16Offset: utf16Offset, source: source, tree: tree)
+        guard reference != .unresolved else {
+            logger.debug("OpenInBrowser: cursor not on a resolvable token")
+            return
+        }
+        logger.info("OpenInBrowser trigger: \(String(describing: reference), privacy: .public)")
+        openInBrowserHandler?(reference)
+    }
+
     // MARK: - Pipeline
 
     private func trigger(textView: STTextView,

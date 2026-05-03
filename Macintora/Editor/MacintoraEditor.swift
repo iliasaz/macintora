@@ -27,11 +27,16 @@ struct EditorCompletionConfig {
     let persistenceController: PersistenceController
     /// Closure so the editor picks up reconnects without rebuilding the view.
     let defaultOwnerProvider: @MainActor () -> String
+    /// Provides the current `MainConnection` at trigger time for the
+    /// "Open in DB Browser" handler. Nil when the document has no connection.
+    let mainConnectionProvider: (@MainActor () -> MainConnection?)?
 
     init(persistenceController: PersistenceController,
-         defaultOwnerProvider: @escaping @MainActor () -> String) {
+         defaultOwnerProvider: @escaping @MainActor () -> String,
+         mainConnectionProvider: (@MainActor () -> MainConnection?)? = nil) {
         self.persistenceController = persistenceController
         self.defaultOwnerProvider = defaultOwnerProvider
+        self.mainConnectionProvider = mainConnectionProvider
     }
 }
 
@@ -47,6 +52,7 @@ struct MacintoraEditor: View {
     let accessibilityIdentifier: String
     let completionConfig: EditorCompletionConfig?
     let quickViewBox: EditorQuickViewBox?
+    let openInBrowserBox: EditorOpenInBrowserBox?
 
     @AppStorage("editorTheme") private var editorThemeRaw: String = EditorTheme.default.rawValue
 
@@ -61,7 +67,8 @@ struct MacintoraEditor: View {
         highlightsSelectedLine: Bool = true,
         accessibilityIdentifier: String = "editor.main",
         completionConfig: EditorCompletionConfig? = nil,
-        quickViewBox: EditorQuickViewBox? = nil
+        quickViewBox: EditorQuickViewBox? = nil,
+        openInBrowserBox: EditorOpenInBrowserBox? = nil
     ) {
         self._text = text
         self._selection = selection
@@ -74,6 +81,7 @@ struct MacintoraEditor: View {
         self.accessibilityIdentifier = accessibilityIdentifier
         self.completionConfig = completionConfig
         self.quickViewBox = quickViewBox
+        self.openInBrowserBox = openInBrowserBox
     }
 
     private var editorTheme: EditorTheme {
@@ -93,7 +101,8 @@ struct MacintoraEditor: View {
             accessibilityIdentifier: accessibilityIdentifier,
             theme: editorTheme,
             completionConfig: completionConfig,
-            quickViewBox: quickViewBox
+            quickViewBox: quickViewBox,
+            openInBrowserBox: openInBrowserBox
         )
         .id(editorTheme)
     }
@@ -112,6 +121,7 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
     let theme: EditorTheme
     let completionConfig: EditorCompletionConfig?
     let quickViewBox: EditorQuickViewBox?
+    let openInBrowserBox: EditorOpenInBrowserBox?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, selection: $selection)
@@ -159,6 +169,10 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
             if let quickViewController = context.coordinator.quickViewController {
                 textView.addPlugin(STDBObjectQuickViewPlugin(controller: quickViewController))
             }
+            context.coordinator.wireOpenInBrowserHandler(
+                openWindow: context.environment.openWindow,
+                mainConnectionProvider: config.mainConnectionProvider)
+            context.coordinator.bindOpenInBrowserBox(openInBrowserBox, textView: textView)
         }
 
         // Install the Neon syntax-highlighting plugin before the first text
@@ -190,11 +204,19 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
             if let quickViewController = context.coordinator.quickViewController {
                 textView.addPlugin(STDBObjectQuickViewPlugin(controller: quickViewController))
             }
-        } else if context.coordinator.quickViewBoxRef !== quickViewBox {
-            // Box identity changed (rare but happens on full document
-            // re-init). Rebind so the menu command keeps working against the
-            // freshly-mounted editor.
-            context.coordinator.bindQuickViewBox(quickViewBox, textView: textView)
+            context.coordinator.wireOpenInBrowserHandler(
+                openWindow: context.environment.openWindow,
+                mainConnectionProvider: config.mainConnectionProvider)
+            context.coordinator.bindOpenInBrowserBox(openInBrowserBox, textView: textView)
+        } else {
+            // Box identity may change on full document re-init. Rebind so menu
+            // commands keep working against the freshly-mounted editor.
+            if context.coordinator.quickViewBoxRef !== quickViewBox {
+                context.coordinator.bindQuickViewBox(quickViewBox, textView: textView)
+            }
+            if context.coordinator.openInBrowserBoxRef !== openInBrowserBox {
+                context.coordinator.bindOpenInBrowserBox(openInBrowserBox, textView: textView)
+            }
         }
 
         if textView.isEditable != isEditable { textView.isEditable = isEditable }
