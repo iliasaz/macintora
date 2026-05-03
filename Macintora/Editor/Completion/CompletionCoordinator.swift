@@ -330,36 +330,45 @@ final class CompletionCoordinator: @unchecked Sendable {
     }
 
     /// Builds one popup row per overload of the call target, with the
-    /// formatted parameter list as the primary text. Phase 2 scope is
-    /// package members only — standalone procedures (no qualifier) are
-    /// deferred to phase 3 and skipped here. The matching-arity overload
-    /// is sorted first as a hint for which signature applies; the user
-    /// can still arrow through the rest.
+    /// formatted parameter list as the primary text. Handles both package
+    /// members (`pkg.proc(`) and standalones (`proc(` at top level — the
+    /// cache stores standalones with `objectName_ == procedureName_`,
+    /// so the same `procedures(...)` call works once we know the owner).
+    /// The matching-arity overload is sorted first as a hint, and the
+    /// argument under the cursor is wrapped in `›‹` markers in the
+    /// rendered display so the user can see which slot they're filling.
     private func procedureCallSignatures(packageName: String?,
                                          procedureName: String,
                                          currentArgumentIndex: Int,
                                          owner: String) async -> [MacintoraCompletionItem] {
-        guard let packageName else {
-            // Phase 3 will resolve the standalone via DBCacheObject lookup.
-            editorCompletionLog.info("procedureCall: standalone procs deferred to phase 3 — skipping")
+        let resolved: ResolvedSchemaObject?
+        if let packageName {
+            resolved = await dataSource.resolvePackage(name: packageName,
+                                                       preferredOwner: owner)
+        } else {
+            resolved = await dataSource.resolveStandaloneProcedure(name: procedureName,
+                                                                   preferredOwner: owner)
+        }
+        guard let resolved else {
+            editorCompletionLog.info("procedureCall: target not in cache (pkg=\(packageName ?? "<nil>", privacy: .public) proc=\(procedureName, privacy: .public))")
             return []
         }
-        guard let pkg = await dataSource.resolvePackage(name: packageName,
-                                                        preferredOwner: owner) else {
-            editorCompletionLog.info("procedureCall: no cached package for \(packageName, privacy: .public)")
-            return []
-        }
+        // For standalones the cache stores rows under `objectName_ ==
+        // procedureName_`, so the `procedures(...)` lookup uses the
+        // resolved name as the package key.
+        let cachedPackageName = resolved.name
+
         // procedures(...) does substring matching; filter the result to
         // exact-name overloads. Overload count is small (typically 1-3),
         // so the per-overload argument fetch is cheap.
         let upperProc = procedureName.uppercased()
-        let allMatches = await dataSource.procedures(packageName: pkg.name,
-                                                     owner: pkg.owner,
+        let allMatches = await dataSource.procedures(packageName: cachedPackageName,
+                                                     owner: resolved.owner,
                                                      search: procedureName,
                                                      limit: fetchLimit)
         let overloads = allMatches.filter { $0.procedureName == upperProc }
         guard !overloads.isEmpty else {
-            editorCompletionLog.info("procedureCall: \(pkg.name, privacy: .public).\(upperProc, privacy: .public) not in cache")
+            editorCompletionLog.info("procedureCall: \(cachedPackageName, privacy: .public).\(upperProc, privacy: .public) not in cache")
             return []
         }
 
@@ -369,8 +378,10 @@ final class CompletionCoordinator: @unchecked Sendable {
                                                            packageName: overload.packageName,
                                                            procedureName: overload.procedureName,
                                                            overload: overload.overload)
-            rendered.append((MacintoraCompletionItem.make(signatureFrom: overload, arguments: args),
-                             args.count))
+            let item = MacintoraCompletionItem.make(signatureFrom: overload,
+                                                    arguments: args,
+                                                    activeArgumentIndex: currentArgumentIndex)
+            rendered.append((item, args.count))
         }
         // Bubble matching-arity overloads first; ties retain fetch order.
         let needed = currentArgumentIndex + 1
