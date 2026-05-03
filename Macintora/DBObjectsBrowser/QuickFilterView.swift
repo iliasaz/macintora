@@ -36,11 +36,18 @@ struct QuickFilterView: View {
                 }
                 .controlGroupStyle(GridControlGroupStyle())
                 
+                if quickFilters.selectedTypeFilter != nil {
+                    Button("Show all types") {
+                        quickFilters.selectedTypeFilter = nil
+                    }
+                    .controlSize(.small)
+                }
+
                 TextField("Schemas, ex. SYSTEM,SYS", text: $quickFilters.ownerString)
                     .lineLimit(3, reservesSpace: true)
                     .textFieldStyle(.roundedBorder)
                     .disableAutocorrection(true)
-                
+
                 TextField("Object Prefix, ex. DBMS,DBA", text: $quickFilters.prefixString)
                     .lineLimit(3, reservesSpace: true)
                     .textFieldStyle(.roundedBorder)

@@ -9,9 +9,39 @@ import SwiftUI
 
 struct DBCacheInputValue: Hashable, Codable, Equatable {
     let mainConnection: MainConnection
+    let selectedOwner: String?
     let selectedObjectName: String?
-    
-    static func preview() -> DBCacheInputValue { DBCacheInputValue(mainConnection: MainConnection.preview(), selectedObjectName: nil) }
+    let selectedObjectType: String?
+    let initialDetailTab: DBDetailTab?
+
+    init(
+        mainConnection: MainConnection,
+        selectedOwner: String? = nil,
+        selectedObjectName: String? = nil,
+        selectedObjectType: String? = nil,
+        initialDetailTab: DBDetailTab? = nil
+    ) {
+        self.mainConnection = mainConnection
+        self.selectedOwner = selectedOwner
+        self.selectedObjectName = selectedObjectName
+        self.selectedObjectType = selectedObjectType
+        self.initialDetailTab = initialDetailTab
+    }
+
+    /// Backward-compatible decoding: scenes persisted before this version lack
+    /// the new fields; treat absent keys as nil rather than throwing.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        mainConnection     = try  c.decode(MainConnection.self,   forKey: .mainConnection)
+        selectedOwner      = try? c.decodeIfPresent(String.self,   forKey: .selectedOwner)      ?? nil
+        selectedObjectName = try? c.decodeIfPresent(String.self,   forKey: .selectedObjectName) ?? nil
+        selectedObjectType = try? c.decodeIfPresent(String.self,   forKey: .selectedObjectType) ?? nil
+        initialDetailTab   = try? c.decodeIfPresent(DBDetailTab.self, forKey: .initialDetailTab) ?? nil
+    }
+
+    static func preview() -> DBCacheInputValue {
+        DBCacheInputValue(mainConnection: .preview())
+    }
 }
 
 struct DBCacheMainView: View {
@@ -21,13 +51,34 @@ struct DBCacheMainView: View {
     @Environment(\.keychainService) private var keychain
     @State private var reportDisplayed = false
     @State private var columnVisibility = NavigationSplitViewVisibility.all
-//    @State private var totalCountMatched: Int = 0
     @SectionedFetchRequest var items: SectionedFetchResults<String?, DBCacheObject>
     @State private var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
 
     init(cache: DBCacheVM) {
         self.cache = cache
-        _items = SectionedFetchRequest(fetchRequest: DBCacheObject.fetchRequest(limit: cache.searchLimit, predicate: cache.searchCriteria.predicate), sectionIdentifier: \DBCacheObject.owner_, animation: .default)
+        _items = SectionedFetchRequest(
+            fetchRequest: DBCacheObject.fetchRequest(limit: cache.searchLimit, predicate: cache.searchCriteria.predicate),
+            sectionIdentifier: \DBCacheObject.owner_,
+            animation: .default)
+    }
+
+    /// Selects the pending object once `items` has been populated.
+    private func performAutoSelect() {
+        guard let name = cache.pendingSelectionName else { return }
+        let owner = cache.pendingSelectionOwner
+        let type  = cache.pendingSelectionType
+        for section in items {
+            for item in section {
+                guard item.name == name else { continue }
+                guard owner == nil || item.owner == owner else { continue }
+                guard type  == nil || item.type  == type  else { continue }
+                listSelection = item
+                cache.pendingSelectionName  = nil
+                cache.pendingSelectionOwner = nil
+                cache.pendingSelectionType  = nil
+                return
+            }
+        }
     }
     
     var body: some View {
@@ -64,13 +115,23 @@ struct DBCacheMainView: View {
             }
         }
         .searchable(text: query, placement: .sidebar, prompt: "type something")
+        .background(WindowObserver { window in
+            DBBrowserWindowRegistry.shared.register(vm: cache, window: window)
+        })
         .onAppear {
             cache.store = injectedStore
             cache.keychain = keychain
+            performAutoSelect()
+        }
+        .onDisappear {
+            DBBrowserWindowRegistry.shared.deregister(vm: cache)
         }
         .onChange(of: cache.searchCriteria.predicate) { _, value in
             listSelection = nil
             items.nsPredicate = value
+        }
+        .onChange(of: items) { _, _ in
+            performAutoSelect()
         }
         .toolbar {
             ToolbarItemGroup(placement: .principal) {

@@ -221,7 +221,12 @@ struct MacOraApp: App {
 
         WindowGroup(for: DBCacheInputValue.self) { $value in
             let v = value ?? .preview()
-            let cache = DBCacheVM(connDetails: v.mainConnection.mainConnDetails, selectedObjectName: v.selectedObjectName)
+            let cache = DBCacheVM(
+                connDetails: v.mainConnection.mainConnDetails,
+                selectedOwner: v.selectedOwner,
+                selectedObjectName: v.selectedObjectName,
+                selectedObjectType: v.selectedObjectType,
+                initialDetailTab: v.initialDetailTab)
             DBCacheMainView(cache: cache)
                 .environment(\.managedObjectContext, cache.persistenceController.container.viewContext)
                 .environment(\.connectionStore, connectionStore)
@@ -247,6 +252,7 @@ struct MainDocumentMenuCommands: Commands {
     @FocusedValue(\.selectedObjectName) var selectedObjectName: String?
     @FocusedValue(\.mainConnection) var mainConnection
     @FocusedValue(\.editorQuickViewBox) var quickViewBox
+    @FocusedValue(\.editorOpenInBrowserBox) var openInBrowserBox
     @Environment(\.openWindow) var openWindow
 
     @Environment(\.openSettings) private var openSettings
@@ -291,6 +297,12 @@ struct MainDocumentMenuCommands: Commands {
             }
             .disabled(quickViewBox == nil)
             .quickViewShortcut(quickViewHotkey)
+
+            Button("Open in DB Browser") {
+                openInBrowserBox?.trigger?()
+            }
+            .disabled(openInBrowserBox == nil)
+            .keyboardShortcut("b", modifiers: [.command, .option])
         }
     }
 }

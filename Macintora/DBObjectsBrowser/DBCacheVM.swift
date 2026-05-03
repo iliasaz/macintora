@@ -254,6 +254,18 @@ final class DBCacheVM: nonisolated ObservableObject {
     var cacheState = CacheState()
     @Published var searchCriteria: DBCacheSearchCriteria
 
+    /// Initial tab to open in `DBDetailView`. Consumed once on first appear,
+    /// then cleared to nil so navigating to other rows doesn't re-apply it.
+    var initialDetailTab: DBDetailTab?
+
+    /// Name of the object to auto-select once the list loads. Cleared after
+    /// selection so subsequent predicate changes don't re-apply it.
+    @Published var pendingSelectionName: String?
+    /// Owner constraint for the auto-selection. Nil means any owner matches.
+    @Published var pendingSelectionOwner: String?
+    /// Type constraint for the auto-selection (e.g. "TABLE"). Nil means any.
+    @Published var pendingSelectionType: String?
+
     private let oracleLogger: Logging.Logger = {
         var logger = Logging.Logger(label: "com.iliasazonov.macintora.oracle.cache")
         logger.logLevel = .notice
@@ -267,15 +279,30 @@ final class DBCacheVM: nonisolated ObservableObject {
         return dateFormatter.string(from: lst)
     }
 
-    init(connDetails: ConnectionDetails, selectedObjectName: String? = nil) {
+    init(connDetails: ConnectionDetails,
+         persistenceController: PersistenceController? = nil,
+         selectedOwner: String? = nil,
+         selectedObjectName: String? = nil,
+         selectedObjectType: String? = nil,
+         initialDetailTab: DBDetailTab? = nil) {
         self.connDetails = connDetails
         self.searchCriteria = DBCacheSearchCriteria(for: connDetails.tns)
-        persistenceController = PersistenceController(name: connDetails.tns)
+        self.persistenceController = persistenceController ?? PersistenceController(name: connDetails.tns)
         setConnDetailsFromCache()
         OracleObjectType.allCases.forEach { objectQueues[$0] = ObjectQueue() }
-        if let selected = selectedObjectName {
-            searchCriteria.searchText = selected
+        if let name = selectedObjectName {
+            searchCriteria.searchText = name
         }
+        if let owner = selectedOwner {
+            searchCriteria.ownerString = owner
+        }
+        if let type = selectedObjectType {
+            searchCriteria.selectedTypeFilter = type
+        }
+        self.initialDetailTab = initialDetailTab
+        self.pendingSelectionName  = selectedObjectName
+        self.pendingSelectionOwner = selectedOwner
+        self.pendingSelectionType  = selectedObjectType
     }
 
     init(preview: Bool = true) {

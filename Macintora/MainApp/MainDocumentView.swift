@@ -40,6 +40,8 @@ struct MainDocumentView: View {
     /// editor without holding a direct reference to the AppKit text view.
     /// Populated by the editor's coordinator after Quick View is wired.
     @State private var quickViewBox = EditorQuickViewBox()
+    /// Bridge for the ⌥⌘B "Open in DB Browser" menu command.
+    @State private var openInBrowserBox = EditorOpenInBrowserBox()
 
     var selectedObject: String {
         if editorSelection.isEmpty { return "" }
@@ -91,7 +93,8 @@ struct MainDocumentView: View {
                         showsLineNumbers: true,
                         highlightsSelectedLine: true,
                         completionConfig: completionConfig,
-                        quickViewBox: quickViewBox
+                        quickViewBox: quickViewBox,
+                        openInBrowserBox: openInBrowserBox
                     )
                         .frame(maxWidth: .infinity, minHeight: 120, idealHeight: 320, maxHeight: .infinity)
                         .focused($focusedView, equals: .codeEditor)
@@ -122,6 +125,7 @@ struct MainDocumentView: View {
         .focusedSceneValue(\.mainConnection, document.mainConnection)
         .focusedSceneValue(\.selectedObjectName, selectedObject)
         .focusedSceneValue(\.editorQuickViewBox, quickViewBox)
+        .focusedSceneValue(\.editorOpenInBrowserBox, openInBrowserBox)
         .tnsImportPromptOnFirstLaunch()
         .onAppear {
             document.prepareOnAppear(store: injectedStore, keychain: keychain)
@@ -136,6 +140,9 @@ struct MainDocumentView: View {
                         persistenceController: controller,
                         defaultOwnerProvider: { [weak document] in
                             document?.mainConnection.mainConnDetails.username.uppercased() ?? ""
+                        },
+                        mainConnectionProvider: { [weak document] in
+                            document?.mainConnection
                         }
                     )
                 }

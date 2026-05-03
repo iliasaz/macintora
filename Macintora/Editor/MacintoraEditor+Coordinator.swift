@@ -56,6 +56,10 @@ extension MacintoraEditorRepresentable {
         /// detect identity changes (rebind on full document re-init).
         weak var quickViewBoxRef: EditorQuickViewBox?
 
+        /// Weak reference back to the SwiftUI-owned Open-in-Browser box so we
+        /// can detect identity changes and avoid double-binding.
+        weak var openInBrowserBoxRef: EditorOpenInBrowserBox?
+
         /// Last UTF-16 cursor location seen in the selection callback. Used to
         /// detect when the cursor moves outside the in-progress identifier so
         /// auto-trigger can be cancelled.
@@ -114,6 +118,43 @@ extension MacintoraEditorRepresentable {
             box.trigger = { [weak controller, weak textView] in
                 guard let controller, let textView else { return }
                 controller.triggerAtCursor(textView: textView)
+            }
+        }
+
+        /// Sets `quickViewController.openInBrowserHandler` to a closure that maps
+        /// the resolved reference to a `DBCacheInputValue` and routes through
+        /// `openOrFocusDBBrowser`. Clears the handler when `mainConnectionProvider`
+        /// is nil (read-only viewer has no connection).
+        @MainActor
+        func wireOpenInBrowserHandler(
+            openWindow: OpenWindowAction,
+            mainConnectionProvider: (@MainActor () -> MainConnection?)?
+        ) {
+            guard let controller = quickViewController else { return }
+            guard let mainConnectionProvider else {
+                controller.openInBrowserHandler = nil
+                return
+            }
+            controller.openInBrowserHandler = { [weak controller] reference in
+                guard controller != nil else { return }
+                guard let connection = mainConnectionProvider() else { return }
+                let value = DBBrowserInputMapper.inputValue(from: reference,
+                                                            mainConnection: connection)
+                openOrFocusDBBrowser(value: value, openWindow: openWindow)
+            }
+        }
+
+        /// Wires the SwiftUI-owned `EditorOpenInBrowserBox` to this editor's
+        /// Quick View controller. The box's `trigger` closure is the path
+        /// the ⌥⌘B menu command uses to open the browser at the cursor.
+        @MainActor
+        func bindOpenInBrowserBox(_ box: EditorOpenInBrowserBox?, textView: STTextView) {
+            openInBrowserBoxRef?.trigger = nil
+            openInBrowserBoxRef = box
+            guard let box, let controller = quickViewController else { return }
+            box.trigger = { [weak controller, weak textView] in
+                guard let controller, let textView else { return }
+                controller.openInBrowserAtCursor(textView: textView)
             }
         }
 
