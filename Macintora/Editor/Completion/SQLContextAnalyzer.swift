@@ -26,6 +26,15 @@ enum CompletionContext: Equatable, Sendable {
     /// alias → table columns, schema → objects (no package members in v1).
     case dottedMember(qualifier: String, prefix: String)
 
+    /// Cursor is inside the argument list of a procedure or function call —
+    /// surface the signature(s) of the call target. `packageName` is nil for
+    /// standalone procedures (phase 3); package members emit a non-nil owner.
+    /// `currentArgumentIndex` is 0-based at the position the user is filling
+    /// (counting top-level commas between the opening `(` and the cursor).
+    case procedureCall(packageName: String?,
+                       procedureName: String,
+                       currentArgumentIndex: Int)
+
     /// No structural cue; just a bare identifier prefix. Used as a soft
     /// fallback (the data source may still surface relevant tables/objects).
     case identifierPrefix(prefix: String)
@@ -58,6 +67,20 @@ struct SQLContextAnalyzer {
 
         if scan.insideStringOrComment {
             return .none
+        }
+
+        // Procedure-call signature takes priority over the dotted-member /
+        // identifier-prefix dispatch, but only when the user has not yet
+        // started typing an argument: an empty prefix means they just hit
+        // `(` or `,`, the moments where the signature is most useful. Once
+        // identifier characters appear, fall through to the regular
+        // column / identifier completion so the user can pick names.
+        if scan.prefix.isEmpty,
+           scan.qualifier == nil,
+           let call = enclosingProcedureCall(source: source, cursor: utf16Offset) {
+            return .procedureCall(packageName: call.packageName,
+                                  procedureName: call.procedureName,
+                                  currentArgumentIndex: call.argumentIndex)
         }
 
         if let qualifier = scan.qualifier {
@@ -140,6 +163,106 @@ struct SQLContextAnalyzer {
             // Continue backwards from before this word.
         }
         return ""
+    }
+
+    // MARK: - Procedure-call detection
+
+    /// Result of walking back from the cursor and identifying the call
+    /// target whose argument list the user is editing.
+    private struct EnclosingCall {
+        let packageName: String?
+        let procedureName: String
+        let argumentIndex: Int
+    }
+
+    /// Walks the source backward from `cursor` looking for an unmatched `(`
+    /// — the opening paren of the call we're nested in. Counts top-level
+    /// commas to derive the current argument index. Returns nil when the
+    /// cursor isn't inside a call's argument list, or the call target
+    /// can't be identified. A `;` aborts the walk: signatures don't span
+    /// statement boundaries.
+    ///
+    /// Limitations (acceptable for v1): pretends string literals don't
+    /// exist. The caller already short-circuits via `insideStringOrComment`
+    /// when the cursor is inside a string, so the typical paths are safe.
+    private func enclosingProcedureCall(source: String, cursor: Int) -> EnclosingCall? {
+        let ns = source as NSString
+        let safe = max(0, min(cursor, ns.length))
+        var depth = 0
+        var argIndex = 0
+        var i = safe
+        while i > 0 {
+            let c = ns.character(at: i - 1)
+            switch c {
+            case 0x29: // ')'
+                depth += 1
+            case 0x28: // '('
+                if depth == 0 {
+                    return readCallTarget(ns: ns,
+                                          openParenIndex: i - 1,
+                                          argumentIndex: argIndex)
+                }
+                depth -= 1
+            case 0x2C: // ','
+                if depth == 0 { argIndex += 1 }
+            case 0x3B: // ';'
+                return nil
+            default:
+                break
+            }
+            i -= 1
+        }
+        return nil
+    }
+
+    /// Reads the identifier (and optional `package.` qualifier) immediately
+    /// preceding the call's open paren. Returns nil when the position
+    /// before the paren isn't a recognisable identifier — e.g.
+    /// parenthesised expressions like `(a + b) * 2` where the paren has no
+    /// callable name in front of it.
+    private func readCallTarget(ns: NSString,
+                                openParenIndex: Int,
+                                argumentIndex: Int) -> EnclosingCall? {
+        var i = openParenIndex
+        // Skip whitespace between the name and the paren.
+        while i > 0 {
+            let c = ns.character(at: i - 1)
+            if c == 0x20 || c == 0x09 || c == 0x0A || c == 0x0D {
+                i -= 1
+            } else {
+                break
+            }
+        }
+        let procEnd = i
+        var procStart = procEnd
+        while procStart > 0 {
+            let c = ns.character(at: procStart - 1)
+            guard let scalar = Unicode.Scalar(c),
+                  SourceScanner.isIdentifierChar(scalar) else { break }
+            procStart -= 1
+        }
+        guard procStart < procEnd else { return nil }
+        let procName = ns.substring(with: NSRange(location: procStart,
+                                                  length: procEnd - procStart))
+
+        var packageName: String?
+        if procStart > 0, ns.character(at: procStart - 1) == 0x2E /* '.' */ {
+            let qualEnd = procStart - 1
+            var qualStart = qualEnd
+            while qualStart > 0 {
+                let c = ns.character(at: qualStart - 1)
+                guard let scalar = Unicode.Scalar(c),
+                      SourceScanner.isIdentifierChar(scalar) else { break }
+                qualStart -= 1
+            }
+            if qualStart < qualEnd {
+                packageName = ns.substring(with: NSRange(location: qualStart,
+                                                         length: qualEnd - qualStart))
+            }
+        }
+        return EnclosingCall(packageName: packageName,
+                             procedureName: procName,
+                             argumentIndex: argumentIndex)
     }
 
     // MARK: - Tree walk
