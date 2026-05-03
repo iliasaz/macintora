@@ -663,8 +663,18 @@ actor CompletionDataSource {
             procRequest.sortDescriptors = [NSSortDescriptor(key: "subprogramId", ascending: true)]
             procRequest.fetchLimit = 1
 
+            // Parent DBCacheObject carries the validity bit. For package
+            // members the parent is the package; for standalones it's the
+            // procedure/function row itself. Treat a missing parent as
+            // valid — same fallback as `packageDetail`.
+            let objectRequest = DBCacheObject.fetchRequest()
+            objectRequest.predicate = NSPredicate(format: "owner_ = %@ AND name_ = %@",
+                                                  upperOwner, upperPkgOrSelf)
+            objectRequest.fetchLimit = 1
+
             do {
                 guard let procRow = try ctx.fetch(procRequest).first else { return nil }
+                let objectRow = try ctx.fetch(objectRequest).first
                 let procRowOverload = procRow.overload_
 
                 let argRequest = DBCacheProcedureArgument.fetchRequest()
@@ -708,7 +718,7 @@ actor CompletionDataSource {
                     overload: procRowOverload,
                     returnType: returnType,
                     parameters: parameters,
-                    isValid: true)
+                    isValid: objectRow?.isValid ?? true)
             } catch {
                 self.logger.error("procedureDetail fetch failed: \(error.localizedDescription, privacy: .public)")
                 return nil

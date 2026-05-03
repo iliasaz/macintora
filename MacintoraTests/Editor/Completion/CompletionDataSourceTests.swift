@@ -337,6 +337,56 @@ final class CompletionDataSourceTests: XCTestCase {
         XCTAssertNil(proc)
     }
 
+    func test_procedureDetail_packageMember_propagatesParentInvalidity() async {
+        seedAccountsPackage()
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "HR", name: "ACCOUNTS_PKG", type: "PACKAGE")
+        // Last-seeded object wins under our addObject helper — flip isValid
+        // by editing the row we just created.
+        let request = DBCacheObject.fetchRequest()
+        request.predicate = NSPredicate(format: "owner_ = %@ AND name_ = %@",
+                                        "HR", "ACCOUNTS_PKG")
+        let row = try! ctx.fetch(request).first
+        row?.isValid = false
+        try! ctx.save()
+
+        let proc = await dataSource.procedureDetail(
+            owner: "HR", packageName: "ACCOUNTS_PKG",
+            procedureName: "DEBIT", overload: nil)
+        XCTAssertNotNil(proc)
+        XCTAssertFalse(proc?.isValid ?? true)
+    }
+
+    func test_procedureDetail_standalone_propagatesObjectInvalidity() async {
+        let ctx = persistence.container.viewContext
+        // Standalone PROCEDURE — parent object is keyed by the procedure name.
+        addProcedure(in: ctx, owner: "HR", pkg: "PURGE_OLD", name: "PURGE_OLD",
+                     subprogramId: 1, overload: nil, parentType: "PROCEDURE")
+        addObject(in: ctx, owner: "HR", name: "PURGE_OLD", type: "PROCEDURE")
+        let request = DBCacheObject.fetchRequest()
+        request.predicate = NSPredicate(format: "owner_ = %@ AND name_ = %@",
+                                        "HR", "PURGE_OLD")
+        let row = try! ctx.fetch(request).first
+        row?.isValid = false
+        try! ctx.save()
+
+        let proc = await dataSource.procedureDetail(
+            owner: "HR", packageName: nil,
+            procedureName: "PURGE_OLD", overload: nil)
+        XCTAssertNotNil(proc)
+        XCTAssertFalse(proc?.isValid ?? true)
+    }
+
+    func test_procedureDetail_defaultsToValidWhenParentObjectMissing() async {
+        // Existing fixture has no DBCacheObject for ACCOUNTS_PKG — the
+        // fallback should keep isValid = true so we don't false-positive.
+        seedAccountsPackage()
+        let proc = await dataSource.procedureDetail(
+            owner: "HR", packageName: "ACCOUNTS_PKG",
+            procedureName: "DEBIT", overload: nil)
+        XCTAssertTrue(proc?.isValid ?? false)
+    }
+
     // MARK: - Quick View: unknownObjectDetail
 
     func test_unknownObjectDetail_carriesObjectMetadata() async {
