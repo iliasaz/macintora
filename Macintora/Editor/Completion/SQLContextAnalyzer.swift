@@ -117,7 +117,7 @@ struct SQLContextAnalyzer {
                 i -= 1
             }
             // Capture the word.
-            var end = i
+            let end = i
             while i > 0 {
                 let ch = utf16[utf16.index(utf16.startIndex, offsetBy: i - 1)]
                 guard let scalar = Unicode.Scalar(ch), scalar.properties.isAlphabetic else { break }
@@ -199,7 +199,7 @@ struct SourceScanner {
         //    backward over identifier characters to grab the qualifier.
         var qualifier: String? = nil
         if prefixStart > 0, ns.character(at: prefixStart - 1) == 0x2E /* '.' */ {
-            var qualEnd = prefixStart - 1
+            let qualEnd = prefixStart - 1
             var qualStart = qualEnd
             while qualStart > 0 {
                 let c = ns.character(at: qualStart - 1)

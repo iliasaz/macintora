@@ -36,6 +36,10 @@ struct MainDocumentView: View {
     /// expensive CoreData load only happens at view construction. Reconnects
     /// keep the same store (per-TNS); switching TNS requires a new worksheet.
     @State private var completionConfig: EditorCompletionConfig?
+    /// Bridge that lets the SwiftUI menu command trigger Quick View on this
+    /// editor without holding a direct reference to the AppKit text view.
+    /// Populated by the editor's coordinator after Quick View is wired.
+    @State private var quickViewBox = EditorQuickViewBox()
 
     var selectedObject: String {
         if editorSelection.isEmpty { return "" }
@@ -86,7 +90,8 @@ struct MainDocumentView: View {
                         wordWrap: $wordWrapping,
                         showsLineNumbers: true,
                         highlightsSelectedLine: true,
-                        completionConfig: completionConfig
+                        completionConfig: completionConfig,
+                        quickViewBox: quickViewBox
                     )
                         .frame(maxWidth: .infinity, minHeight: 120, idealHeight: 320, maxHeight: .infinity)
                         .focused($focusedView, equals: .codeEditor)
@@ -116,6 +121,7 @@ struct MainDocumentView: View {
         )
         .focusedSceneValue(\.mainConnection, document.mainConnection)
         .focusedSceneValue(\.selectedObjectName, selectedObject)
+        .focusedSceneValue(\.editorQuickViewBox, quickViewBox)
         .tnsImportPromptOnFirstLaunch()
         .onAppear {
             document.prepareOnAppear(store: injectedStore, keychain: keychain)

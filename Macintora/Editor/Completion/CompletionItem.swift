@@ -105,6 +105,7 @@ final class MacintoraCompletionItem: NSObject, STCompletionItem, @unchecked Send
         MainActor.assumeIsolated { makeView() }
     }
 
+    @MainActor
     private func makeView() -> NSView {
         // SwiftUI inside `NSHostingView` handles row sizing/layout cleanly —
         // an earlier raw NSStackView attempt left the stack collapsed at

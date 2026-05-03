@@ -47,6 +47,15 @@ extension MacintoraEditorRepresentable {
         /// source/formatted) leave this nil for the editor's lifetime.
         var completionCoordinator: CompletionCoordinator?
 
+        /// Quick View orchestrator — owned alongside `completionCoordinator`
+        /// so both share the same `treeStore` and `dataSource`. nil for
+        /// read-only viewers that opt out of completion.
+        var quickViewController: QuickViewController?
+
+        /// Weak reference back to the SwiftUI-owned Quick View box so we can
+        /// detect identity changes (rebind on full document re-init).
+        weak var quickViewBoxRef: EditorQuickViewBox?
+
         /// Last UTF-16 cursor location seen in the selection callback. Used to
         /// detect when the cursor moves outside the in-progress identifier so
         /// auto-trigger can be cancelled.
@@ -59,20 +68,53 @@ extension MacintoraEditorRepresentable {
 
         /// Builds the `CompletionCoordinator` using the previously installed
         /// `treeStore`. Idempotent: subsequent calls are no-ops while a
-        /// coordinator is already in place.
+        /// coordinator is already in place. Returns the coordinator on first
+        /// build so the caller can install dependent plugins.
         @MainActor
-        func installCompletionCoordinator(with config: EditorCompletionConfig) {
-            guard completionCoordinator == nil else { return }
+        @discardableResult
+        func installCompletionCoordinator(with config: EditorCompletionConfig) -> CompletionCoordinator? {
+            if let completionCoordinator { return completionCoordinator }
             guard let treeStore else {
                 editorCompletionLog.error("installCompletionCoordinator called before treeStore was set")
-                return
+                return nil
             }
             let dataSource = CompletionDataSource(persistenceController: config.persistenceController)
-            completionCoordinator = CompletionCoordinator(
+            let coordinator = CompletionCoordinator(
                 treeStore: treeStore,
                 dataSource: dataSource,
                 defaultOwnerProvider: config.defaultOwnerProvider)
+            completionCoordinator = coordinator
             editorCompletionLog.info("installCompletionCoordinator: completion wired for editor")
+            return coordinator
+        }
+
+        /// Builds the Quick View controller once the `completionCoordinator`
+        /// has been installed. Re-uses its `treeStore` and `dataSource`.
+        @MainActor
+        func installQuickViewController(textView: STTextView) {
+            guard quickViewController == nil,
+                  let completionCoordinator else { return }
+            quickViewController = QuickViewController(
+                textView: textView,
+                treeStore: completionCoordinator.treeStore,
+                dataSource: completionCoordinator.dataSource,
+                defaultOwnerProvider: completionCoordinator.defaultOwnerProvider)
+        }
+
+        /// Wires the SwiftUI-owned `EditorQuickViewBox` to this editor's
+        /// Quick View controller. The box's `trigger` closure becomes the
+        /// path the menu command uses to invoke Quick View at the cursor.
+        @MainActor
+        func bindQuickViewBox(_ box: EditorQuickViewBox?, textView: STTextView) {
+            // Drop the previous box's trigger so a stale closure doesn't
+            // keep us alive after a re-mount.
+            quickViewBoxRef?.trigger = nil
+            quickViewBoxRef = box
+            guard let box, let controller = quickViewController else { return }
+            box.trigger = { [weak controller, weak textView] in
+                guard let controller, let textView else { return }
+                controller.triggerAtCursor(textView: textView)
+            }
         }
 
         @MainActor

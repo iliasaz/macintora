@@ -18,7 +18,12 @@ enum SQLParserHelper {
     /// than user input we can recover from.
     static func parse(_ source: String) -> SwiftTreeSitter.Tree {
         let parser = Parser()
-        let language = SwiftTreeSitter.Language(language: TreeSitterLanguage.sqlOrcl.parser)
+        // `SwiftTreeSitter.Language(language:)` consumes a C parser
+        // pointer (`UnsafePointer<TSLanguage>`) — SE-0458 wants the
+        // unsafe acknowledgement at the call site. The pointer comes
+        // from a static linked symbol in the bundled grammar; reading
+        // it is safe.
+        let language = unsafe SwiftTreeSitter.Language(language: TreeSitterLanguage.sqlOrcl.parser)
         try! parser.setLanguage(language)
         // `parse` returns the parser's internal `MutableTree`. The `Tree`
         // wrapper isn't directly accessible, but `copy()` produces one.

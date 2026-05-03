@@ -46,6 +46,7 @@ struct MacintoraEditor: View {
     let highlightsSelectedLine: Bool
     let accessibilityIdentifier: String
     let completionConfig: EditorCompletionConfig?
+    let quickViewBox: EditorQuickViewBox?
 
     @AppStorage("editorTheme") private var editorThemeRaw: String = EditorTheme.default.rawValue
 
@@ -59,7 +60,8 @@ struct MacintoraEditor: View {
         showsLineNumbers: Bool = true,
         highlightsSelectedLine: Bool = true,
         accessibilityIdentifier: String = "editor.main",
-        completionConfig: EditorCompletionConfig? = nil
+        completionConfig: EditorCompletionConfig? = nil,
+        quickViewBox: EditorQuickViewBox? = nil
     ) {
         self._text = text
         self._selection = selection
@@ -71,6 +73,7 @@ struct MacintoraEditor: View {
         self.highlightsSelectedLine = highlightsSelectedLine
         self.accessibilityIdentifier = accessibilityIdentifier
         self.completionConfig = completionConfig
+        self.quickViewBox = quickViewBox
     }
 
     private var editorTheme: EditorTheme {
@@ -89,7 +92,8 @@ struct MacintoraEditor: View {
             highlightsSelectedLine: highlightsSelectedLine,
             accessibilityIdentifier: accessibilityIdentifier,
             theme: editorTheme,
-            completionConfig: completionConfig
+            completionConfig: completionConfig,
+            quickViewBox: quickViewBox
         )
         .id(editorTheme)
     }
@@ -107,6 +111,7 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
     let accessibilityIdentifier: String
     let theme: EditorTheme
     let completionConfig: EditorCompletionConfig?
+    let quickViewBox: EditorQuickViewBox?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, selection: $selection)
@@ -128,6 +133,15 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
         textView.setAccessibilityIdentifier(accessibilityIdentifier)
         textView.setAccessibilityRole(.textArea)
 
+        // SQL editor: keep AppKit's spell/grammar/text-replacement machinery
+        // out of the right-click path. NSSpellChecker hops to a default-QoS
+        // thread for NLP and surfaces as a "Hang Risk: priority inversion"
+        // diagnostic when the user-interactive main thread waits on it
+        // (STTextView+Mouse.swift line 231 / super.rightMouseDown at 197).
+        // The two `isAutomatic*` flags otherwise lazily default to the system
+        // NSSpellChecker setting, which is normally on.
+        disableSpellCheckingMachinery(on: textView)
+
         // Always create the SQLTreeStore and install Neon with a tree-update
         // callback, even when the host hasn't (yet) opted in to autocompletion.
         // The CompletionCoordinator is built lazily in `updateNSView` once
@@ -140,6 +154,11 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
         }
         if let config = completionConfig {
             context.coordinator.installCompletionCoordinator(with: config)
+            context.coordinator.installQuickViewController(textView: textView)
+            context.coordinator.bindQuickViewBox(quickViewBox, textView: textView)
+            if let quickViewController = context.coordinator.quickViewController {
+                textView.addPlugin(STDBObjectQuickViewPlugin(controller: quickViewController))
+            }
         }
 
         // Install the Neon syntax-highlighting plugin before the first text
@@ -162,9 +181,20 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
         guard let textView = scrollView.documentView as? STTextView else { return }
 
         // Promote a late-binding completion config (e.g. MainDocumentView's
-        // `.onAppear` runs after `makeNSView`) to a live CompletionCoordinator.
+        // `.onAppear` runs after `makeNSView`) to a live CompletionCoordinator
+        // and Quick View plugin.
         if let config = completionConfig, context.coordinator.completionCoordinator == nil {
             context.coordinator.installCompletionCoordinator(with: config)
+            context.coordinator.installQuickViewController(textView: textView)
+            context.coordinator.bindQuickViewBox(quickViewBox, textView: textView)
+            if let quickViewController = context.coordinator.quickViewController {
+                textView.addPlugin(STDBObjectQuickViewPlugin(controller: quickViewController))
+            }
+        } else if context.coordinator.quickViewBoxRef !== quickViewBox {
+            // Box identity changed (rare but happens on full document
+            // re-init). Rebind so the menu command keeps working against the
+            // freshly-mounted editor.
+            context.coordinator.bindQuickViewBox(quickViewBox, textView: textView)
         }
 
         if textView.isEditable != isEditable { textView.isEditable = isEditable }
@@ -176,6 +206,10 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
         if textView.isHorizontallyResizable == wordWrap {
             textView.isHorizontallyResizable = !wordWrap
         }
+
+        // SwiftUI re-renders shouldn't be able to flip these back on. Cheap
+        // idempotent writes — see makeNSView for why this is gated off.
+        disableSpellCheckingMachinery(on: textView)
 
         // Only overwrite editor contents when the upstream text diverged from what
         // the editor already shows. Skipping the no-op write prevents the classic
@@ -199,5 +233,12 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
         if let textView = scrollView.documentView as? STTextView {
             textView.textDelegate = nil
         }
+    }
+
+    private func disableSpellCheckingMachinery(on textView: STTextView) {
+        textView.isContinuousSpellCheckingEnabled = false
+        textView.isGrammarCheckingEnabled = false
+        textView.isAutomaticSpellingCorrectionEnabled = false
+        textView.isAutomaticTextReplacementEnabled = false
     }
 }

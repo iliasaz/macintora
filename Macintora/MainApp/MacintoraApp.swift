@@ -57,6 +57,21 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
         UserDefaults.standard.register(defaults: [
             "NSShowAppCentricOpenPanelInsteadOfUntitledFile": false
         ])
+
+        // Validate the persisted window frame BEFORE any window opens. If
+        // the saved frame lives on a now-disconnected display (or otherwise
+        // doesn't meaningfully intersect any current screen) AppKit's
+        // `setFrameAutosaveName` replays the bad frame, the window appears
+        // off-screen, and SwiftUI's NavigationSplitView immediately drives
+        // `_NSSplitViewItemViewWrapper.updateConstraints` past AppKit's
+        // "more passes than views" safety net and crashes. The post-window
+        // sanity check in `WindowLayoutPersister.ensureFrameIsOnScreen`
+        // can't help — by the time `viewDidMoveToWindow` fires, the bad
+        // layout has already aborted the app.
+        WindowFrameSanitiser.sanitisePersistedFrames(
+            autosaveNames: ["Macintora.MainDocument"],
+            in: .standard,
+            screens: NSScreen.screens)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -231,9 +246,15 @@ struct MainDocumentMenuCommands: Commands {
 //    @FocusedValue(\.cacheConnectionDetails) var cacheConnectionDetails: ConnectionDetails?
     @FocusedValue(\.selectedObjectName) var selectedObjectName: String?
     @FocusedValue(\.mainConnection) var mainConnection
+    @FocusedValue(\.editorQuickViewBox) var quickViewBox
     @Environment(\.openWindow) var openWindow
 
     @Environment(\.openSettings) private var openSettings
+
+    @AppStorage(QuickViewHotkey.storageKey) private var quickViewHotkeyRaw: String = QuickViewHotkey.default.rawValue
+    private var quickViewHotkey: QuickViewHotkey {
+        QuickViewHotkey(rawValue: quickViewHotkeyRaw) ?? .default
+    }
 
     var body: some Commands {
         CommandMenu("Database") {
@@ -258,6 +279,18 @@ struct MainDocumentMenuCommands: Commands {
                 .disabled(mainConnection?.mainConnDetails == nil)
                 .presentedWindowStyle(TitleBarWindowStyle())
                 .keyboardShortcut("s", modifiers: [.command, .control, .shift])
+
+            Divider()
+
+            // Disabled gating reads the box's identity (nil = no focused
+            // editor capable of Quick View) rather than `box.trigger` —
+            // see the long comment in `EditorQuickViewBox` for the
+            // constraint-loop crash that observable trigger reads caused.
+            Button("Quick View") {
+                quickViewBox?.trigger?()
+            }
+            .disabled(quickViewBox == nil)
+            .quickViewShortcut(quickViewHotkey)
         }
     }
 }
