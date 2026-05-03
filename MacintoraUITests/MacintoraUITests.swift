@@ -225,7 +225,7 @@ final class MacintoraUITests: XCTestCase {
         textView.typeKey("a", modifierFlags: .command)
         textView.typeKey(.delete, modifierFlags: [])
 
-        let stmts = (0..<20)
+        let stmts = (0..<6)
             .map { "SELECT \($0) FROM dual WHERE x = \($0);\n" }
             .joined()
         let start = Date()

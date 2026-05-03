@@ -110,7 +110,7 @@ struct STDBObjectQuickViewPlugin: STPlugin {
                     // `unsafe` acknowledges SE-0458 — `NSEvent.window` and
                     // `NSResponder.window` are marked `@unsafe` in the
                     // AppKit overlay; we're already main-actor isolated.
-                    let eventWindow = unsafe event.window
+                    let eventWindow = event.window
                     guard Coordinator.shouldTrigger(eventWindow: eventWindow,
                                                     locationInWindow: event.locationInWindow,
                                                     textView: textView) else { return }

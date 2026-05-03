@@ -286,7 +286,6 @@ struct ObjectAtCursorResolver {
             return .unresolved
         }
         let start = token.start
-        let end = token.end
         let name = token.text
 
         // Look back for `qualifier.` immediately preceding the name. Skip a
