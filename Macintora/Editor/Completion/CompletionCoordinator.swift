@@ -117,11 +117,25 @@ final class CompletionCoordinator: @unchecked Sendable {
 
     /// Replaces the partial identifier under the cursor with the picked item's
     /// `insertText`. Falls back to plain insertion if no partial range exists.
+    /// Signature-row insertions take a separate path: the cursor sits right
+    /// after `(`, so there's no partial identifier to strip — just insert the
+    /// named-arg template and park the caret at the first value slot.
     func insert(_ item: any STCompletionItem, into textView: STTextView) {
         guard let item = item as? MacintoraCompletionItem else { return }
         let source = textView.text ?? ""
         let nsSource = source as NSString
         let cursor = textView.selectedRange().location
+
+        if let signature = item.signatureInsertion {
+            let insertLocation = max(0, min(cursor, nsSource.length))
+            isInsertingCompletion = true
+            textView.replaceCharacters(in: NSRange(location: insertLocation, length: 0),
+                                       with: signature.text)
+            textView.textSelection = NSRange(location: insertLocation + signature.caretUTF16Offset,
+                                             length: 0)
+            isInsertingCompletion = false
+            return
+        }
 
         // Compute the range of the in-progress identifier preceding the
         // cursor — same backward scan the analyzer uses.
@@ -306,7 +320,13 @@ final class CompletionCoordinator: @unchecked Sendable {
                                                      owner: pkg.owner,
                                                      search: prefix,
                                                      limit: fetchLimit)
-        return procedures.map { MacintoraCompletionItem.make(from: $0) }
+        // Collapse overloads — the row only shows the procedure name at this
+        // point, so duplicate "DEBIT" rows would just look like noise. The
+        // user picks a specific overload after typing `(`, where the
+        // signature popup surfaces every overload with its parameter list.
+        var seen = Set<String>()
+        let unique = procedures.filter { seen.insert($0.procedureName).inserted }
+        return unique.map { MacintoraCompletionItem.make(from: $0) }
     }
 
     /// Builds one popup row per overload of the call target, with the

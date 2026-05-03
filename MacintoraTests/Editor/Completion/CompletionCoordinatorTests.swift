@@ -49,10 +49,13 @@ final class CompletionCoordinatorTests: XCTestCase {
 
         let names = Set(items.map(\.displayText))
         XCTAssertTrue(names.contains("GET_BALANCE"))
-        XCTAssertTrue(names.contains("DEBIT"),
-                      "Both DEBIT overloads should be present (one row each)")
-        XCTAssertEqual(items.filter { $0.displayText == "DEBIT" }.count, 2,
-                       "Each overload renders as its own popup row")
+        XCTAssertTrue(names.contains("DEBIT"))
+        // Overloads collapse to a single row — the row shows only the
+        // procedure name, so duplicate "DEBIT" entries would be noise.
+        // Overload selection happens at the signature popup once the user
+        // types `(`.
+        XCTAssertEqual(items.filter { $0.displayText == "DEBIT" }.count, 1,
+                       "Overloaded procedures must dedup to one row")
     }
 
     func test_dottedMember_packageQualifier_filtersByPrefix() async {
@@ -147,11 +150,22 @@ final class CompletionCoordinatorTests: XCTestCase {
                                             atUTF16Offset: "BEGIN accounts_pkg.debit(".utf16.count)
 
         // Both DEBIT overloads must appear, formatted as call signatures.
+        // The procedure name is omitted from the row — the user has already
+        // typed it before the `(` that triggered the popup. Display is
+        // lowercase so the row reads like editor text.
         let display = items.map(\.displayText)
-        XCTAssertTrue(display.contains { $0 == "DEBIT(AMOUNT IN NUMBER)" })
-        XCTAssertTrue(display.contains { $0 == "DEBIT(AMOUNT IN NUMBER, CURRENCY IN VARCHAR2)" })
-        XCTAssertTrue(items.allSatisfy { $0.insertText.isEmpty },
-                      "Signature rows are informational — accepting one must be a no-op")
+        XCTAssertTrue(display.contains { $0 == "(amount in number)" })
+        XCTAssertTrue(display.contains { $0 == "(amount in number, currency in varchar2)" })
+
+        // Accepting a row inserts a true named-argument call template — the
+        // user is picking a specific overload, not just previewing it.
+        let oneArg = items.first { $0.displayText == "(amount in number)" }
+        XCTAssertEqual(oneArg?.insertText, "amount => )")
+        XCTAssertEqual(oneArg?.signatureInsertion?.caretUTF16Offset, "amount => ".utf16.count,
+                       "Caret must land on the first value slot")
+
+        let twoArg = items.first { $0.displayText == "(amount in number, currency in varchar2)" }
+        XCTAssertEqual(twoArg?.insertText, "amount => , currency => )")
     }
 
     func test_procedureCall_function_signatureCarriesReturnType() async {
@@ -159,7 +173,7 @@ final class CompletionCoordinatorTests: XCTestCase {
         let items = await coordinator.items(for: makeTextView("BEGIN accounts_pkg.get_balance("),
                                             atUTF16Offset: "BEGIN accounts_pkg.get_balance(".utf16.count)
 
-        let row = items.first { $0.displayText == "GET_BALANCE(ACCT_ID IN NUMBER)" }
+        let row = items.first { $0.displayText == "(acct_id in number)" }
         XCTAssertNotNil(row, "Function signature must surface")
         XCTAssertTrue(row?.secondaryText?.contains("→ NUMBER") ?? false,
                       "Function row must show the return type hint")
@@ -174,7 +188,7 @@ final class CompletionCoordinatorTests: XCTestCase {
                                             atUTF16Offset: source.utf16.count)
 
         let display = items.map(\.displayText)
-        XCTAssertEqual(display.first, "DEBIT(AMOUNT IN NUMBER, CURRENCY IN VARCHAR2)",
+        XCTAssertEqual(display.first, "(amount in number, currency in varchar2)",
                        "Two-arg overload must lead when the user is filling the second slot")
     }
 

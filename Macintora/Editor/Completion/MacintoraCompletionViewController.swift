@@ -42,6 +42,43 @@ final class MacintoraCompletionViewController: STCompletionViewController {
             parentCornerRadius: view.layer?.cornerRadius ?? 8,
             inset: tableView.enclosingScrollView?.contentInsets.top ?? 0)
     }
+
+    /// Procedure-signature rows wrap their parameter list across lines when
+    /// it doesn't fit the popup width. NSTableView's `usesAutomaticRowHeights`
+    /// doesn't size NSHostingView reliably here, so we measure the displayed
+    /// string directly. Other rows (tables/columns/etc.) always fit the
+    /// default 22pt and short-circuit.
+    func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
+        let base = tableView.rowHeight
+        guard row >= 0, row < items.count,
+              let item = items[row] as? MacintoraCompletionItem,
+              item.signatureInsertion != nil
+        else { return base }
+
+        let font = NSFont.monospacedSystemFont(
+            ofSize: NSFont.preferredFont(forTextStyle: .callout).pointSize,
+            weight: .regular)
+
+        // Mirror CompletionRowView's layout numerics. Reserve enough room
+        // for the icon (14 + 6 spacing), an HStack gap before the secondary
+        // text (6), the secondary label (~110pt covers "PROCEDURE #N → …"),
+        // and 12pt of horizontal padding plus 8pt of slop for intercell
+        // spacing. Anything below ~40pt would degenerate to one char per
+        // line, so clamp.
+        let columnWidth = tableView.tableColumns.first?.width ?? tableView.bounds.width
+        let chrome: CGFloat = 14 + 6 + 6 + 110 + 12 + 8
+        let maxTextWidth = max(40, columnWidth - chrome)
+
+        let rect = (item.displayText as NSString).boundingRect(
+            with: CGSize(width: maxTextWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font])
+
+        // 6pt of vertical padding matches `.padding(.vertical, 3)` in the
+        // SwiftUI row.
+        let textHeight = ceil(rect.height) + 6
+        return max(base, textHeight)
+    }
 }
 
 /// Mirrors STTextView's private `STTableRowView` but draws the selection
