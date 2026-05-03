@@ -407,6 +407,15 @@ from dual;\n\n
         if editorSelectionRange.lowerBound != editorSelectionRange.upperBound {
             ret = String(model.text[editorSelectionRange]).trimmingCharacters(in: ["\n"])
         } else {
+            let cursor = editorSelectionRange.lowerBound
+
+            // PL/SQL anonymous block detection (issue #14):
+            // If the caret is inside BEGIN…END; (optionally preceded by DECLARE),
+            // return the whole block. The `/` terminator is excluded by the detector.
+            if let blockSQL = PlsqlBlockDetector.plsqlAnonBlockSQL(at: cursor, in: model.text) {
+                return blockSQL
+            }
+
             var firstIndex = model.text.startIndex
             var lastIndex = model.text.endIndex
             var currentIndex = editorSelectionRange.lowerBound
