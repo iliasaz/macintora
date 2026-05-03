@@ -48,13 +48,12 @@ final class QuickViewPresenter: NSObject {
         let content = QuickViewContent(payload: payload,
                                        openInBrowserAction: openInBrowserAction)
 
-        // Reuse the existing popover when one is up — re-show is cheaper than
-        // tearing down and re-creating. Still re-anchors for the new rect.
-        if let popover, let hosting = hostingController, popover.isShown {
-            hosting.rootView = content
-            popover.contentSize = hosting.view.intrinsicContentSize
-            close()
-        }
+        // Always rebuild on present. Re-using the popover would mean keeping
+        // the previous anchor rect in sync with the new payload's range, and
+        // tearing down a transient `NSPopover` is cheap. Tear down any
+        // currently-visible popover so only one Quick View is on screen at a
+        // time.
+        if popover != nil { close() }
 
         let hosting = QuickViewHostingController(rootView: content)
         hosting.sizingOptions = [.preferredContentSize]
