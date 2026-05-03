@@ -105,7 +105,6 @@ final class QuickViewController {
         inflight?.cancel()
         let owner = defaultOwnerProvider()
         let dataSource = self.dataSource
-        let presenter = self.presenter
         let openInBrowserHandler = self.openInBrowserHandler
 
         inflight = Task { [weak self] in
@@ -127,7 +126,6 @@ final class QuickViewController {
             self.presenter.present(payload: payload,
                                    anchor: upgraded,
                                    openInBrowserAction: action)
-            _ = presenter // keep ARC honest about capture
         }
     }
 

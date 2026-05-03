@@ -162,30 +162,6 @@ struct STDBObjectQuickViewPlugin: STPlugin {
             removeMonitor()
         }
 
-        /// Hit-tests `point` (in `textView` coordinates) against the layout
-        /// manager and returns the UTF-16 offset of the resulting text
-        /// location. Returns nil for clicks outside any text run.
-        @MainActor
-        static func utf16Offset(at point: CGPoint, in textView: STTextView) -> Int? {
-            let layoutManager = textView.textLayoutManager
-            guard let textContentManager = layoutManager.textContentManager else { return nil }
-            let docStart = layoutManager.documentRange.location
-            // `lineFragmentRange(for:inContainerAt:)` returns the visible line
-            // range; its `textSelectionNavigation.textSelections(...)` lookup
-            // produces the click-resolved text location.
-            guard let fragmentRange = layoutManager.lineFragmentRange(for: point,
-                                                                       inContainerAt: docStart),
-                  let location = layoutManager.textSelectionNavigation
-                    .textSelections(interactingAt: point,
-                                    inContainerAt: fragmentRange.location,
-                                    anchors: [],
-                                    modifiers: [],
-                                    selecting: false,
-                                    bounds: layoutManager.usageBoundsForTextContainer)
-                    .first?.textRanges.first?.location
-            else { return nil }
-            return textContentManager.offset(from: docStart, to: location)
-        }
     }
 
     func tearDown() {
@@ -198,7 +174,7 @@ struct STDBObjectQuickViewPlugin: STPlugin {
 /// Tiny target object owning the closure invoked when the user picks the
 /// "Quick View" context menu item.
 @MainActor
-final class QuickViewMenuTarget: NSObject {
+private final class QuickViewMenuTarget: NSObject {
     private let action: () -> Void
     init(action: @escaping () -> Void) {
         self.action = action

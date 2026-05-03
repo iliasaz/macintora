@@ -7,8 +7,9 @@
 //  range) or at a click point. Idempotent: presenting a new payload while a
 //  popover is already showing closes the previous one and re-anchors.
 //
-//  Anchor-rect math is in `QuickViewAnchor.swift` rather than the presenter
-//  so the conversion can be unit-tested independently.
+//  Anchor-rect math lives in the `QuickViewAnchor` enum below, kept in this
+//  same file so the rect-resolution logic stays close to the call site that
+//  consumes it. Both types are small enough to share a file.
 //
 
 import AppKit
