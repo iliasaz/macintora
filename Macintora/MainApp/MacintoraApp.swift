@@ -57,6 +57,21 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
         UserDefaults.standard.register(defaults: [
             "NSShowAppCentricOpenPanelInsteadOfUntitledFile": false
         ])
+
+        // Validate the persisted window frame BEFORE any window opens. If
+        // the saved frame lives on a now-disconnected display (or otherwise
+        // doesn't meaningfully intersect any current screen) AppKit's
+        // `setFrameAutosaveName` replays the bad frame, the window appears
+        // off-screen, and SwiftUI's NavigationSplitView immediately drives
+        // `_NSSplitViewItemViewWrapper.updateConstraints` past AppKit's
+        // "more passes than views" safety net and crashes. The post-window
+        // sanity check in `WindowLayoutPersister.ensureFrameIsOnScreen`
+        // can't help — by the time `viewDidMoveToWindow` fires, the bad
+        // layout has already aborted the app.
+        WindowFrameSanitiser.sanitisePersistedFrames(
+            autosaveNames: ["Macintora.MainDocument"],
+            in: .standard,
+            screens: NSScreen.screens)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {

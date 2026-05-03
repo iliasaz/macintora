@@ -19,6 +19,8 @@
 		49DB100900000009 /* QuickViewHotkey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000900000009 /* QuickViewHotkey.swift */; };
 		49DB100A0000000A /* STDBObjectQuickViewPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000A0000000A /* STDBObjectQuickViewPlugin.swift */; };
 		49DB100B0000000B /* EditorQuickViewBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000B0000000B /* EditorQuickViewBox.swift */; };
+		49DB102000000020 /* WindowFrameSanitiser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002000000020 /* WindowFrameSanitiser.swift */; };
+		49DB302100000021 /* WindowFrameSanitiserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002100000021 /* WindowFrameSanitiserTests.swift */; };
 		49DB300C0000000C /* ObjectAtCursorResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000C0000000C /* ObjectAtCursorResolverTests.swift */; };
 		49DB301000000010 /* QuickViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001000000010 /* QuickViewControllerTests.swift */; };
 		49DB301100000011 /* QuickViewHotkeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001100000011 /* QuickViewHotkeyTests.swift */; };
@@ -315,6 +317,8 @@
 		49DB000900000009 /* QuickViewHotkey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewHotkey.swift; sourceTree = "<group>"; };
 		49DB000A0000000A /* STDBObjectQuickViewPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STDBObjectQuickViewPlugin.swift; sourceTree = "<group>"; };
 		49DB000B0000000B /* EditorQuickViewBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorQuickViewBox.swift; sourceTree = "<group>"; };
+		49DB002000000020 /* WindowFrameSanitiser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFrameSanitiser.swift; sourceTree = "<group>"; };
+		49DB002100000021 /* WindowFrameSanitiserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFrameSanitiserTests.swift; sourceTree = "<group>"; };
 		49DB000C0000000C /* ObjectAtCursorResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectAtCursorResolverTests.swift; sourceTree = "<group>"; };
 		49DB001000000010 /* QuickViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewControllerTests.swift; sourceTree = "<group>"; };
 		49DB001100000011 /* QuickViewHotkeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewHotkeyTests.swift; sourceTree = "<group>"; };
@@ -493,6 +497,7 @@
 				AA0000410000000000000000 /* ConnectionDetailsCodableTests.swift */,
 				AA0000C10000000000000000 /* LegacyDocumentMigrationTests.swift */,
 				AA0000F10000000000000000 /* FullRefreshReproTests.swift */,
+				49DB002100000021 /* WindowFrameSanitiserTests.swift */,
 				49D0ECF22F9C1E070047540A /* Editor */,
 				49D0ED042F9C34410047540A /* Results */,
 				490E96B42FA4216800DDF37F /* Script */,
@@ -509,6 +514,7 @@
 				4982890428B7EF5E00A28B04 /* ConnectionDetails.swift */,
 				49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */,
 				49D0ED312F9C50000047540A /* WindowLayoutPersister.swift */,
+				49DB002000000020 /* WindowFrameSanitiser.swift */,
 				AA0001010000000000000000 /* SessionRestorer.swift */,
 				4982889628B1C41700A28B04 /* Formatter.swift */,
 				49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */,
@@ -952,6 +958,7 @@
 				490E96E42FA42AC500DDF37F /* ScriptRunnerDirectivesLiveTests.swift in Sources */,
 				AA00003E0000000000000000 /* ConnectionStoreTests.swift in Sources */,
 				AA0001020000000000000000 /* SessionRestorerTests.swift in Sources */,
+				49DB302100000021 /* WindowFrameSanitiserTests.swift in Sources */,
 				490E96E02FA429E100DDF37F /* SqlPlusInterpreterTests.swift in Sources */,
 				AA0000400000000000000000 /* ConnectionDetailsCodableTests.swift in Sources */,
 				AA0000C00000000000000000 /* LegacyDocumentMigrationTests.swift in Sources */,
@@ -1093,6 +1100,7 @@
 				49DB100900000009 /* QuickViewHotkey.swift in Sources */,
 				49DB100A0000000A /* STDBObjectQuickViewPlugin.swift in Sources */,
 				49DB100B0000000B /* EditorQuickViewBox.swift in Sources */,
+				49DB102000000020 /* WindowFrameSanitiser.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
