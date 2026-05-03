@@ -207,6 +207,46 @@ final class CompletionDataSourceTests: XCTestCase {
         XCTAssertEqual(resolved?.owner, "BILLING")
     }
 
+    // MARK: - Completion: resolveStandaloneProcedure
+
+    func test_resolveStandaloneProcedure_findsProcedureAndFunction() async {
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "HR", name: "PURGE_OLD", type: "PROCEDURE")
+        addObject(in: ctx, owner: "HR", name: "NEXT_SERIAL", type: "FUNCTION")
+        try! ctx.save()
+
+        let proc = await dataSource.resolveStandaloneProcedure(
+            name: "PURGE_OLD", preferredOwner: "HR")
+        XCTAssertEqual(proc?.objectType, "PROCEDURE")
+
+        let fn = await dataSource.resolveStandaloneProcedure(
+            name: "NEXT_SERIAL", preferredOwner: "HR")
+        XCTAssertEqual(fn?.objectType, "FUNCTION")
+    }
+
+    func test_resolveStandaloneProcedure_ignoresPackagesAndTables() async {
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "HR", name: "PURGE_OLD", type: "PACKAGE")
+        addObject(in: ctx, owner: "HR", name: "PURGE_OLD", type: "TABLE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolveStandaloneProcedure(
+            name: "PURGE_OLD", preferredOwner: "HR")
+        XCTAssertNil(resolved,
+                     "Only PROCEDURE / FUNCTION rows must satisfy a standalone-call lookup")
+    }
+
+    func test_resolveStandaloneProcedure_prefersConnectedSchema() async {
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "BILLING", name: "PURGE_OLD", type: "PROCEDURE")
+        addObject(in: ctx, owner: "HR", name: "PURGE_OLD", type: "PROCEDURE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolveStandaloneProcedure(
+            name: "PURGE_OLD", preferredOwner: "HR")
+        XCTAssertEqual(resolved?.owner, "HR")
+    }
+
     // MARK: - Quick View: resolveSchemaObject
 
     func test_resolveSchemaObject_explicitOwner_findsExactRow() async {

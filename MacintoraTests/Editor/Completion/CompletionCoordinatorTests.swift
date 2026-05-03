@@ -150,21 +150,22 @@ final class CompletionCoordinatorTests: XCTestCase {
                                             atUTF16Offset: "BEGIN accounts_pkg.debit(".utf16.count)
 
         // Both DEBIT overloads must appear, formatted as call signatures.
-        // The procedure name is omitted from the row — the user has already
-        // typed it before the `(` that triggered the popup. Display is
-        // lowercase so the row reads like editor text.
+        // The procedure name is omitted (the user just typed it before the
+        // `(`), display is lowercased to read like editor text, and the
+        // active argument (the first slot, since the cursor is right after
+        // `(`) is wrapped in `›‹` markers.
         let display = items.map(\.displayText)
-        XCTAssertTrue(display.contains { $0 == "(amount in number)" })
-        XCTAssertTrue(display.contains { $0 == "(amount in number, currency in varchar2)" })
+        XCTAssertTrue(display.contains { $0 == "(›amount in number‹)" })
+        XCTAssertTrue(display.contains { $0 == "(›amount in number‹, currency in varchar2)" })
 
         // Accepting a row inserts a true named-argument call template — the
         // user is picking a specific overload, not just previewing it.
-        let oneArg = items.first { $0.displayText == "(amount in number)" }
+        let oneArg = items.first { $0.displayText == "(›amount in number‹)" }
         XCTAssertEqual(oneArg?.insertText, "amount => )")
         XCTAssertEqual(oneArg?.signatureInsertion?.caretUTF16Offset, "amount => ".utf16.count,
                        "Caret must land on the first value slot")
 
-        let twoArg = items.first { $0.displayText == "(amount in number, currency in varchar2)" }
+        let twoArg = items.first { $0.displayText == "(›amount in number‹, currency in varchar2)" }
         XCTAssertEqual(twoArg?.insertText, "amount => , currency => )")
     }
 
@@ -173,7 +174,7 @@ final class CompletionCoordinatorTests: XCTestCase {
         let items = await coordinator.items(for: makeTextView("BEGIN accounts_pkg.get_balance("),
                                             atUTF16Offset: "BEGIN accounts_pkg.get_balance(".utf16.count)
 
-        let row = items.first { $0.displayText == "(acct_id in number)" }
+        let row = items.first { $0.displayText == "(›acct_id in number‹)" }
         XCTAssertNotNil(row, "Function signature must surface")
         XCTAssertTrue(row?.secondaryText?.contains("→ NUMBER") ?? false,
                       "Function row must show the return type hint")
@@ -188,8 +189,9 @@ final class CompletionCoordinatorTests: XCTestCase {
                                             atUTF16Offset: source.utf16.count)
 
         let display = items.map(\.displayText)
-        XCTAssertEqual(display.first, "(amount in number, currency in varchar2)",
-                       "Two-arg overload must lead when the user is filling the second slot")
+        XCTAssertEqual(display.first,
+                       "(amount in number, ›currency in varchar2‹)",
+                       "Two-arg overload must lead when filling the second slot, with that slot highlighted")
     }
 
     func test_procedureCall_unknownPackage_returnsEmpty() async {
@@ -201,15 +203,69 @@ final class CompletionCoordinatorTests: XCTestCase {
         XCTAssertTrue(items.isEmpty)
     }
 
-    func test_procedureCall_standalone_skippedInPhase2() async {
-        // No qualifier → analyzer routes to .procedureCall(packageName: nil)
-        // and the coordinator currently no-ops; phase 3 will surface the
-        // standalone signature.
+    func test_procedureCall_standalone_unknownNameReturnsEmpty() async {
+        // Standalone name not in the cache → no signature surfaces.
         seedAccountsPackageWithObject(owner: "HR")
         let source = "BEGIN debit("
         let items = await coordinator.items(for: makeTextView(source),
                                             atUTF16Offset: source.utf16.count)
-        XCTAssertTrue(items.isEmpty)
+        XCTAssertTrue(items.isEmpty,
+                      "DEBIT exists only as a package member; the standalone lookup must miss")
+    }
+
+    // MARK: - Phase 3: standalone procedure signatures
+
+    func test_procedureCall_standalone_surfacesSignature() async {
+        seedStandalonePurgeOld(owner: "HR")
+        let source = "BEGIN purge_old("
+        let items = await coordinator.items(for: makeTextView(source),
+                                            atUTF16Offset: source.utf16.count)
+
+        XCTAssertEqual(items.map(\.displayText),
+                       ["(›cutoff in date‹)"],
+                       "Standalone procedure signature must surface with active arg highlighted")
+    }
+
+    func test_procedureCall_standalone_function_carriesReturnType() async {
+        seedStandaloneNextSerial(owner: "HR")
+        let source = "BEGIN x := next_serial("
+        let items = await coordinator.items(for: makeTextView(source),
+                                            atUTF16Offset: source.utf16.count)
+
+        let row = items.first
+        XCTAssertEqual(row?.displayText, "(›seq in varchar2‹)")
+        XCTAssertTrue(row?.secondaryText?.contains("→ NUMBER") ?? false,
+                      "Standalone function row must include the return type")
+    }
+
+    func test_procedureCall_standalone_prefersConnectedSchema() async {
+        // Same standalone name in two schemas — preferred owner wins.
+        seedStandalonePurgeOld(owner: "BILLING")
+        seedStandalonePurgeOld(owner: "HR")
+        let source = "BEGIN purge_old("
+        let items = await coordinator.items(for: makeTextView(source),
+                                            atUTF16Offset: source.utf16.count)
+        // Both copies are seeded identically — but the resolver must pick
+        // HR (the connected schema) and return that owner's overloads only.
+        XCTAssertEqual(items.count, 1,
+                       "Resolver must scope to the preferred owner, not unify across schemas")
+    }
+
+    // MARK: - Phase 3: current-argument highlighting
+
+    func test_procedureCall_outOfRangeArgumentIndex_doesNotHighlight() async {
+        // User has typed past the last declared argument — the popup
+        // should still render the row (without an active highlight) so
+        // the user notices they've over-shot rather than seeing nothing.
+        seedAccountsPackageWithObject(owner: "HR")
+        let source = "BEGIN accounts_pkg.get_balance(100, 200, "
+        let items = await coordinator.items(for: makeTextView(source),
+                                            atUTF16Offset: source.utf16.count)
+        // GET_BALANCE has only one parameter; the cursor is on argument
+        // index 2, which is out of range — no `›‹` markers should appear.
+        let display = items.map(\.displayText)
+        XCTAssertTrue(display.contains { !$0.contains("›") && !$0.contains("‹") },
+                      "Out-of-range index must not wrap any argument")
     }
 
     // MARK: - Seed helpers
@@ -220,6 +276,47 @@ final class CompletionCoordinatorTests: XCTestCase {
         return view
     }
 
+    /// Standalone PROCEDURE `<owner>.PURGE_OLD(CUTOFF IN DATE)`.
+    /// Seeds both the parent `DBCacheObject` (so resolveStandaloneProcedure
+    /// finds it) and the matching `DBCacheProcedure` / `DBCacheProcedureArgument`
+    /// rows that the standalone lookup keys on (`objectName_ ==
+    /// procedureName_` for top-level callables).
+    private func seedStandalonePurgeOld(owner: String) {
+        let ctx = persistence.container.viewContext
+        let object = DBCacheObject(context: ctx)
+        object.owner_ = owner
+        object.name_ = "PURGE_OLD"
+        object.type_ = "PROCEDURE"
+
+        addProcedure(in: ctx, owner: owner, pkg: "PURGE_OLD",
+                     name: "PURGE_OLD", subprogramId: 1, overload: nil,
+                     parentType: "PROCEDURE")
+        addArgument(in: ctx, owner: owner, pkg: "PURGE_OLD", proc: "PURGE_OLD",
+                    overload: nil, position: 1, sequence: 1, name: "CUTOFF",
+                    dataType: "DATE", inOut: "IN")
+        try! ctx.save()
+    }
+
+    /// Standalone FUNCTION `<owner>.NEXT_SERIAL(SEQ IN VARCHAR2) RETURN NUMBER`.
+    /// The function classification comes from the `position == 0` return-row.
+    private func seedStandaloneNextSerial(owner: String) {
+        let ctx = persistence.container.viewContext
+        let object = DBCacheObject(context: ctx)
+        object.owner_ = owner
+        object.name_ = "NEXT_SERIAL"
+        object.type_ = "FUNCTION"
+
+        addProcedure(in: ctx, owner: owner, pkg: "NEXT_SERIAL",
+                     name: "NEXT_SERIAL", subprogramId: 1, overload: nil,
+                     parentType: "FUNCTION")
+        addArgument(in: ctx, owner: owner, pkg: "NEXT_SERIAL", proc: "NEXT_SERIAL",
+                    overload: nil, position: 0, sequence: 1, name: nil,
+                    dataType: "NUMBER", inOut: "OUT")
+        addArgument(in: ctx, owner: owner, pkg: "NEXT_SERIAL", proc: "NEXT_SERIAL",
+                    overload: nil, position: 1, sequence: 2, name: "SEQ",
+                    dataType: "VARCHAR2", inOut: "IN")
+        try! ctx.save()
+    }
 
     /// Adds the same `DBCacheProcedure` / `DBCacheProcedureArgument` rows as
     /// `CompletionDataSourceTests.seedAccountsPackage`, plus a parent

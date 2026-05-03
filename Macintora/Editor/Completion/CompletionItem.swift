@@ -253,20 +253,31 @@ extension MacintoraCompletionItem {
     }
 
     /// Builds a row that shows the call signature of a single overload —
-    /// `(in_csp_id in number, val in varchar2 default null)`. The procedure
-    /// name is omitted because the user has already typed it before the `(`
-    /// that triggered the popup; repeating it just steals horizontal space.
-    /// Lowercase, monospaced, and allowed to wrap so the full parameter
-    /// list stays visible in the 450pt popup.
+    /// `(in_csp_id in number, ›val in varchar2‹ default null)`. The
+    /// procedure name is omitted because the user has already typed it
+    /// before the `(` that triggered the popup; repeating it just steals
+    /// horizontal space. Lowercase, monospaced, and allowed to wrap so
+    /// the full parameter list stays visible in the 450pt popup.
+    ///
+    /// The argument at `activeArgumentIndex` is wrapped in `›‹` markers
+    /// so the user can see which slot they're filling. Out-of-range
+    /// indexes (e.g. the user has typed past the last declared arg)
+    /// leave the row unmarked rather than highlighting nothing.
     ///
     /// Accepting the row inserts a true named-argument call template
     /// (`in_csp_id => , val => , fmt => )`) and parks the caret at the
     /// first value slot. Rows with zero arguments produce an empty
     /// insertion — the `(` already typed is a complete call.
     static func make(signatureFrom p: ProcedureSuggestion,
-                     arguments: [ProcedureArgumentSuggestion]) -> MacintoraCompletionItem {
+                     arguments: [ProcedureArgumentSuggestion],
+                     activeArgumentIndex: Int = -1) -> MacintoraCompletionItem {
         let kind: Kind = p.kind == "FUNCTION" ? .function : .procedure
-        let formattedArgs = arguments.map(formatArgument).joined(separator: ", ")
+        let formattedArgs = arguments.enumerated().map { offset, arg -> String in
+            let rendered = formatArgument(arg)
+            return offset == activeArgumentIndex ? "›\(rendered)‹" : rendered
+        }.joined(separator: ", ")
+        // `lowercased()` is locale-independent and leaves non-letter code
+        // points (the `›‹` markers, U+203A / U+2039) untouched.
         let display = "(\(formattedArgs))".lowercased()
         var secondary = p.kind
         if let overload = p.overload, !overload.isEmpty {

@@ -323,6 +323,42 @@ actor CompletionDataSource {
         }
     }
 
+    /// Resolves a top-level procedure or function name (no package qualifier)
+    /// to its owning schema. Mirrors `resolvePackage(...)` but matches
+    /// `DBCacheObject.type_ IN ("PROCEDURE", "FUNCTION")`. Used by the
+    /// completion coordinator to surface signatures for `proc(` calls
+    /// without a package prefix.
+    func resolveStandaloneProcedure(name: String,
+                                    preferredOwner: String) async -> ResolvedSchemaObject? {
+        await fetch { ctx -> ResolvedSchemaObject? in
+            let upperName = name.uppercased()
+            let upperPreferred = preferredOwner.uppercased()
+            let request = DBCacheObject.fetchRequest()
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "name_ = %@", upperName),
+                NSPredicate(format: "type_ IN %@", ["PROCEDURE", "FUNCTION"])
+            ])
+            request.sortDescriptors = [
+                NSSortDescriptor(key: "owner_", ascending: true),
+                NSSortDescriptor(key: "name_", ascending: true)
+            ]
+            do {
+                let rows = try ctx.fetch(request)
+                guard !rows.isEmpty else { return nil }
+                let chosen = rows.first { ($0.owner_ ?? "") == upperPreferred } ?? rows[0]
+                return ResolvedSchemaObject(
+                    owner: chosen.owner_ ?? "",
+                    name: chosen.name_ ?? "",
+                    objectType: chosen.type_ ?? "PROCEDURE",
+                    isValid: chosen.isValid,
+                    lastDDLDate: chosen.lastDDLDate)
+            } catch {
+                self.logger.error("resolveStandaloneProcedure fetch failed: \(error.localizedDescription, privacy: .public)")
+                return nil
+            }
+        }
+    }
+
     /// Arguments of a single procedure / function invocation. Excludes the
     /// `position == 0` return-value row (callers consume return type via
     /// `procedures(...).returnType`) and `dataLevel > 0` composite expansions.
