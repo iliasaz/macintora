@@ -9,10 +9,26 @@ Macintora is a SQL IDE tool for Oracle databases. It is written for Developers b
 - Connections manager where a user may choose a database connection, connect and disconnect from the database.
 
 ## Dependencies
-- STTextView
-- STTextView-Plugin-Neon
-- STTextKitPlus
-The dependencies are Swift SPM repositories that live next to the project directory. For example, STTextView repository is located in /Users/ilia/Developer/STTextView
+
+The following dependencies are **forked or owned by `iliasaz`** and consumed by Macintora as Swift SPM remote source-control packages. Their `git push origin macintora` is what ships changes back to the app — Macintora's `Package.resolved` pins each to a specific commit on the `macintora` branch, so a local SHA bump is required after pushing fixes upstream.
+
+| Repo | iliasaz role | Local checkout | Branch | Notes |
+|---|---|---|---|---|
+| [iliasaz/oracle-nio](https://github.com/iliasaz/oracle-nio) | fork of `lovetodream/oracle-nio` | `/Users/ilia/Developer/oracle-nio` | `macintora` | Pure-Swift Oracle TTC/TNS driver. |
+| [iliasaz/STTextView](https://github.com/iliasaz/STTextView) | fork of `krzyzanowskim/STTextView` | `/Users/ilia/Developer/STTextView` | `macintora` | TextKit 2 source editor. |
+| [iliasaz/STTextView-Plugin-Neon](https://github.com/iliasaz/STTextView-Plugin-Neon) | fork of `krzyzanowskim/STTextView-Plugin-Neon` | `/Users/ilia/Developer/STTextView-Plugin-Neon` | `macintora` | Tree-sitter highlighting plugin. Vendors `tree-sitter-sql-orcl` as the `TreeSitterSQLOrcl` SPM target. |
+| [iliasaz/STTextKitPlus](https://github.com/iliasaz/STTextKitPlus) | fork of `krzyzanowskim/STTextKitPlus` | `/Users/ilia/Developer/STTextKitPlus` | `macintora` | TextKit 2 range / location helpers. |
+| [iliasaz/tree-sitter-sql-orcl](https://github.com/iliasaz/tree-sitter-sql-orcl) | owned (no upstream) | `/Users/ilia/Developer/tree-sitter-sql-orcl` | `main` | Oracle SQL & PL/SQL grammar. Powers syntax highlighting, code completion, and the Quick View object resolver. |
+
+### Editing a fork
+
+1. Edit files in the local checkout (`/Users/ilia/Developer/<repo>`).
+2. `git checkout macintora` if not already on it.
+3. Commit and push: `git push origin macintora`.
+4. Update Macintora's pinned revision in `Macintora.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` so the next build picks up the new commit.
+5. Build Macintora and verify.
+
+Other dependencies (Apple `swift-*`, `vapor/postgres-nio`, `ChimeHQ/SwiftTreeSitter`, etc.) are remote and not forked — they're listed in `Package.resolved`.
 
 ## Role
 
@@ -48,6 +64,7 @@ This project uses Swift 6.2 approachable concurrency, which means:
 - Use `@concurrent` to explicitly run async functions on the concurrent thread pool when parallelism is needed.
 - Do not manually mark classes with `@MainActor` unless they need to be isolated from default main actor context.
 - Rely on the compiler's automatic `@Sendable` inference from captures.
+- Always review swift compiler concurrency and memory safety warnings and do best effort attempt to resolve them. Use swift-concurrency skill.
 
 ### General Swift guidelines
 

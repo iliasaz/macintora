@@ -83,27 +83,40 @@ struct STDBObjectQuickViewPlugin: STPlugin {
                                     controller: QuickViewController) {
             // Only one monitor per coordinator instance; tearDown removes it.
             removeMonitor()
-            // The NSEvent local-monitor closure is declared nonisolated by
-            // AppKit but fires on the main thread. The strategy:
+            // ⌘+Click hit-testing strategy:
             //
-            //   1. Pre-filter on `event.modifierFlags` (Sendable) for ⌘.
-            //   2. Return `event` so AppKit dispatches the click normally —
-            //      the cursor moves to the click point through STTextView's
-            //      own hit-testing path, which already knows about content-
-            //      view coordinate offsets, line gutters, etc.
-            //   3. Schedule a main-actor Task to fire Quick View at the
-            //      *new* cursor location, which by definition is the click
-            //      target. This avoids re-implementing STTextView's point-
-            //      to-offset conversion (an earlier attempt got the
-            //      coordinate space wrong because `textView.convert(_:from:)`
-            //      is bounds-relative, while `lineFragmentRange(for:inContainerAt:)`
-            //      is content-view-relative).
+            //   * Reading the cursor *after* the click doesn't work —
+            //     NSTextView/STTextView don't move the cursor on ⌘+click,
+            //     so `selectedRange()` reports the *old* location.
+            //   * Doing my own point-to-offset conversion via
+            //     `textView.convert(_:from:)` and `lineFragmentRange(for:)`
+            //     gives the wrong coordinate space (textView bounds vs.
+            //     content-view interior — see commit history).
+            //
+            // Use STTextView's public `characterIndex(for screenPoint:)`,
+            // which is the official NSTextInputClient hit-tester. It
+            // converts screen → window → contentView for us, runs through
+            // `textLayoutManager.caretLocation(interactingAt:)`, and
+            // returns the document-relative UTF-16 offset (or NSNotFound).
+            //
+            // Body wrapped in `MainActor.assumeIsolated` because AppKit's
+            // Swift overlay marks `NSEvent.window` and the responder
+            // hierarchy `@MainActor`. Local monitors fire on the main
+            // thread, so the assumption is the documented contract.
             monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak textView, weak controller] event in
                 guard event.modifierFlags.contains(.command) else { return event }
-                guard let textView, let controller else { return event }
-
-                Task { @MainActor in
-                    controller.triggerAtCursor(textView: textView)
+                MainActor.assumeIsolated {
+                    guard let textView, let controller else { return }
+                    // `unsafe` acknowledges SE-0458 — `NSEvent.window` and
+                    // `NSResponder.window` are marked `@unsafe` in the
+                    // AppKit overlay; we're already main-actor isolated.
+                    guard let window = unsafe textView.window else { return }
+                    let eventWindow = unsafe event.window
+                    guard eventWindow === window else { return }
+                    let screenPoint = window.convertPoint(toScreen: event.locationInWindow)
+                    let offset = textView.characterIndex(for: screenPoint)
+                    guard offset != NSNotFound else { return }
+                    controller.triggerAtTextLocation(textView: textView, utf16Offset: offset)
                 }
                 return event
             }
