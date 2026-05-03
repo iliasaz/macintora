@@ -324,15 +324,17 @@ actor CompletionDataSource {
     }
 
     /// Single-row counterpart of `procedures(...)` for top-level callables.
-    /// Standalone procedures and functions live in `DBCacheProcedure` with
-    /// `procedureName_ == nil` (the field carries `ALL_PROCEDURES.PROCEDURE_NAME`,
-    /// which is NULL for standalones), so the package-member fetcher can't
-    /// see them. This method finds the row by `objectName_` + nil
-    /// `procedureName_`, derives kind / return-type from the matching
-    /// `DBCacheProcedureArgument` rows (whose `procedureName_` is the
-    /// standalone's name — not nil — because `fetchProcedureArguments`
-    /// substitutes `OBJECT_NAME` when `PACKAGE_NAME` is NULL), and synthesises
-    /// a `ProcedureSuggestion` ready for `make(signatureFrom:arguments:...)`.
+    /// The package-member fetcher requires `procedureName_ != nil`, but
+    /// `ALL_PROCEDURES.PROCEDURE_NAME` is NULL for standalones in some
+    /// Oracle versions and populated in others — we can't rely on a
+    /// nil/non-nil check. The reliable discriminator is
+    /// `DBCacheProcedure.objectType_`: it carries the parent
+    /// `ALL_PROCEDURES.OBJECT_TYPE`, so standalones have `"PROCEDURE"`
+    /// or `"FUNCTION"` while package members have `"PACKAGE"`.
+    /// Argument rows still record the procedure name (it's `OBJECT_NAME`
+    /// from `ALL_ARGUMENTS`, with `nvl(PACKAGE_NAME, OBJECT_NAME)` used
+    /// as `objectName_`), so the return-type lookup keys on
+    /// `objectName_` and ignores `procedureName_`.
     func standaloneProcedure(owner: String,
                              name: String) async -> ProcedureSuggestion? {
         await fetch { ctx -> ProcedureSuggestion? in
@@ -343,7 +345,7 @@ actor CompletionDataSource {
             procRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
                 NSPredicate(format: "owner_ = %@", upperOwner),
                 NSPredicate(format: "objectName_ = %@", upperName),
-                NSPredicate(format: "procedureName_ == nil")
+                NSPredicate(format: "objectType_ IN %@", ["PROCEDURE", "FUNCTION"])
             ])
             procRequest.fetchLimit = 1
 
@@ -354,7 +356,6 @@ actor CompletionDataSource {
             argRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
                 NSPredicate(format: "owner_ = %@", upperOwner),
                 NSPredicate(format: "objectName_ = %@", upperName),
-                NSPredicate(format: "procedureName_ = %@", upperName),
                 NSPredicate(format: "position == 0"),
                 NSPredicate(format: "dataLevel == 0"),
                 NSPredicate(format: "argumentName_ == nil")
@@ -785,12 +786,16 @@ actor CompletionDataSource {
                 NSPredicate(format: "objectName_ = %@", upperPkgOrSelf)
             ]
             // Package members carry `procedureName_` populated; standalones
-            // come from `ALL_PROCEDURES.PROCEDURE_NAME` which is NULL, so
-            // the cache row has `procedureName_ == nil`. Match accordingly.
+            // come from `ALL_PROCEDURES.PROCEDURE_NAME` whose value depends
+            // on the Oracle version (NULL on some, the proc name on
+            // others). Discriminate via `objectType_` instead — it's the
+            // parent `OBJECT_TYPE` and is "PROCEDURE"/"FUNCTION" for
+            // standalones, "PACKAGE" for members.
             if packageName != nil {
                 procPredicates.append(NSPredicate(format: "procedureName_ = %@", upperProc))
             } else {
-                procPredicates.append(NSPredicate(format: "procedureName_ == nil"))
+                procPredicates.append(NSPredicate(format: "objectType_ IN %@",
+                                                  ["PROCEDURE", "FUNCTION"]))
             }
             if let overload, !overload.isEmpty {
                 procPredicates.append(NSPredicate(format: "overload_ = %@", overload))
