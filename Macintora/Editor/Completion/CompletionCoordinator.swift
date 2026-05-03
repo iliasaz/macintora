@@ -341,35 +341,42 @@ final class CompletionCoordinator: @unchecked Sendable {
                                          procedureName: String,
                                          currentArgumentIndex: Int,
                                          owner: String) async -> [MacintoraCompletionItem] {
-        let resolved: ResolvedSchemaObject?
+        let overloads: [ProcedureSuggestion]
         if let packageName {
-            resolved = await dataSource.resolvePackage(name: packageName,
-                                                       preferredOwner: owner)
+            guard let pkg = await dataSource.resolvePackage(name: packageName,
+                                                            preferredOwner: owner) else {
+                editorCompletionLog.info("procedureCall: no cached package for \(packageName, privacy: .public)")
+                return []
+            }
+            // procedures(...) does substring matching; filter to exact-name
+            // overloads. Overload count is small (typically 1-3), so the
+            // per-overload argument fetch is cheap.
+            let upperProc = procedureName.uppercased()
+            let allMatches = await dataSource.procedures(packageName: pkg.name,
+                                                         owner: pkg.owner,
+                                                         search: procedureName,
+                                                         limit: fetchLimit)
+            overloads = allMatches.filter { $0.procedureName == upperProc }
+            guard !overloads.isEmpty else {
+                editorCompletionLog.info("procedureCall: \(pkg.name, privacy: .public).\(upperProc, privacy: .public) not in cache")
+                return []
+            }
         } else {
-            resolved = await dataSource.resolveStandaloneProcedure(name: procedureName,
-                                                                   preferredOwner: owner)
-        }
-        guard let resolved else {
-            editorCompletionLog.info("procedureCall: target not in cache (pkg=\(packageName ?? "<nil>", privacy: .public) proc=\(procedureName, privacy: .public))")
-            return []
-        }
-        // For standalones the cache stores rows under `objectName_ ==
-        // procedureName_`, so the `procedures(...)` lookup uses the
-        // resolved name as the package key.
-        let cachedPackageName = resolved.name
-
-        // procedures(...) does substring matching; filter the result to
-        // exact-name overloads. Overload count is small (typically 1-3),
-        // so the per-overload argument fetch is cheap.
-        let upperProc = procedureName.uppercased()
-        let allMatches = await dataSource.procedures(packageName: cachedPackageName,
-                                                     owner: resolved.owner,
-                                                     search: procedureName,
-                                                     limit: fetchLimit)
-        let overloads = allMatches.filter { $0.procedureName == upperProc }
-        guard !overloads.isEmpty else {
-            editorCompletionLog.info("procedureCall: \(cachedPackageName, privacy: .public).\(upperProc, privacy: .public) not in cache")
-            return []
+            // Standalone: DBCacheProcedure stores `procedureName_` as NULL
+            // (it's `ALL_PROCEDURES.PROCEDURE_NAME`, NULL for top-level
+            // callables), so the package-member fetcher can't reach this
+            // row. Use the dedicated single-row lookup. Standalone names
+            // can't be overloaded at the schema level, so this is always
+            // 0 or 1 row.
+            guard let resolved = await dataSource.resolveStandaloneProcedure(
+                    name: procedureName, preferredOwner: owner),
+                  let suggestion = await dataSource.standaloneProcedure(
+                    owner: resolved.owner, name: resolved.name)
+            else {
+                editorCompletionLog.info("procedureCall: standalone \(procedureName, privacy: .public) not in cache")
+                return []
+            }
+            overloads = [suggestion]
         }
 
         var rendered: [(item: MacintoraCompletionItem, arity: Int)] = []

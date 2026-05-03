@@ -277,10 +277,12 @@ final class CompletionCoordinatorTests: XCTestCase {
     }
 
     /// Standalone PROCEDURE `<owner>.PURGE_OLD(CUTOFF IN DATE)`.
-    /// Seeds both the parent `DBCacheObject` (so resolveStandaloneProcedure
-    /// finds it) and the matching `DBCacheProcedure` / `DBCacheProcedureArgument`
-    /// rows that the standalone lookup keys on (`objectName_ ==
-    /// procedureName_` for top-level callables).
+    /// Seeds the parent `DBCacheObject` plus the matching
+    /// `DBCacheProcedure` / `DBCacheProcedureArgument` rows. Standalones
+    /// hit `ALL_PROCEDURES` with `PROCEDURE_NAME == NULL`, so the
+    /// `DBCacheProcedure` row's `procedureName_` is nil — the cache
+    /// lookups for standalones key on that. Argument rows still record
+    /// the name (it's `OBJECT_NAME` from `ALL_ARGUMENTS`, not NULL).
     private func seedStandalonePurgeOld(owner: String) {
         let ctx = persistence.container.viewContext
         let object = DBCacheObject(context: ctx)
@@ -289,7 +291,7 @@ final class CompletionCoordinatorTests: XCTestCase {
         object.type_ = "PROCEDURE"
 
         addProcedure(in: ctx, owner: owner, pkg: "PURGE_OLD",
-                     name: "PURGE_OLD", subprogramId: 1, overload: nil,
+                     name: nil, subprogramId: 1, overload: nil,
                      parentType: "PROCEDURE")
         addArgument(in: ctx, owner: owner, pkg: "PURGE_OLD", proc: "PURGE_OLD",
                     overload: nil, position: 1, sequence: 1, name: "CUTOFF",
@@ -307,7 +309,7 @@ final class CompletionCoordinatorTests: XCTestCase {
         object.type_ = "FUNCTION"
 
         addProcedure(in: ctx, owner: owner, pkg: "NEXT_SERIAL",
-                     name: "NEXT_SERIAL", subprogramId: 1, overload: nil,
+                     name: nil, subprogramId: 1, overload: nil,
                      parentType: "FUNCTION")
         addArgument(in: ctx, owner: owner, pkg: "NEXT_SERIAL", proc: "NEXT_SERIAL",
                     overload: nil, position: 0, sequence: 1, name: nil,

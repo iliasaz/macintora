@@ -457,8 +457,10 @@ final class CompletionDataSourceTests: XCTestCase {
 
     func test_procedureDetail_standalone_propagatesObjectInvalidity() async {
         let ctx = persistence.container.viewContext
-        // Standalone PROCEDURE — parent object is keyed by the procedure name.
-        addProcedure(in: ctx, owner: "HR", pkg: "PURGE_OLD", name: "PURGE_OLD",
+        // Standalone PROCEDURE — parent object is keyed by the procedure
+        // name. `ALL_PROCEDURES.PROCEDURE_NAME` is NULL for top-level
+        // callables, so the cache row carries `procedureName_ == nil`.
+        addProcedure(in: ctx, owner: "HR", pkg: "PURGE_OLD", name: nil,
                      subprogramId: 1, overload: nil, parentType: "PROCEDURE")
         addObject(in: ctx, owner: "HR", name: "PURGE_OLD", type: "PROCEDURE")
         let request = DBCacheObject.fetchRequest()

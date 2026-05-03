@@ -323,6 +323,63 @@ actor CompletionDataSource {
         }
     }
 
+    /// Single-row counterpart of `procedures(...)` for top-level callables.
+    /// Standalone procedures and functions live in `DBCacheProcedure` with
+    /// `procedureName_ == nil` (the field carries `ALL_PROCEDURES.PROCEDURE_NAME`,
+    /// which is NULL for standalones), so the package-member fetcher can't
+    /// see them. This method finds the row by `objectName_` + nil
+    /// `procedureName_`, derives kind / return-type from the matching
+    /// `DBCacheProcedureArgument` rows (whose `procedureName_` is the
+    /// standalone's name — not nil — because `fetchProcedureArguments`
+    /// substitutes `OBJECT_NAME` when `PACKAGE_NAME` is NULL), and synthesises
+    /// a `ProcedureSuggestion` ready for `make(signatureFrom:arguments:...)`.
+    func standaloneProcedure(owner: String,
+                             name: String) async -> ProcedureSuggestion? {
+        await fetch { ctx -> ProcedureSuggestion? in
+            let upperOwner = owner.uppercased()
+            let upperName = name.uppercased()
+
+            let procRequest = DBCacheProcedure.fetchRequest()
+            procRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "owner_ = %@", upperOwner),
+                NSPredicate(format: "objectName_ = %@", upperName),
+                NSPredicate(format: "procedureName_ == nil")
+            ])
+            procRequest.fetchLimit = 1
+
+            // Function classification: presence of the position == 0 /
+            // dataLevel == 0 / nameless return-type row. Mirrors how
+            // `procedures(...)` decides FUNCTION vs PROCEDURE.
+            let argRequest = DBCacheProcedureArgument.fetchRequest()
+            argRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "owner_ = %@", upperOwner),
+                NSPredicate(format: "objectName_ = %@", upperName),
+                NSPredicate(format: "procedureName_ = %@", upperName),
+                NSPredicate(format: "position == 0"),
+                NSPredicate(format: "dataLevel == 0"),
+                NSPredicate(format: "argumentName_ == nil")
+            ])
+            argRequest.fetchLimit = 1
+
+            do {
+                guard let procRow = try ctx.fetch(procRequest).first else { return nil }
+                let returnType = try ctx.fetch(argRequest).first?.dataType_
+                return ProcedureSuggestion(
+                    owner: procRow.owner_ ?? upperOwner,
+                    packageName: procRow.objectName_ ?? upperName,
+                    procedureName: upperName,
+                    overload: procRow.overload_,
+                    subprogramId: Int(procRow.subprogramId),
+                    kind: returnType != nil ? "FUNCTION" : "PROCEDURE",
+                    parentType: procRow.objectType_ ?? "",
+                    returnType: returnType)
+            } catch {
+                self.logger.error("standaloneProcedure fetch failed: \(error.localizedDescription, privacy: .public)")
+                return nil
+            }
+        }
+    }
+
     /// Resolves a top-level procedure or function name (no package qualifier)
     /// to its owning schema. Mirrors `resolvePackage(...)` but matches
     /// `DBCacheObject.type_ IN ("PROCEDURE", "FUNCTION")`. Used by the
@@ -725,9 +782,16 @@ actor CompletionDataSource {
             let procRequest = DBCacheProcedure.fetchRequest()
             var procPredicates: [NSPredicate] = [
                 NSPredicate(format: "owner_ = %@", upperOwner),
-                NSPredicate(format: "objectName_ = %@", upperPkgOrSelf),
-                NSPredicate(format: "procedureName_ = %@", upperProc)
+                NSPredicate(format: "objectName_ = %@", upperPkgOrSelf)
             ]
+            // Package members carry `procedureName_` populated; standalones
+            // come from `ALL_PROCEDURES.PROCEDURE_NAME` which is NULL, so
+            // the cache row has `procedureName_ == nil`. Match accordingly.
+            if packageName != nil {
+                procPredicates.append(NSPredicate(format: "procedureName_ = %@", upperProc))
+            } else {
+                procPredicates.append(NSPredicate(format: "procedureName_ == nil"))
+            }
             if let overload, !overload.isEmpty {
                 procPredicates.append(NSPredicate(format: "overload_ = %@", overload))
             }
