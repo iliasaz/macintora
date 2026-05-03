@@ -38,7 +38,13 @@ struct STDBObjectQuickViewPlugin: STPlugin {
         let coordinator = context.coordinator
         coordinator.installCmdClickMonitor(textView: textView, controller: controller)
 
-        context.events.onContextMenu { location, contentManager in
+        // STTextView doesn't retain `Coordinator` directly. The contract
+        // (see `NeonPlugin.setUp`) is that an `events` closure captures it
+        // strongly so the long-lived `STPluginEvents` keeps it alive — and
+        // with it, the cmd+click monitor whose token only the coordinator
+        // holds. Drop this capture and the monitor dies when `setUp` returns.
+        context.events.onContextMenu { [coordinator] location, contentManager in
+            _ = coordinator
             let menu = NSMenu()
             let item = NSMenuItem(
                 title: "Quick View",
