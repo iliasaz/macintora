@@ -363,8 +363,12 @@ actor CompletionDataSource {
             argRequest.fetchLimit = 1
 
             do {
-                guard let procRow = try ctx.fetch(procRequest).first else { return nil }
+                guard let procRow = try ctx.fetch(procRequest).first else {
+                    self.logger.info("standaloneProcedure: no DBCacheProcedure row for \(upperOwner, privacy: .public).\(upperName, privacy: .public) (objectType_ in PROCEDURE/FUNCTION)")
+                    return nil
+                }
                 let returnType = try ctx.fetch(argRequest).first?.dataType_
+                self.logger.info("standaloneProcedure: \(upperOwner, privacy: .public).\(upperName, privacy: .public) found — objectType_=\(procRow.objectType_ ?? "nil", privacy: .public) procedureName_=\(procRow.procedureName_ ?? "nil", privacy: .public) overload_=\(procRow.overload_ ?? "nil", privacy: .public) returnType=\(returnType ?? "nil", privacy: .public)")
                 return ProcedureSuggestion(
                     owner: procRow.owner_ ?? upperOwner,
                     packageName: procRow.objectName_ ?? upperName,
@@ -426,10 +430,21 @@ actor CompletionDataSource {
                             overload: String?) async -> [ProcedureArgumentSuggestion] {
         await fetch { ctx -> [ProcedureArgumentSuggestion] in
             let request = DBCacheProcedureArgument.fetchRequest()
+            let upperPkg = packageName.uppercased()
+            let upperProc = procedureName.uppercased()
+            // Standalones: callers pass `packageName == procedureName` as a
+            // signal. The arg row's `procedureName_` value can vary by
+            // Oracle version (proc name, NULL, or empty), so accept any
+            // shape — `(owner, objectName_)` already pins the proc.
+            let isStandalone = upperPkg == upperProc
+            let nameMatch: NSPredicate = isStandalone
+                ? NSPredicate(format: "procedureName_ = %@ OR procedureName_ == nil OR procedureName_ = %@",
+                              upperProc, "")
+                : NSPredicate(format: "procedureName_ = %@", upperProc)
             var predicates: [NSPredicate] = [
                 NSPredicate(format: "owner_ = %@", owner.uppercased()),
-                NSPredicate(format: "objectName_ = %@", packageName.uppercased()),
-                NSPredicate(format: "procedureName_ = %@", procedureName.uppercased()),
+                NSPredicate(format: "objectName_ = %@", upperPkg),
+                nameMatch,
                 NSPredicate(format: "dataLevel == 0"),
                 NSPredicate(format: "position > 0")
             ]
@@ -818,11 +833,21 @@ actor CompletionDataSource {
                 let objectRow = try ctx.fetch(objectRequest).first
                 let procRowOverload = procRow.overload_
 
+                // Standalones: arg rows' `procedureName_` may be the proc
+                // name, NULL, or empty depending on Oracle version. Relax
+                // the match for the standalone case (signalled by
+                // `packageName == nil`); package members keep the strict
+                // equality so we don't accidentally collapse overloads
+                // across same-named members of two packages.
                 let argRequest = DBCacheProcedureArgument.fetchRequest()
+                let argNameMatch: NSPredicate = packageName == nil
+                    ? NSPredicate(format: "procedureName_ = %@ OR procedureName_ == nil OR procedureName_ = %@",
+                                  upperProc, "")
+                    : NSPredicate(format: "procedureName_ = %@", upperProc)
                 var argPredicates: [NSPredicate] = [
                     NSPredicate(format: "owner_ = %@", upperOwner),
                     NSPredicate(format: "objectName_ = %@", upperPkgOrSelf),
-                    NSPredicate(format: "procedureName_ = %@", upperProc),
+                    argNameMatch,
                     NSPredicate(format: "dataLevel == 0")
                 ]
                 if let procRowOverload, !procRowOverload.isEmpty {
@@ -851,9 +876,21 @@ actor CompletionDataSource {
                         defaultValue: arg.defaultValue_))
                 }
 
+                // For standalones the cache row's `procedureName_` can be
+                // nil OR empty depending on Oracle version, but the
+                // displayed name is just what the user clicked — fall
+                // back to `upperProc` whenever we'd otherwise display an
+                // empty string. (Without this, the Quick View header
+                // renders as `OWNER.` with a trailing dot.)
+                let displayName: String = {
+                    if packageName == nil { return upperProc }
+                    if let n = procRow.procedureName_, !n.isEmpty { return n }
+                    return upperProc
+                }()
+
                 return ProcedureDetailPayload(
                     owner: procRow.owner_ ?? upperOwner,
-                    name: procRow.procedureName_ ?? upperProc,
+                    name: displayName,
                     packageName: packageName.map { $0.uppercased() },
                     kind: returnType != nil ? "FUNCTION" : "PROCEDURE",
                     overload: procRowOverload,
