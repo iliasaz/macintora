@@ -108,6 +108,62 @@ final class QuickViewContentRenderTests: XCTestCase {
         XCTAssertNoThrow(try renderAndForceLayout(payload: payload))
     }
 
+    // MARK: - Table header stats line
+
+    func test_render_table_withRowCountAndAnalyzed() {
+        let table = TableDetailPayload(
+            owner: "HR", name: "EMPLOYEES",
+            isView: false, isEditioning: false, isReadOnly: false,
+            isPartitioned: false,
+            numRows: 12_345_678,
+            lastAnalyzed: Date(timeIntervalSince1970: 1_700_000_000),
+            sqlText: nil,
+            columns: TableDetailPayload.fixtureColumns,
+            indexes: [], triggers: [],
+            highlightedColumn: nil)
+        XCTAssertNoThrow(try renderAndForceLayout(payload: .table(table)))
+    }
+
+    func test_render_table_withEditioningChip() {
+        let table = TableDetailPayload(
+            owner: "HR", name: "EMPLOYEES",
+            isView: false, isEditioning: true, isReadOnly: false,
+            isPartitioned: false,
+            numRows: nil, lastAnalyzed: nil,
+            sqlText: nil,
+            columns: TableDetailPayload.fixtureColumns,
+            indexes: [], triggers: [],
+            highlightedColumn: nil)
+        XCTAssertNoThrow(try renderAndForceLayout(payload: .table(table)))
+    }
+
+    func test_render_table_withNoStats_subLineHidden() {
+        // Both `numRows` and `lastAnalyzed` nil — the stats subline must
+        // collapse to `EmptyView` so the header doesn't grow a blank row.
+        let table = TableDetailPayload(
+            owner: "HR", name: "BLANK_TABLE",
+            isView: false, isEditioning: false, isReadOnly: false,
+            isPartitioned: false,
+            numRows: nil, lastAnalyzed: nil,
+            sqlText: nil,
+            columns: [], indexes: [], triggers: [],
+            highlightedColumn: nil)
+        XCTAssertNoThrow(try renderAndForceLayout(payload: .table(table)))
+    }
+
+    func test_render_table_withRowCountOnly_omitsAnalyzed() {
+        let table = TableDetailPayload(
+            owner: "HR", name: "EMPLOYEES",
+            isView: false, isEditioning: false, isReadOnly: false,
+            isPartitioned: false,
+            numRows: 42, lastAnalyzed: nil,
+            sqlText: nil,
+            columns: TableDetailPayload.fixtureColumns,
+            indexes: [], triggers: [],
+            highlightedColumn: nil)
+        XCTAssertNoThrow(try renderAndForceLayout(payload: .table(table)))
+    }
+
     func test_render_notCached_eachReferenceShape() {
         // The "not cached" placeholder formats the reference name; cover
         // each enum case so we don't regress the formatter accidentally.

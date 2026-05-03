@@ -45,27 +45,64 @@ private struct QuickViewTableHeader: View {
     let openInBrowserAction: (() -> Void)?
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Image(systemName: payload.isView ? "tablecells.badge.ellipsis" : "tablecells")
-                .foregroundStyle(.tint)
-            Text("\(payload.owner).\(payload.name)")
-                .font(.system(.headline, design: .monospaced))
-                .textSelection(.enabled)
-            if payload.isView {
-                QuickViewChip(label: "View", tone: .accent)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline) {
+                Image(systemName: payload.isView ? "tablecells.badge.ellipsis" : "tablecells")
+                    .foregroundStyle(.tint)
+                Text("\(payload.owner).\(payload.name)")
+                    .font(.system(.headline, design: .monospaced))
+                    .textSelection(.enabled)
+                if payload.isView {
+                    QuickViewChip(label: "View", tone: .accent)
+                }
+                if payload.isPartitioned {
+                    QuickViewChip(label: "Partitioned", tone: .secondary)
+                }
+                if payload.isReadOnly {
+                    QuickViewChip(label: "Read-Only", tone: .secondary)
+                }
+                if payload.isEditioning {
+                    QuickViewChip(label: "Editioning", tone: .secondary)
+                }
+                Spacer(minLength: 0)
+                if let action = openInBrowserAction {
+                    Button("Open in Browser", systemImage: "rectangle.portrait.and.arrow.right",
+                           action: action)
+                        .controlSize(.small)
+                }
             }
-            if payload.isPartitioned {
-                QuickViewChip(label: "Partitioned", tone: .secondary)
+            QuickViewTableStatsLine(numRows: payload.numRows,
+                                    lastAnalyzed: payload.lastAnalyzed)
+        }
+    }
+}
+
+/// Compact stats subline under the table title — row count and a relative
+/// "analyzed" timestamp. Renders `EmptyView` when neither field is populated
+/// so a fully-uncached table doesn't grow a blank line.
+private struct QuickViewTableStatsLine: View {
+    let numRows: Int64?
+    let lastAnalyzed: Date?
+
+    var body: some View {
+        if numRows == nil && lastAnalyzed == nil {
+            EmptyView()
+        } else {
+            HStack(spacing: 6) {
+                if let numRows {
+                    Text("\(numRows, format: .number.notation(.compactName)) rows")
+                }
+                if numRows != nil && lastAnalyzed != nil {
+                    Text(verbatim: "·")
+                        .foregroundStyle(.tertiary)
+                }
+                if let lastAnalyzed {
+                    Text("analyzed \(lastAnalyzed, format: .relative(presentation: .named))")
+                }
+                Spacer(minLength: 0)
             }
-            if payload.isReadOnly {
-                QuickViewChip(label: "Read-Only", tone: .secondary)
-            }
-            Spacer(minLength: 0)
-            if let action = openInBrowserAction {
-                Button("Open in Browser", systemImage: "rectangle.portrait.and.arrow.right",
-                       action: action)
-                    .controlSize(.small)
-            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
     }
 }
