@@ -177,7 +177,7 @@ struct DBDetailViewHeaderImage: View {
             case .view:
                 Label("View", systemImage: "tablecells.badge.ellipsis")
             case .index:
-                Label("Index", systemImage: "ecrease.indent")
+                Label("Index", systemImage: "decrease.indent")
             case .type:
                 Label("Type", systemImage: "t.square")
             case .package:

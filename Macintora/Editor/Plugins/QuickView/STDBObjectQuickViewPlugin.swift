@@ -84,32 +84,26 @@ struct STDBObjectQuickViewPlugin: STPlugin {
             // Only one monitor per coordinator instance; tearDown removes it.
             removeMonitor()
             // The NSEvent local-monitor closure is declared nonisolated by
-            // AppKit but always invoked on the main thread. AppKit's Swift
-            // overlay marks `NSEvent.window` and the AppKit responder
-            // hierarchy as `@MainActor`, so we hop the body through
-            // `MainActor.assumeIsolated` to read those without per-call
-            // `unsafe` annotations. We deliberately return Void from the
-            // assumed block (NSEvent is non-Sendable, and the closure
-            // result type would otherwise force a Sendable bound) and let
-            // the outer closure return `event` unconditionally — Quick
-            // View is non-destructive and never consumes the click.
+            // AppKit but fires on the main thread. The strategy:
+            //
+            //   1. Pre-filter on `event.modifierFlags` (Sendable) for ⌘.
+            //   2. Return `event` so AppKit dispatches the click normally —
+            //      the cursor moves to the click point through STTextView's
+            //      own hit-testing path, which already knows about content-
+            //      view coordinate offsets, line gutters, etc.
+            //   3. Schedule a main-actor Task to fire Quick View at the
+            //      *new* cursor location, which by definition is the click
+            //      target. This avoids re-implementing STTextView's point-
+            //      to-offset conversion (an earlier attempt got the
+            //      coordinate space wrong because `textView.convert(_:from:)`
+            //      is bounds-relative, while `lineFragmentRange(for:inContainerAt:)`
+            //      is content-view-relative).
             monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak textView, weak controller] event in
-                // Modifier flags are Sendable; cheap pre-filter avoids
-                // hopping the actor for the hot non-⌘ path.
                 guard event.modifierFlags.contains(.command) else { return event }
                 guard let textView, let controller else { return event }
 
-                MainActor.assumeIsolated {
-                    // Unsafe-marked AppKit window identity check; SE-0458
-                    // requires acknowledgement at the call site. Reading
-                    // is safe under main-actor isolation.
-                    guard unsafe event.window === textView.window else { return }
-                    let pointInText = textView.convert(event.locationInWindow, from: nil)
-                    guard textView.bounds.contains(pointInText) else { return }
-                    guard let offset = Self.utf16Offset(at: pointInText, in: textView) else { return }
-                    controller.triggerAtClick(textView: textView,
-                                              point: pointInText,
-                                              utf16Offset: offset)
+                Task { @MainActor in
+                    controller.triggerAtCursor(textView: textView)
                 }
                 return event
             }

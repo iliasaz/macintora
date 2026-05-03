@@ -161,7 +161,7 @@ private struct QuickViewIndexList: View {
         VStack(alignment: .leading, spacing: 2) {
             ForEach(indexes) { idx in
                 HStack(spacing: 8) {
-                    Image(systemName: "ecrease.indent")
+                    Image(systemName: "decrease.indent")
                         .foregroundStyle(.tint)
                     Text(idx.name)
                         .font(.system(.callout, design: .monospaced))
