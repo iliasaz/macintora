@@ -11,6 +11,7 @@
 
 import XCTest
 import CoreData
+import STTextView
 @testable import Macintora
 
 @MainActor
@@ -138,7 +139,73 @@ final class CompletionCoordinatorTests: XCTestCase {
         XCTAssertTrue(items.contains { $0.displayText == "GET_BALANCE" })
     }
 
+    // MARK: - Phase 2: signature popup on `pkg.proc(`
+
+    func test_procedureCall_packageMember_listsAllOverloadsWithSignature() async {
+        seedAccountsPackageWithObject(owner: "HR")
+        let items = await coordinator.items(for: makeTextView("BEGIN accounts_pkg.debit("),
+                                            atUTF16Offset: "BEGIN accounts_pkg.debit(".utf16.count)
+
+        // Both DEBIT overloads must appear, formatted as call signatures.
+        let display = items.map(\.displayText)
+        XCTAssertTrue(display.contains { $0 == "DEBIT(AMOUNT IN NUMBER)" })
+        XCTAssertTrue(display.contains { $0 == "DEBIT(AMOUNT IN NUMBER, CURRENCY IN VARCHAR2)" })
+        XCTAssertTrue(items.allSatisfy { $0.insertText.isEmpty },
+                      "Signature rows are informational — accepting one must be a no-op")
+    }
+
+    func test_procedureCall_function_signatureCarriesReturnType() async {
+        seedAccountsPackageWithObject(owner: "HR")
+        let items = await coordinator.items(for: makeTextView("BEGIN accounts_pkg.get_balance("),
+                                            atUTF16Offset: "BEGIN accounts_pkg.get_balance(".utf16.count)
+
+        let row = items.first { $0.displayText == "GET_BALANCE(ACCT_ID IN NUMBER)" }
+        XCTAssertNotNil(row, "Function signature must surface")
+        XCTAssertTrue(row?.secondaryText?.contains("→ NUMBER") ?? false,
+                      "Function row must show the return type hint")
+    }
+
+    func test_procedureCall_arityMatchingOverloadComesFirst() async {
+        seedAccountsPackageWithObject(owner: "HR")
+        // Cursor is positioned for the second argument — the matching
+        // overload (two parameters) must rank ahead of the single-arg one.
+        let source = "BEGIN accounts_pkg.debit(100, "
+        let items = await coordinator.items(for: makeTextView(source),
+                                            atUTF16Offset: source.utf16.count)
+
+        let display = items.map(\.displayText)
+        XCTAssertEqual(display.first, "DEBIT(AMOUNT IN NUMBER, CURRENCY IN VARCHAR2)",
+                       "Two-arg overload must lead when the user is filling the second slot")
+    }
+
+    func test_procedureCall_unknownPackage_returnsEmpty() async {
+        // No cache entries — the popup should produce nothing rather than
+        // dump unrelated suggestions.
+        let source = "BEGIN unknown_pkg.foo("
+        let items = await coordinator.items(for: makeTextView(source),
+                                            atUTF16Offset: source.utf16.count)
+        XCTAssertTrue(items.isEmpty)
+    }
+
+    func test_procedureCall_standalone_skippedInPhase2() async {
+        // No qualifier → analyzer routes to .procedureCall(packageName: nil)
+        // and the coordinator currently no-ops; phase 3 will surface the
+        // standalone signature.
+        seedAccountsPackageWithObject(owner: "HR")
+        let source = "BEGIN debit("
+        let items = await coordinator.items(for: makeTextView(source),
+                                            atUTF16Offset: source.utf16.count)
+        XCTAssertTrue(items.isEmpty)
+    }
+
     // MARK: - Seed helpers
+
+    private func makeTextView(_ source: String) -> STTextView {
+        let view = STTextView()
+        view.text = source
+        return view
+    }
+
 
     /// Adds the same `DBCacheProcedure` / `DBCacheProcedureArgument` rows as
     /// `CompletionDataSourceTests.seedAccountsPackage`, plus a parent

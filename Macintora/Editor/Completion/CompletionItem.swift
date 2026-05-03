@@ -230,4 +230,44 @@ extension MacintoraCompletionItem {
             secondaryText: secondary,
             kind: kind)
     }
+
+    /// Builds a row that shows the call signature of a single overload —
+    /// `proc(arg1 IN NUMBER, arg2 IN VARCHAR2)`. `insertText` is empty so
+    /// accepting a row is a no-op (it just dismisses the popup); the row's
+    /// purpose is informational while the user types arguments.
+    static func make(signatureFrom p: ProcedureSuggestion,
+                     arguments: [ProcedureArgumentSuggestion]) -> MacintoraCompletionItem {
+        let kind: Kind = p.kind == "FUNCTION" ? .function : .procedure
+        let formattedArgs = arguments.map(formatArgument).joined(separator: ", ")
+        let display = "\(p.procedureName)(\(formattedArgs))"
+        var secondary = p.kind
+        if let overload = p.overload, !overload.isEmpty {
+            secondary += " #\(overload)"
+        }
+        if let returnType = p.returnType, !returnType.isEmpty {
+            secondary += " → \(returnType)"
+        }
+        return MacintoraCompletionItem(
+            displayText: display,
+            insertText: "",
+            secondaryText: secondary,
+            kind: kind)
+    }
+
+    /// Renders one argument like `name IN VARCHAR2` or `name IN NUMBER
+    /// DEFAULT 0`. Anonymous arguments (Oracle ALL_ARGUMENTS allows
+    /// nameless positional params for some bind shapes) fall back to the
+    /// position number.
+    private static func formatArgument(_ arg: ProcedureArgumentSuggestion) -> String {
+        let name = arg.argumentName ?? "arg\(arg.position)"
+        var rendered = "\(name) \(arg.inOut) \(arg.dataType)"
+        if arg.defaulted {
+            if let value = arg.defaultValue, !value.isEmpty {
+                rendered += " DEFAULT \(value)"
+            } else {
+                rendered += " DEFAULT"
+            }
+        }
+        return rendered
+    }
 }
