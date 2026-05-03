@@ -15,8 +15,9 @@
 //
 
 import AppKit
-@preconcurrency import STTextView
+import STTextView
 import STPluginNeon  // re-exports SwiftTreeSitter
+import os
 
 extension MacintoraEditorRepresentable.Coordinator {
 

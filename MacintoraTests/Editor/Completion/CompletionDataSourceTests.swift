@@ -408,11 +408,15 @@ final class CompletionDataSourceTests: XCTestCase {
         addProcedure(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG",
                      name: "GET_BALANCE", subprogramId: 1, overload: nil,
                      parentType: "PACKAGE")
+        // Distinct subprogram_id per overload — Oracle gives each overload
+        // a unique value in ALL_PROCEDURES, and our sort-by-subprogramId
+        // picker breaks ties non-deterministically when they collide,
+        // which made `pickFirstOverload` flaky on cold full-suite runs.
         addProcedure(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG",
                      name: "DEBIT", subprogramId: 2, overload: "1",
                      parentType: "PACKAGE")
         addProcedure(in: ctx, owner: "HR", pkg: "ACCOUNTS_PKG",
-                     name: "DEBIT", subprogramId: 2, overload: "2",
+                     name: "DEBIT", subprogramId: 3, overload: "2",
                      parentType: "PACKAGE")
 
         // GET_BALANCE return row + IN parameter.

@@ -386,10 +386,12 @@ final class QuickViewEndToEndTests: XCTestCase {
                      subprogramId: 0, overload: nil, parentType: "PACKAGE")
         addProcedure(owner: "HR", pkg: "ACCOUNTS_PKG", name: "GET_BALANCE",
                      subprogramId: 1, overload: nil, parentType: "PACKAGE")
+        // Distinct subprogram_id per overload — matches Oracle's
+        // ALL_PROCEDURES and avoids non-deterministic sort-tie ordering.
         addProcedure(owner: "HR", pkg: "ACCOUNTS_PKG", name: "DEBIT",
                      subprogramId: 2, overload: "1", parentType: "PACKAGE")
         addProcedure(owner: "HR", pkg: "ACCOUNTS_PKG", name: "DEBIT",
-                     subprogramId: 2, overload: "2", parentType: "PACKAGE")
+                     subprogramId: 3, overload: "2", parentType: "PACKAGE")
 
         addArgument(owner: "HR", pkg: "ACCOUNTS_PKG", proc: "GET_BALANCE",
                     overload: nil, position: 0, sequence: 1, name: nil,

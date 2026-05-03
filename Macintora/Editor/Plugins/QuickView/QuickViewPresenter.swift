@@ -78,7 +78,10 @@ final class QuickViewPresenter: NSObject {
         // "not cached" placeholder before issue #13 wires the Open in
         // Browser button) leaves no responder for AppKit to deliver Esc
         // to, and the only way to dismiss is click-outside.
-        hosting.view.window?.makeFirstResponder(hosting)
+        // `unsafe` acknowledges SE-0458 — `NSWindow.makeFirstResponder`
+        // is annotated `@unsafe` in the AppKit overlay; we're already
+        // on the main actor, so the call is safe in practice.
+        unsafe hosting.view.window?.makeFirstResponder(hosting)
     }
 
     func close() {

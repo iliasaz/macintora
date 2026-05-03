@@ -56,13 +56,13 @@ struct STDBObjectQuickViewPlugin: STPlugin {
             }
             item.target = target
             item.action = #selector(QuickViewMenuTarget.invoke(_:))
-            // `NSMenu.addItem(_:)` doesn't retain the target; stash it on the
-            // menu item via objc associated objects so it lives until the
-            // menu is dismissed.
-            objc_setAssociatedObject(item,
-                                     &QuickViewMenuTargetAssocKey,
-                                     target,
-                                     .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            // `NSMenuItem.target` is a weak reference, so we need a strong
+            // ref to keep the closure alive until the menu is dismissed.
+            // `representedObject` is the canonical strong-ref slot on
+            // NSMenuItem — using it avoids an `objc_setAssociatedObject`
+            // call that Swift 6's strict-memory-safety mode now flags as
+            // unsafe.
+            item.representedObject = target
             menu.addItem(item)
             return menu
         }
@@ -74,39 +74,43 @@ struct STDBObjectQuickViewPlugin: STPlugin {
 
     @MainActor
     final class Coordinator {
-        /// `nonisolated(unsafe)` — the monitor token is read on the main
-        /// actor (`installCmdClickMonitor` / `removeMonitor`) but `deinit`
-        /// runs in the runtime's chosen isolation, which the type checker
-        /// can't statically prove is main. `NSEvent.removeMonitor(_:)` is
-        /// thread-safe per AppKit, so calling it from any thread is fine.
-        nonisolated(unsafe) private var monitor: Any?
+        /// Token returned by `NSEvent.addLocalMonitorForEvents`. Read and
+        /// written only on the main actor; the matching `removeMonitor`
+        /// call also runs on main — see `isolated deinit` below.
+        private var monitor: Any?
 
         func installCmdClickMonitor(textView: STTextView,
                                     controller: QuickViewController) {
             // Only one monitor per coordinator instance; tearDown removes it.
             removeMonitor()
+            // The NSEvent local-monitor closure is declared nonisolated by
+            // AppKit but always invoked on the main thread. AppKit's Swift
+            // overlay marks `NSEvent.window` and the AppKit responder
+            // hierarchy as `@MainActor`, so we hop the body through
+            // `MainActor.assumeIsolated` to read those without per-call
+            // `unsafe` annotations. We deliberately return Void from the
+            // assumed block (NSEvent is non-Sendable, and the closure
+            // result type would otherwise force a Sendable bound) and let
+            // the outer closure return `event` unconditionally — Quick
+            // View is non-destructive and never consumes the click.
             monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak textView, weak controller] event in
-                guard let textView, let controller else { return event }
+                // Modifier flags are Sendable; cheap pre-filter avoids
+                // hopping the actor for the hot non-⌘ path.
                 guard event.modifierFlags.contains(.command) else { return event }
-                guard event.window === textView.window else { return event }
-
-                // Hit-test the click against the text view's content bounds.
-                let pointInText = textView.convert(event.locationInWindow, from: nil)
-                guard textView.bounds.contains(pointInText) else { return event }
-
-                // Map the text-view-coordinate point to a content-text offset.
-                guard let offset = MainActor.assumeIsolated({
-                    Self.utf16Offset(at: pointInText, in: textView)
-                }) else { return event }
+                guard let textView, let controller else { return event }
 
                 MainActor.assumeIsolated {
+                    // Unsafe-marked AppKit window identity check; SE-0458
+                    // requires acknowledgement at the call site. Reading
+                    // is safe under main-actor isolation.
+                    guard unsafe event.window === textView.window else { return }
+                    let pointInText = textView.convert(event.locationInWindow, from: nil)
+                    guard textView.bounds.contains(pointInText) else { return }
+                    guard let offset = Self.utf16Offset(at: pointInText, in: textView) else { return }
                     controller.triggerAtClick(textView: textView,
                                               point: pointInText,
                                               utf16Offset: offset)
                 }
-
-                // Return the event so cursor placement still happens — Quick
-                // View is non-destructive and doesn't consume the click.
                 return event
             }
         }
@@ -118,11 +122,12 @@ struct STDBObjectQuickViewPlugin: STPlugin {
             monitor = nil
         }
 
-        deinit {
-            // `NSEvent.removeMonitor` is safe from any thread per AppKit docs.
-            if let monitor = monitor {
-                NSEvent.removeMonitor(monitor)
-            }
+        /// `isolated deinit` (SE-0371) keeps the cleanup main-actor-bound
+        /// so we can read the `monitor` property without `nonisolated(unsafe)`
+        /// hatches. The Swift runtime hops to the main executor for the
+        /// deinit body if invoked from another isolation domain.
+        isolated deinit {
+            removeMonitor()
         }
 
         /// Hit-tests `point` (in `textView` coordinates) against the layout
@@ -157,9 +162,6 @@ struct STDBObjectQuickViewPlugin: STPlugin {
         // owns monitor cleanup. Nothing to do here.
     }
 }
-
-/// Associated-object key for `NSMenuItem` → `QuickViewMenuTarget` retention.
-nonisolated(unsafe) private var QuickViewMenuTargetAssocKey: UInt8 = 0
 
 /// Tiny target object owning the closure invoked when the user picks the
 /// "Quick View" context menu item.
