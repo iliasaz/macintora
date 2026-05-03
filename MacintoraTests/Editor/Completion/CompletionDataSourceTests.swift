@@ -149,6 +149,64 @@ final class CompletionDataSourceTests: XCTestCase {
         XCTAssertTrue(args.allSatisfy { $0.position > 0 })
     }
 
+    // MARK: - Completion: resolvePackage
+
+    func test_resolvePackage_returnsNilWhenNoCachedPackage() async {
+        seedAccountsPackage()
+        // seedAccountsPackage seeds the procedure rows but no parent
+        // DBCacheObject of type PACKAGE — resolvePackage must miss.
+        let resolved = await dataSource.resolvePackage(
+            name: "ACCOUNTS_PKG", preferredOwner: "HR")
+        XCTAssertNil(resolved)
+    }
+
+    func test_resolvePackage_findsByName() async {
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "HR", name: "ACCOUNTS_PKG", type: "PACKAGE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolvePackage(
+            name: "accounts_pkg", preferredOwner: "HR")
+        XCTAssertEqual(resolved?.owner, "HR")
+        XCTAssertEqual(resolved?.name, "ACCOUNTS_PKG")
+        XCTAssertEqual(resolved?.objectType, "PACKAGE")
+    }
+
+    func test_resolvePackage_ignoresNonPackageObjectsWithSameName() async {
+        // A TABLE with the same identifier as a package must not satisfy a
+        // package lookup. Without this guard a `pkg.` qualifier pointing at
+        // a table would attempt to surface non-existent procedure members.
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "HR", name: "ACCOUNTS_PKG", type: "TABLE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolvePackage(
+            name: "ACCOUNTS_PKG", preferredOwner: "HR")
+        XCTAssertNil(resolved)
+    }
+
+    func test_resolvePackage_prefersConnectedSchema() async {
+        // Same package name in two schemas — preferred owner wins.
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "BILLING", name: "ACCOUNTS_PKG", type: "PACKAGE")
+        addObject(in: ctx, owner: "HR", name: "ACCOUNTS_PKG", type: "PACKAGE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolvePackage(
+            name: "ACCOUNTS_PKG", preferredOwner: "HR")
+        XCTAssertEqual(resolved?.owner, "HR")
+    }
+
+    func test_resolvePackage_fallsBackToFirstWhenPreferredAbsent() async {
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "BILLING", name: "ACCOUNTS_PKG", type: "PACKAGE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolvePackage(
+            name: "ACCOUNTS_PKG", preferredOwner: "HR")
+        XCTAssertEqual(resolved?.owner, "BILLING")
+    }
+
     // MARK: - Quick View: resolveSchemaObject
 
     func test_resolveSchemaObject_explicitOwner_findsExactRow() async {

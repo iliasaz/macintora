@@ -236,28 +236,39 @@ final class CompletionCoordinator: @unchecked Sendable {
         return items
     }
 
-    private func dottedMemberSuggestions(qualifier: String,
-                                         prefix: String,
-                                         owner: String,
-                                         source: String,
-                                         tree: SwiftTreeSitter.Tree?,
-                                         offset: Int) async -> [MacintoraCompletionItem] {
+    func dottedMemberSuggestions(qualifier: String,
+                                 prefix: String,
+                                 owner: String,
+                                 source: String,
+                                 tree: SwiftTreeSitter.Tree?,
+                                 offset: Int) async -> [MacintoraCompletionItem] {
         let aliases = currentAliases(source: source, tree: tree, offset: offset)
         let upper = qualifier.uppercased()
 
-        // 1) Alias → table columns.
+        // 1) Alias → table columns. Aliases resolve unambiguously, so this
+        // short-circuits the rest.
         if let resolved = aliases[upper] ?? nil {
             return await fetchColumns(table: resolved, prefix: prefix)
         }
 
-        // 2) Treat as schema → list its objects (tables/views/packages).
-        let objects = await dataSource.objects(
+        // 2) `qualifier.` is ambiguous without semantic resolution: it could
+        // be `schema.object` *or* `package.member`, and a cached
+        // `qualifier`-named TABLE could coexist with a `qualifier`-named
+        // PACKAGE in another schema. Probe both in parallel and merge —
+        // showing both kinds in the popup is the pragmatic answer.
+        async let schemaObjects = dataSource.objects(
             search: prefix,
             owner: upper,
             types: ["TABLE", "VIEW", "PACKAGE"],
             limit: fetchLimit)
-        if !objects.isEmpty {
-            return objects.map { MacintoraCompletionItem.make(from: $0) }
+        async let packageMembers = packageMemberSuggestions(qualifier: upper,
+                                                            prefix: prefix,
+                                                            owner: owner)
+
+        let objs = await schemaObjects
+        let procs = await packageMembers
+        if !objs.isEmpty || !procs.isEmpty {
+            return objs.map { MacintoraCompletionItem.make(from: $0) } + procs
         }
 
         // 3) Treat as table → columns of any cached table with this name,
@@ -266,6 +277,26 @@ final class CompletionCoordinator: @unchecked Sendable {
         return await dataSource
             .columns(tableName: upper, owner: nil, search: prefix, limit: fetchLimit)
             .map { MacintoraCompletionItem.make(from: $0) }
+    }
+
+    /// Resolves `qualifier` to a cached PACKAGE and surfaces its procedures
+    /// and functions. Empty result when the qualifier doesn't name a package
+    /// in any cached schema. The package is selected by `resolvePackage`'s
+    /// preferred-owner-first ranking; cross-schema name collisions
+    /// (rare — same package name in two schemas the user has cached) pick
+    /// the connected schema if it has one, otherwise the alphabetically
+    /// first match.
+    private func packageMemberSuggestions(qualifier: String,
+                                          prefix: String,
+                                          owner: String) async -> [MacintoraCompletionItem] {
+        guard let pkg = await dataSource.resolvePackage(name: qualifier,
+                                                        preferredOwner: owner)
+        else { return [] }
+        let procedures = await dataSource.procedures(packageName: pkg.name,
+                                                     owner: pkg.owner,
+                                                     search: prefix,
+                                                     limit: fetchLimit)
+        return procedures.map { MacintoraCompletionItem.make(from: $0) }
     }
 
     private func fetchColumns(table: ResolvedTable, prefix: String) async -> [MacintoraCompletionItem] {
