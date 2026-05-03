@@ -133,6 +133,15 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
         textView.setAccessibilityIdentifier(accessibilityIdentifier)
         textView.setAccessibilityRole(.textArea)
 
+        // SQL editor: keep AppKit's spell/grammar/text-replacement machinery
+        // out of the right-click path. NSSpellChecker hops to a default-QoS
+        // thread for NLP and surfaces as a "Hang Risk: priority inversion"
+        // diagnostic when the user-interactive main thread waits on it
+        // (STTextView+Mouse.swift line 231 / super.rightMouseDown at 197).
+        // The two `isAutomatic*` flags otherwise lazily default to the system
+        // NSSpellChecker setting, which is normally on.
+        disableSpellCheckingMachinery(on: textView)
+
         // Always create the SQLTreeStore and install Neon with a tree-update
         // callback, even when the host hasn't (yet) opted in to autocompletion.
         // The CompletionCoordinator is built lazily in `updateNSView` once
@@ -198,6 +207,10 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
             textView.isHorizontallyResizable = !wordWrap
         }
 
+        // SwiftUI re-renders shouldn't be able to flip these back on. Cheap
+        // idempotent writes — see makeNSView for why this is gated off.
+        disableSpellCheckingMachinery(on: textView)
+
         // Only overwrite editor contents when the upstream text diverged from what
         // the editor already shows. Skipping the no-op write prevents the classic
         // re-entrancy loop where a keystroke-driven binding update would stomp on
@@ -220,5 +233,12 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
         if let textView = scrollView.documentView as? STTextView {
             textView.textDelegate = nil
         }
+    }
+
+    private func disableSpellCheckingMachinery(on textView: STTextView) {
+        textView.isContinuousSpellCheckingEnabled = false
+        textView.isGrammarCheckingEnabled = false
+        textView.isAutomaticSpellingCorrectionEnabled = false
+        textView.isAutomaticTextReplacementEnabled = false
     }
 }
