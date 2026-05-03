@@ -149,6 +149,104 @@ final class CompletionDataSourceTests: XCTestCase {
         XCTAssertTrue(args.allSatisfy { $0.position > 0 })
     }
 
+    // MARK: - Completion: resolvePackage
+
+    func test_resolvePackage_returnsNilWhenNoCachedPackage() async {
+        seedAccountsPackage()
+        // seedAccountsPackage seeds the procedure rows but no parent
+        // DBCacheObject of type PACKAGE — resolvePackage must miss.
+        let resolved = await dataSource.resolvePackage(
+            name: "ACCOUNTS_PKG", preferredOwner: "HR")
+        XCTAssertNil(resolved)
+    }
+
+    func test_resolvePackage_findsByName() async {
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "HR", name: "ACCOUNTS_PKG", type: "PACKAGE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolvePackage(
+            name: "accounts_pkg", preferredOwner: "HR")
+        XCTAssertEqual(resolved?.owner, "HR")
+        XCTAssertEqual(resolved?.name, "ACCOUNTS_PKG")
+        XCTAssertEqual(resolved?.objectType, "PACKAGE")
+    }
+
+    func test_resolvePackage_ignoresNonPackageObjectsWithSameName() async {
+        // A TABLE with the same identifier as a package must not satisfy a
+        // package lookup. Without this guard a `pkg.` qualifier pointing at
+        // a table would attempt to surface non-existent procedure members.
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "HR", name: "ACCOUNTS_PKG", type: "TABLE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolvePackage(
+            name: "ACCOUNTS_PKG", preferredOwner: "HR")
+        XCTAssertNil(resolved)
+    }
+
+    func test_resolvePackage_prefersConnectedSchema() async {
+        // Same package name in two schemas — preferred owner wins.
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "BILLING", name: "ACCOUNTS_PKG", type: "PACKAGE")
+        addObject(in: ctx, owner: "HR", name: "ACCOUNTS_PKG", type: "PACKAGE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolvePackage(
+            name: "ACCOUNTS_PKG", preferredOwner: "HR")
+        XCTAssertEqual(resolved?.owner, "HR")
+    }
+
+    func test_resolvePackage_fallsBackToFirstWhenPreferredAbsent() async {
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "BILLING", name: "ACCOUNTS_PKG", type: "PACKAGE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolvePackage(
+            name: "ACCOUNTS_PKG", preferredOwner: "HR")
+        XCTAssertEqual(resolved?.owner, "BILLING")
+    }
+
+    // MARK: - Completion: resolveStandaloneProcedure
+
+    func test_resolveStandaloneProcedure_findsProcedureAndFunction() async {
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "HR", name: "PURGE_OLD", type: "PROCEDURE")
+        addObject(in: ctx, owner: "HR", name: "NEXT_SERIAL", type: "FUNCTION")
+        try! ctx.save()
+
+        let proc = await dataSource.resolveStandaloneProcedure(
+            name: "PURGE_OLD", preferredOwner: "HR")
+        XCTAssertEqual(proc?.objectType, "PROCEDURE")
+
+        let fn = await dataSource.resolveStandaloneProcedure(
+            name: "NEXT_SERIAL", preferredOwner: "HR")
+        XCTAssertEqual(fn?.objectType, "FUNCTION")
+    }
+
+    func test_resolveStandaloneProcedure_ignoresPackagesAndTables() async {
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "HR", name: "PURGE_OLD", type: "PACKAGE")
+        addObject(in: ctx, owner: "HR", name: "PURGE_OLD", type: "TABLE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolveStandaloneProcedure(
+            name: "PURGE_OLD", preferredOwner: "HR")
+        XCTAssertNil(resolved,
+                     "Only PROCEDURE / FUNCTION rows must satisfy a standalone-call lookup")
+    }
+
+    func test_resolveStandaloneProcedure_prefersConnectedSchema() async {
+        let ctx = persistence.container.viewContext
+        addObject(in: ctx, owner: "BILLING", name: "PURGE_OLD", type: "PROCEDURE")
+        addObject(in: ctx, owner: "HR", name: "PURGE_OLD", type: "PROCEDURE")
+        try! ctx.save()
+
+        let resolved = await dataSource.resolveStandaloneProcedure(
+            name: "PURGE_OLD", preferredOwner: "HR")
+        XCTAssertEqual(resolved?.owner, "HR")
+    }
+
     // MARK: - Quick View: resolveSchemaObject
 
     func test_resolveSchemaObject_explicitOwner_findsExactRow() async {
@@ -359,8 +457,10 @@ final class CompletionDataSourceTests: XCTestCase {
 
     func test_procedureDetail_standalone_propagatesObjectInvalidity() async {
         let ctx = persistence.container.viewContext
-        // Standalone PROCEDURE — parent object is keyed by the procedure name.
-        addProcedure(in: ctx, owner: "HR", pkg: "PURGE_OLD", name: "PURGE_OLD",
+        // Standalone PROCEDURE — parent object is keyed by the procedure
+        // name. `ALL_PROCEDURES.PROCEDURE_NAME` is NULL for top-level
+        // callables, so the cache row carries `procedureName_ == nil`.
+        addProcedure(in: ctx, owner: "HR", pkg: "PURGE_OLD", name: nil,
                      subprogramId: 1, overload: nil, parentType: "PROCEDURE")
         addObject(in: ctx, owner: "HR", name: "PURGE_OLD", type: "PROCEDURE")
         let request = DBCacheObject.fetchRequest()

@@ -94,6 +94,12 @@ final class CompletionCoordinator: @unchecked Sendable {
                                                  tree: tree,
                                                  offset: offset)
 
+        case .procedureCall(let packageName, let procedureName, let argumentIndex):
+            return await procedureCallSignatures(packageName: packageName,
+                                                 procedureName: procedureName,
+                                                 currentArgumentIndex: argumentIndex,
+                                                 owner: owner)
+
         case .identifierPrefix(let prefix):
             // Soft fallback: if the prefix is non-trivial, surface objects
             // across all cached schemas; the user's connected schema is
@@ -111,11 +117,25 @@ final class CompletionCoordinator: @unchecked Sendable {
 
     /// Replaces the partial identifier under the cursor with the picked item's
     /// `insertText`. Falls back to plain insertion if no partial range exists.
+    /// Signature-row insertions take a separate path: the cursor sits right
+    /// after `(`, so there's no partial identifier to strip — just insert the
+    /// named-arg template and park the caret at the first value slot.
     func insert(_ item: any STCompletionItem, into textView: STTextView) {
         guard let item = item as? MacintoraCompletionItem else { return }
         let source = textView.text ?? ""
         let nsSource = source as NSString
         let cursor = textView.selectedRange().location
+
+        if let signature = item.signatureInsertion {
+            let insertLocation = max(0, min(cursor, nsSource.length))
+            isInsertingCompletion = true
+            textView.replaceCharacters(in: NSRange(location: insertLocation, length: 0),
+                                       with: signature.text)
+            textView.textSelection = NSRange(location: insertLocation + signature.caretUTF16Offset,
+                                             length: 0)
+            isInsertingCompletion = false
+            return
+        }
 
         // Compute the range of the in-progress identifier preceding the
         // cursor — same backward scan the analyzer uses.
@@ -188,7 +208,11 @@ final class CompletionCoordinator: @unchecked Sendable {
 
     private func shouldAutoTrigger(textView: STTextView, replacement: String) -> Bool {
         guard let last = replacement.unicodeScalars.last else { return false }
-        if last == "." { return true }
+        // `.` triggers dotted-member completion; `(` and `,` trigger the
+        // signature popup for the enclosing call. The analyzer is the
+        // authority on whether the cursor is actually inside a call — this
+        // gate just decides whether to fire `complete(_:)` at all.
+        if last == "." || last == "(" || last == "," { return true }
         if SourceScanner.isIdentifierChar(last) {
             // Require at least one identifier character before the cursor to
             // avoid popping for a stray keystroke.
@@ -236,28 +260,39 @@ final class CompletionCoordinator: @unchecked Sendable {
         return items
     }
 
-    private func dottedMemberSuggestions(qualifier: String,
-                                         prefix: String,
-                                         owner: String,
-                                         source: String,
-                                         tree: SwiftTreeSitter.Tree?,
-                                         offset: Int) async -> [MacintoraCompletionItem] {
+    func dottedMemberSuggestions(qualifier: String,
+                                 prefix: String,
+                                 owner: String,
+                                 source: String,
+                                 tree: SwiftTreeSitter.Tree?,
+                                 offset: Int) async -> [MacintoraCompletionItem] {
         let aliases = currentAliases(source: source, tree: tree, offset: offset)
         let upper = qualifier.uppercased()
 
-        // 1) Alias → table columns.
+        // 1) Alias → table columns. Aliases resolve unambiguously, so this
+        // short-circuits the rest.
         if let resolved = aliases[upper] ?? nil {
             return await fetchColumns(table: resolved, prefix: prefix)
         }
 
-        // 2) Treat as schema → list its objects (tables/views/packages).
-        let objects = await dataSource.objects(
+        // 2) `qualifier.` is ambiguous without semantic resolution: it could
+        // be `schema.object` *or* `package.member`, and a cached
+        // `qualifier`-named TABLE could coexist with a `qualifier`-named
+        // PACKAGE in another schema. Probe both in parallel and merge —
+        // showing both kinds in the popup is the pragmatic answer.
+        async let schemaObjects = dataSource.objects(
             search: prefix,
             owner: upper,
             types: ["TABLE", "VIEW", "PACKAGE"],
             limit: fetchLimit)
-        if !objects.isEmpty {
-            return objects.map { MacintoraCompletionItem.make(from: $0) }
+        async let packageMembers = packageMemberSuggestions(qualifier: upper,
+                                                            prefix: prefix,
+                                                            owner: owner)
+
+        let objs = await schemaObjects
+        let procs = await packageMembers
+        if !objs.isEmpty || !procs.isEmpty {
+            return objs.map { MacintoraCompletionItem.make(from: $0) } + procs
         }
 
         // 3) Treat as table → columns of any cached table with this name,
@@ -266,6 +301,106 @@ final class CompletionCoordinator: @unchecked Sendable {
         return await dataSource
             .columns(tableName: upper, owner: nil, search: prefix, limit: fetchLimit)
             .map { MacintoraCompletionItem.make(from: $0) }
+    }
+
+    /// Resolves `qualifier` to a cached PACKAGE and surfaces its procedures
+    /// and functions. Empty result when the qualifier doesn't name a package
+    /// in any cached schema. The package is selected by `resolvePackage`'s
+    /// preferred-owner-first ranking; cross-schema name collisions
+    /// (rare — same package name in two schemas the user has cached) pick
+    /// the connected schema if it has one, otherwise the alphabetically
+    /// first match.
+    private func packageMemberSuggestions(qualifier: String,
+                                          prefix: String,
+                                          owner: String) async -> [MacintoraCompletionItem] {
+        guard let pkg = await dataSource.resolvePackage(name: qualifier,
+                                                        preferredOwner: owner)
+        else { return [] }
+        let procedures = await dataSource.procedures(packageName: pkg.name,
+                                                     owner: pkg.owner,
+                                                     search: prefix,
+                                                     limit: fetchLimit)
+        // Collapse overloads — the row only shows the procedure name at this
+        // point, so duplicate "DEBIT" rows would just look like noise. The
+        // user picks a specific overload after typing `(`, where the
+        // signature popup surfaces every overload with its parameter list.
+        var seen = Set<String>()
+        let unique = procedures.filter { seen.insert($0.procedureName).inserted }
+        return unique.map { MacintoraCompletionItem.make(from: $0) }
+    }
+
+    /// Builds one popup row per overload of the call target, with the
+    /// formatted parameter list as the primary text. Handles both package
+    /// members (`pkg.proc(`) and standalones (`proc(` at top level — the
+    /// cache stores standalones with `objectName_ == procedureName_`,
+    /// so the same `procedures(...)` call works once we know the owner).
+    /// The matching-arity overload is sorted first as a hint, and the
+    /// argument under the cursor is wrapped in `›‹` markers in the
+    /// rendered display so the user can see which slot they're filling.
+    private func procedureCallSignatures(packageName: String?,
+                                         procedureName: String,
+                                         currentArgumentIndex: Int,
+                                         owner: String) async -> [MacintoraCompletionItem] {
+        let overloads: [ProcedureSuggestion]
+        if let packageName {
+            guard let pkg = await dataSource.resolvePackage(name: packageName,
+                                                            preferredOwner: owner) else {
+                editorCompletionLog.info("procedureCall: no cached package for \(packageName, privacy: .public)")
+                return []
+            }
+            // procedures(...) does substring matching; filter to exact-name
+            // overloads. Overload count is small (typically 1-3), so the
+            // per-overload argument fetch is cheap.
+            let upperProc = procedureName.uppercased()
+            let allMatches = await dataSource.procedures(packageName: pkg.name,
+                                                         owner: pkg.owner,
+                                                         search: procedureName,
+                                                         limit: fetchLimit)
+            overloads = allMatches.filter { $0.procedureName == upperProc }
+            guard !overloads.isEmpty else {
+                editorCompletionLog.info("procedureCall: \(pkg.name, privacy: .public).\(upperProc, privacy: .public) not in cache")
+                return []
+            }
+        } else {
+            // Standalone: DBCacheProcedure stores `procedureName_` as NULL
+            // (it's `ALL_PROCEDURES.PROCEDURE_NAME`, NULL for top-level
+            // callables), so the package-member fetcher can't reach this
+            // row. Use the dedicated single-row lookup. Standalone names
+            // can't be overloaded at the schema level, so this is always
+            // 0 or 1 row.
+            guard let resolved = await dataSource.resolveStandaloneProcedure(
+                    name: procedureName, preferredOwner: owner),
+                  let suggestion = await dataSource.standaloneProcedure(
+                    owner: resolved.owner, name: resolved.name)
+            else {
+                editorCompletionLog.info("procedureCall: standalone \(procedureName, privacy: .public) not in cache")
+                return []
+            }
+            overloads = [suggestion]
+        }
+
+        var rendered: [(item: MacintoraCompletionItem, arity: Int)] = []
+        for overload in overloads {
+            let args = await dataSource.procedureArguments(owner: overload.owner,
+                                                           packageName: overload.packageName,
+                                                           procedureName: overload.procedureName,
+                                                           overload: overload.overload)
+            let item = MacintoraCompletionItem.make(signatureFrom: overload,
+                                                    arguments: args,
+                                                    activeArgumentIndex: currentArgumentIndex)
+            rendered.append((item, args.count))
+        }
+        // Bubble matching-arity overloads first; ties retain fetch order.
+        let needed = currentArgumentIndex + 1
+        return rendered
+            .enumerated()
+            .sorted { lhs, rhs in
+                let lhsMatch = lhs.element.arity >= needed
+                let rhsMatch = rhs.element.arity >= needed
+                if lhsMatch != rhsMatch { return lhsMatch && !rhsMatch }
+                return lhs.offset < rhs.offset
+            }
+            .map { $0.element.item }
     }
 
     private func fetchColumns(table: ResolvedTable, prefix: String) async -> [MacintoraCompletionItem] {

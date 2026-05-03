@@ -287,6 +287,144 @@ actor CompletionDataSource {
         }
     }
 
+    /// Resolves `name` to the best-ranked `DBCacheObject` of type `PACKAGE`
+    /// across all cached schemas. The preferred owner wins; otherwise the
+    /// alphabetically first match. Returns nil when the name doesn't refer to
+    /// any cached package — used by the completion coordinator to decide
+    /// whether `qualifier.` should expand into package members.
+    func resolvePackage(name: String,
+                        preferredOwner: String) async -> ResolvedSchemaObject? {
+        await fetch { ctx -> ResolvedSchemaObject? in
+            let upperName = name.uppercased()
+            let upperPreferred = preferredOwner.uppercased()
+            let request = DBCacheObject.fetchRequest()
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "name_ = %@", upperName),
+                NSPredicate(format: "type_ = %@", "PACKAGE")
+            ])
+            request.sortDescriptors = [
+                NSSortDescriptor(key: "owner_", ascending: true),
+                NSSortDescriptor(key: "name_", ascending: true)
+            ]
+            do {
+                let rows = try ctx.fetch(request)
+                guard !rows.isEmpty else { return nil }
+                let chosen = rows.first { ($0.owner_ ?? "") == upperPreferred } ?? rows[0]
+                return ResolvedSchemaObject(
+                    owner: chosen.owner_ ?? "",
+                    name: chosen.name_ ?? "",
+                    objectType: chosen.type_ ?? "PACKAGE",
+                    isValid: chosen.isValid,
+                    lastDDLDate: chosen.lastDDLDate)
+            } catch {
+                self.logger.error("resolvePackage fetch failed: \(error.localizedDescription, privacy: .public)")
+                return nil
+            }
+        }
+    }
+
+    /// Single-row counterpart of `procedures(...)` for top-level callables.
+    /// The package-member fetcher requires `procedureName_ != nil`, but
+    /// `ALL_PROCEDURES.PROCEDURE_NAME` is NULL for standalones in some
+    /// Oracle versions and populated in others — we can't rely on a
+    /// nil/non-nil check. The reliable discriminator is
+    /// `DBCacheProcedure.objectType_`: it carries the parent
+    /// `ALL_PROCEDURES.OBJECT_TYPE`, so standalones have `"PROCEDURE"`
+    /// or `"FUNCTION"` while package members have `"PACKAGE"`.
+    /// Argument rows still record the procedure name (it's `OBJECT_NAME`
+    /// from `ALL_ARGUMENTS`, with `nvl(PACKAGE_NAME, OBJECT_NAME)` used
+    /// as `objectName_`), so the return-type lookup keys on
+    /// `objectName_` and ignores `procedureName_`.
+    func standaloneProcedure(owner: String,
+                             name: String) async -> ProcedureSuggestion? {
+        await fetch { ctx -> ProcedureSuggestion? in
+            let upperOwner = owner.uppercased()
+            let upperName = name.uppercased()
+
+            let procRequest = DBCacheProcedure.fetchRequest()
+            procRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "owner_ = %@", upperOwner),
+                NSPredicate(format: "objectName_ = %@", upperName),
+                NSPredicate(format: "objectType_ IN %@", ["PROCEDURE", "FUNCTION"])
+            ])
+            procRequest.fetchLimit = 1
+
+            // Function classification: presence of the position == 0 /
+            // dataLevel == 0 / nameless return-type row. Standalone arg
+            // rows store the proc name in `procedureName_` and may carry
+            // an empty `objectName_`, so pin via `procedureName_` and
+            // relax `objectName_`.
+            let argRequest = DBCacheProcedureArgument.fetchRequest()
+            argRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "owner_ = %@", upperOwner),
+                NSPredicate(format: "objectName_ = %@ OR objectName_ == nil OR objectName_ = %@",
+                            upperName, ""),
+                NSPredicate(format: "procedureName_ = %@", upperName),
+                NSPredicate(format: "position == 0"),
+                NSPredicate(format: "dataLevel == 0"),
+                NSPredicate(format: "argumentName_ == nil")
+            ])
+            argRequest.fetchLimit = 1
+
+            do {
+                guard let procRow = try ctx.fetch(procRequest).first else {
+                    self.logger.info("standaloneProcedure: no DBCacheProcedure row for \(upperOwner, privacy: .public).\(upperName, privacy: .public) (objectType_ in PROCEDURE/FUNCTION)")
+                    return nil
+                }
+                let returnType = try ctx.fetch(argRequest).first?.dataType_
+                self.logger.info("standaloneProcedure: \(upperOwner, privacy: .public).\(upperName, privacy: .public) found — objectType_=\(procRow.objectType_ ?? "nil", privacy: .public) procedureName_=\(procRow.procedureName_ ?? "nil", privacy: .public) overload_=\(procRow.overload_ ?? "nil", privacy: .public) returnType=\(returnType ?? "nil", privacy: .public)")
+                return ProcedureSuggestion(
+                    owner: procRow.owner_ ?? upperOwner,
+                    packageName: procRow.objectName_ ?? upperName,
+                    procedureName: upperName,
+                    overload: procRow.overload_,
+                    subprogramId: Int(procRow.subprogramId),
+                    kind: returnType != nil ? "FUNCTION" : "PROCEDURE",
+                    parentType: procRow.objectType_ ?? "",
+                    returnType: returnType)
+            } catch {
+                self.logger.error("standaloneProcedure fetch failed: \(error.localizedDescription, privacy: .public)")
+                return nil
+            }
+        }
+    }
+
+    /// Resolves a top-level procedure or function name (no package qualifier)
+    /// to its owning schema. Mirrors `resolvePackage(...)` but matches
+    /// `DBCacheObject.type_ IN ("PROCEDURE", "FUNCTION")`. Used by the
+    /// completion coordinator to surface signatures for `proc(` calls
+    /// without a package prefix.
+    func resolveStandaloneProcedure(name: String,
+                                    preferredOwner: String) async -> ResolvedSchemaObject? {
+        await fetch { ctx -> ResolvedSchemaObject? in
+            let upperName = name.uppercased()
+            let upperPreferred = preferredOwner.uppercased()
+            let request = DBCacheObject.fetchRequest()
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "name_ = %@", upperName),
+                NSPredicate(format: "type_ IN %@", ["PROCEDURE", "FUNCTION"])
+            ])
+            request.sortDescriptors = [
+                NSSortDescriptor(key: "owner_", ascending: true),
+                NSSortDescriptor(key: "name_", ascending: true)
+            ]
+            do {
+                let rows = try ctx.fetch(request)
+                guard !rows.isEmpty else { return nil }
+                let chosen = rows.first { ($0.owner_ ?? "") == upperPreferred } ?? rows[0]
+                return ResolvedSchemaObject(
+                    owner: chosen.owner_ ?? "",
+                    name: chosen.name_ ?? "",
+                    objectType: chosen.type_ ?? "PROCEDURE",
+                    isValid: chosen.isValid,
+                    lastDDLDate: chosen.lastDDLDate)
+            } catch {
+                self.logger.error("resolveStandaloneProcedure fetch failed: \(error.localizedDescription, privacy: .public)")
+                return nil
+            }
+        }
+    }
+
     /// Arguments of a single procedure / function invocation. Excludes the
     /// `position == 0` return-value row (callers consume return type via
     /// `procedures(...).returnType`) and `dataLevel > 0` composite expansions.
@@ -296,10 +434,32 @@ actor CompletionDataSource {
                             overload: String?) async -> [ProcedureArgumentSuggestion] {
         await fetch { ctx -> [ProcedureArgumentSuggestion] in
             let request = DBCacheProcedureArgument.fetchRequest()
+            let upperPkg = packageName.uppercased()
+            let upperProc = procedureName.uppercased()
+            // Callers pass `packageName == procedureName` as the standalone
+            // signal. The cache layout for standalone args is empirically
+            // `objectName_ == ""` and `procedureName_ == procName` (the
+            // ingestion path persists `nvl(PACKAGE_NAME, "")` into
+            // `objectName_` for standalones, even though it should be the
+            // proc name). Accept all observed shapes — proc name in either
+            // field, plus NULL/empty — and pin to `procedureName_ = X`
+            // which is consistently populated. Package members keep the
+            // strict pairwise match.
+            let isStandalone = upperPkg == upperProc
+            let pkgMatch: NSPredicate
+            let nameMatch: NSPredicate
+            if isStandalone {
+                pkgMatch = NSPredicate(format: "objectName_ = %@ OR objectName_ == nil OR objectName_ = %@",
+                                       upperPkg, "")
+                nameMatch = NSPredicate(format: "procedureName_ = %@", upperProc)
+            } else {
+                pkgMatch = NSPredicate(format: "objectName_ = %@", upperPkg)
+                nameMatch = NSPredicate(format: "procedureName_ = %@", upperProc)
+            }
             var predicates: [NSPredicate] = [
                 NSPredicate(format: "owner_ = %@", owner.uppercased()),
-                NSPredicate(format: "objectName_ = %@", packageName.uppercased()),
-                NSPredicate(format: "procedureName_ = %@", procedureName.uppercased()),
+                pkgMatch,
+                nameMatch,
                 NSPredicate(format: "dataLevel == 0"),
                 NSPredicate(format: "position > 0")
             ]
@@ -312,20 +472,29 @@ actor CompletionDataSource {
             request.sortDescriptors = [NSSortDescriptor(key: "sequence", ascending: true)]
             do {
                 let rows = try ctx.fetch(request)
-                return rows.map { row in
-                    ProcedureArgumentSuggestion(
-                        owner: row.owner_ ?? "",
-                        packageName: row.objectName_ ?? "",
-                        procedureName: row.procedureName_ ?? "",
-                        overload: row.overload_,
-                        position: Int(row.position),
-                        argumentName: row.argumentName_,
-                        dataType: row.dataType_ ?? "",
-                        inOut: row.inOut_ ?? "IN",
-                        defaulted: row.defaulted,
-                        defaultValue: row.defaultValue_
-                    )
+                // Dedup on the natural key — the same standalone proc can
+                // accumulate copies in the cache because the delete-by-name
+                // path keys on the wrong column for standalones (an
+                // upstream bug). Surface each parameter once.
+                var seen = Set<String>()
+                var unique: [ProcedureArgumentSuggestion] = []
+                for row in rows {
+                    let key = "\(row.position)|\(row.sequence)|\(row.overload_ ?? "")|\(row.argumentName_ ?? "")"
+                    if seen.insert(key).inserted {
+                        unique.append(ProcedureArgumentSuggestion(
+                            owner: row.owner_ ?? "",
+                            packageName: row.objectName_ ?? "",
+                            procedureName: row.procedureName_ ?? "",
+                            overload: row.overload_,
+                            position: Int(row.position),
+                            argumentName: row.argumentName_,
+                            dataType: row.dataType_ ?? "",
+                            inOut: row.inOut_ ?? "IN",
+                            defaulted: row.defaulted,
+                            defaultValue: row.defaultValue_))
+                    }
                 }
+                return unique
             } catch {
                 self.logger.error("procedureArguments fetch failed: \(error.localizedDescription, privacy: .public)")
                 return []
@@ -653,9 +822,20 @@ actor CompletionDataSource {
             let procRequest = DBCacheProcedure.fetchRequest()
             var procPredicates: [NSPredicate] = [
                 NSPredicate(format: "owner_ = %@", upperOwner),
-                NSPredicate(format: "objectName_ = %@", upperPkgOrSelf),
-                NSPredicate(format: "procedureName_ = %@", upperProc)
+                NSPredicate(format: "objectName_ = %@", upperPkgOrSelf)
             ]
+            // Package members carry `procedureName_` populated; standalones
+            // come from `ALL_PROCEDURES.PROCEDURE_NAME` whose value depends
+            // on the Oracle version (NULL on some, the proc name on
+            // others). Discriminate via `objectType_` instead — it's the
+            // parent `OBJECT_TYPE` and is "PROCEDURE"/"FUNCTION" for
+            // standalones, "PACKAGE" for members.
+            if packageName != nil {
+                procPredicates.append(NSPredicate(format: "procedureName_ = %@", upperProc))
+            } else {
+                procPredicates.append(NSPredicate(format: "objectType_ IN %@",
+                                                  ["PROCEDURE", "FUNCTION"]))
+            }
             if let overload, !overload.isEmpty {
                 procPredicates.append(NSPredicate(format: "overload_ = %@", overload))
             }
@@ -677,10 +857,20 @@ actor CompletionDataSource {
                 let objectRow = try ctx.fetch(objectRequest).first
                 let procRowOverload = procRow.overload_
 
+                // Standalone arg rows are stored in this cache with
+                // `objectName_ == ""` and the proc name in
+                // `procedureName_` — pin to `procedureName_` and relax
+                // `objectName_` for the `packageName == nil` branch.
+                // Package members keep the strict pairwise match so we
+                // don't collapse same-named members of two packages.
                 let argRequest = DBCacheProcedureArgument.fetchRequest()
+                let argPkgMatch: NSPredicate = packageName == nil
+                    ? NSPredicate(format: "objectName_ = %@ OR objectName_ == nil OR objectName_ = %@",
+                                  upperPkgOrSelf, "")
+                    : NSPredicate(format: "objectName_ = %@", upperPkgOrSelf)
                 var argPredicates: [NSPredicate] = [
                     NSPredicate(format: "owner_ = %@", upperOwner),
-                    NSPredicate(format: "objectName_ = %@", upperPkgOrSelf),
+                    argPkgMatch,
                     NSPredicate(format: "procedureName_ = %@", upperProc),
                     NSPredicate(format: "dataLevel == 0")
                 ]
@@ -695,11 +885,18 @@ actor CompletionDataSource {
 
                 var returnType: String? = nil
                 var parameters: [QuickViewProcedureArgument] = []
+                // Dedup — standalone args can accumulate copies in this
+                // cache because the upstream delete-by-objectName path
+                // doesn't match the empty `objectName_` they're stored
+                // under, so each refresh layers another set of duplicates.
+                var seenParam = Set<String>()
                 for arg in argRows {
                     if arg.position == 0, arg.argumentName_ == nil {
                         returnType = arg.dataType_
                         continue
                     }
+                    let key = "\(arg.position)|\(arg.sequence)|\(arg.overload_ ?? "")|\(arg.argumentName_ ?? "")"
+                    guard seenParam.insert(key).inserted else { continue }
                     parameters.append(QuickViewProcedureArgument(
                         sequence: Int(arg.sequence),
                         position: Int(arg.position),
@@ -710,9 +907,21 @@ actor CompletionDataSource {
                         defaultValue: arg.defaultValue_))
                 }
 
+                // For standalones the cache row's `procedureName_` can be
+                // nil OR empty depending on Oracle version, but the
+                // displayed name is just what the user clicked — fall
+                // back to `upperProc` whenever we'd otherwise display an
+                // empty string. (Without this, the Quick View header
+                // renders as `OWNER.` with a trailing dot.)
+                let displayName: String = {
+                    if packageName == nil { return upperProc }
+                    if let n = procRow.procedureName_, !n.isEmpty { return n }
+                    return upperProc
+                }()
+
                 return ProcedureDetailPayload(
                     owner: procRow.owner_ ?? upperOwner,
-                    name: procRow.procedureName_ ?? upperProc,
+                    name: displayName,
                     packageName: packageName.map { $0.uppercased() },
                     kind: returnType != nil ? "FUNCTION" : "PROCEDURE",
                     overload: procRowOverload,

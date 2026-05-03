@@ -81,6 +81,101 @@ final class SQLContextAnalyzerTests: XCTestCase {
         XCTAssertEqual(context, .none)
     }
 
+    // MARK: - Procedure call (signature popup)
+
+    func test_procedureCall_packageMember_emptyArgList() {
+        let source = "BEGIN accounts_pkg.debit("
+        let context = SQLContextAnalyzer.parseAndAnalyze(source, utf16Offset: source.utf16.count)
+        XCTAssertEqual(context,
+                       .procedureCall(packageName: "accounts_pkg",
+                                      procedureName: "debit",
+                                      currentArgumentIndex: 0))
+    }
+
+    func test_procedureCall_afterFirstComma_indexAdvances() {
+        let source = "BEGIN accounts_pkg.debit(100, "
+        let context = SQLContextAnalyzer.parseAndAnalyze(source, utf16Offset: source.utf16.count)
+        XCTAssertEqual(context,
+                       .procedureCall(packageName: "accounts_pkg",
+                                      procedureName: "debit",
+                                      currentArgumentIndex: 1))
+    }
+
+    func test_procedureCall_skipsNestedParens() {
+        // Nested call's args/commas must not perturb the outer index.
+        let source = "BEGIN accounts_pkg.debit(get_amount(100, 200), "
+        let context = SQLContextAnalyzer.parseAndAnalyze(source, utf16Offset: source.utf16.count)
+        XCTAssertEqual(context,
+                       .procedureCall(packageName: "accounts_pkg",
+                                      procedureName: "debit",
+                                      currentArgumentIndex: 1))
+    }
+
+    func test_procedureCall_standalone_noPackageQualifier() {
+        // Phase 3 lifts this case to surfacing in the popup; the analyzer
+        // already classifies it correctly with packageName == nil.
+        let source = "BEGIN purge_old("
+        let context = SQLContextAnalyzer.parseAndAnalyze(source, utf16Offset: source.utf16.count)
+        XCTAssertEqual(context,
+                       .procedureCall(packageName: nil,
+                                      procedureName: "purge_old",
+                                      currentArgumentIndex: 0))
+    }
+
+    func test_procedureCall_partialArgPrefix_fallsThroughToIdentifier() {
+        // Once the user starts typing an argument identifier, the regular
+        // completion should take over so they can pick column / variable
+        // names rather than the signature row.
+        let source = "BEGIN accounts_pkg.debit(am"
+        let context = SQLContextAnalyzer.parseAndAnalyze(source, utf16Offset: source.utf16.count)
+        switch context {
+        case .columnReference(_, let prefix), .identifierPrefix(let prefix):
+            XCTAssertEqual(prefix, "am")
+        default:
+            XCTFail("expected identifier-flavoured context, got \(context)")
+        }
+    }
+
+    func test_procedureCall_dottedArgument_routesToDottedMember() {
+        // Inside the call but typing a qualified reference — the dotted
+        // member branch wins. Tests that the procedure-call probe doesn't
+        // swallow legitimate dotted-member contexts.
+        let source = "BEGIN accounts_pkg.debit(emp."
+        let context = SQLContextAnalyzer.parseAndAnalyze(source, utf16Offset: source.utf16.count)
+        if case .dottedMember(let qualifier, let prefix) = context {
+            XCTAssertEqual(qualifier, "emp")
+            XCTAssertEqual(prefix, "")
+        } else {
+            XCTFail("expected dottedMember, got \(context)")
+        }
+    }
+
+    func test_procedureCall_outsideAnyCall_returnsIdentifier() {
+        // No enclosing `(` — must not invent one.
+        let source = "SELECT "
+        let context = SQLContextAnalyzer.parseAndAnalyze(source, utf16Offset: source.utf16.count)
+        switch context {
+        case .columnReference, .identifierPrefix, .afterFromKeyword:
+            break
+        default:
+            XCTFail("expected fallthrough context, got \(context)")
+        }
+    }
+
+    func test_procedureCall_statementBoundary_abortsWalk() {
+        // A `;` between `(` and the cursor means the call isn't really
+        // open; the walk should abort rather than reach back into the
+        // previous statement.
+        let source = "accounts_pkg.debit(100); BEGIN "
+        let context = SQLContextAnalyzer.parseAndAnalyze(source, utf16Offset: source.utf16.count)
+        switch context {
+        case .procedureCall:
+            XCTFail("statement boundary must terminate the call walk")
+        default:
+            break
+        }
+    }
+
     // MARK: - ERROR-node fallback (mid-typing tolerance)
 
     func test_brokenSyntax_stillReturnsContext() {

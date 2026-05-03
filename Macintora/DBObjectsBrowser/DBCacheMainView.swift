@@ -91,20 +91,7 @@ struct DBCacheMainView: View {
             }
             .padding()
         } content: {
-            List(selection: $listSelection) {
-                ForEach(items) { section in
-                    Section(header: Text(section.id ?? "(unknown)")) {
-                        ForEach(section) { item in
-                            NavigationLink(value: item) {
-                                DBCacheListEntryView(dbObject: item)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .contentShape(Rectangle())
-                            }
-                        }
-                    }
-                }
-            }
-            .listStyle(SidebarListStyle())
+            DBCacheSidebarList(items: items, listSelection: $listSelection)
         } detail: {
             if let selectedItem = listSelection {
                 DBDetailView(dbObject: Binding(get: { selectedItem }, set: {_ in }))
@@ -130,65 +117,68 @@ struct DBCacheMainView: View {
             listSelection = nil
             items.nsPredicate = value
         }
-        .onChange(of: items) { _, _ in
+        .onChange(of: items.count) { _, _ in
             performAutoSelect()
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .principal) {
-                Menu {
-                    Button(cache.isReloading ? "Working..." : "Incremental Refresh") {
-                        guard !cache.isReloading else { return }
-                        cache.updateCache()
-                    }
-                    
-                    Button(cache.isReloading ? "Working..." : "Full Refresh (No Vacuum)") {
-                        guard !cache.isReloading else { return }
-                        cache.updateCache(ignoreLastUpdate: true)
-                    }
-                    
-                    Button(cache.isReloading ? "Working..." : "Full Refresh + Vacuum") {
-                        guard !cache.isReloading else { return }
-                        cache.updateCache(ignoreLastUpdate: true, withCleanup: true)
-                    }
+        .toolbar { toolbarContent }
+    }
 
-                    Button(cache.isReloading ? "Working..." : "Vacuum Only") {
-                        guard !cache.isReloading else { return }
-                        cache.updateCache(cleanupOnly: true)
-                    }
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItemGroup(placement: .principal) {
+            Menu {
+                Button(cache.isReloading ? "Working..." : "Incremental Refresh") {
+                    guard !cache.isReloading else { return }
+                    cache.updateCache()
+                }
 
-                } label: {
-                    Label(cache.isReloading ? "Working..." : "Refresh", systemImage: "arrow.triangle.2.circlepath")
+                Button(cache.isReloading ? "Working..." : "Full Refresh (No Vacuum)") {
+                    guard !cache.isReloading else { return }
+                    cache.updateCache(ignoreLastUpdate: true)
                 }
-                .help("Refresh Cache")
-                
-                Button { cache.clearCache() } label: {
-                    Label("Clear", systemImage: "trash")
+
+                Button(cache.isReloading ? "Working..." : "Full Refresh + Vacuum") {
+                    guard !cache.isReloading else { return }
+                    cache.updateCache(ignoreLastUpdate: true, withCleanup: true)
                 }
-                .help("Clear Cache")
+
+                Button(cache.isReloading ? "Working..." : "Vacuum Only") {
+                    guard !cache.isReloading else { return }
+                    cache.updateCache(cleanupOnly: true)
+                }
+
+            } label: {
+                Label(cache.isReloading ? "Working..." : "Refresh", systemImage: "arrow.triangle.2.circlepath")
             }
-            
-            ToolbarItemGroup(placement: .status) {
-                Button { reportDisplayed.toggle() } label: {
-                    Label("Counts", systemImage: "sum")
-                }
-                .sheet(isPresented: $reportDisplayed) {
-                    VStack {
-                        Text(cache.reportCacheCounts())
-                            .textSelection(.enabled)
-                            .lineLimit(20)
-                            .frame(width: 300.0, height: 200.0, alignment: .topLeading)
-                            .padding()
-                        Button { reportDisplayed.toggle() } label: { Text("Dismiss") }
+            .help("Refresh Cache")
+
+            Button { cache.clearCache() } label: {
+                Label("Clear", systemImage: "trash")
+            }
+            .help("Clear Cache")
+        }
+
+        ToolbarItemGroup(placement: .status) {
+            Button { reportDisplayed.toggle() } label: {
+                Label("Counts", systemImage: "sum")
+            }
+            .sheet(isPresented: $reportDisplayed) {
+                VStack {
+                    Text(cache.reportCacheCounts())
+                        .textSelection(.enabled)
+                        .lineLimit(20)
+                        .frame(width: 300.0, height: 200.0, alignment: .topLeading)
                         .padding()
-                    }.padding()
-                }
-                .help("Show Cache counts")
-                
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .rotationEffect(Angle.degrees(cache.isReloading ? 360 : 0))
-                    .animation(.linear(duration: 2.0).repeat(while: cache.isReloading, autoreverses: false), value: cache.isReloading)
-                    .foregroundColor(cache.isReloading ? .red : .green)
+                    Button { reportDisplayed.toggle() } label: { Text("Dismiss") }
+                    .padding()
+                }.padding()
             }
+            .help("Show Cache counts")
+
+            Image(systemName: "arrow.triangle.2.circlepath")
+                .rotationEffect(Angle.degrees(cache.isReloading ? 360 : 0))
+                .animation(.linear(duration: 2.0).repeat(while: cache.isReloading, autoreverses: false), value: cache.isReloading)
+                .foregroundColor(cache.isReloading ? .red : .green)
         }
     }
     
@@ -215,6 +205,28 @@ struct DBCacheMainView: View {
             items.nsPredicate = cache.searchCriteria.predicate
 //            totalCountMatched = 0
         }
+    }
+}
+
+private struct DBCacheSidebarList: View {
+    let items: SectionedFetchResults<String?, DBCacheObject>
+    @Binding var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
+
+    var body: some View {
+        List(selection: $listSelection) {
+            ForEach(items) { section in
+                Section(header: Text(section.id ?? "(unknown)")) {
+                    ForEach(section) { item in
+                        NavigationLink(value: item) {
+                            DBCacheListEntryView(dbObject: item)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                        }
+                    }
+                }
+            }
+        }
+        .listStyle(SidebarListStyle())
     }
 }
 
