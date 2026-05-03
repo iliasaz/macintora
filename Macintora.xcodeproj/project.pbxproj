@@ -130,6 +130,8 @@
 		49C62C1C27DD7BAF00DE69E4 /* MainDocumentVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */; };
 		49C62C2427E010AE00DE69E4 /* ConnectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */; };
 		49CE5FF027279F3A009C2A94 /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CE5FEF27279F3A009C2A94 /* ResultView.swift */; };
+		49141400000000000000A002 /* PlsqlBlockDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49141400000000000000A001 /* PlsqlBlockDetector.swift */; };
+		49141400000000000000A004 /* PlsqlBlockDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49141400000000000000A003 /* PlsqlBlockDetectorTests.swift */; };
 		49D0ECEB2F9C1D970047540A /* EditorSelectionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECEA2F9C1D970047540A /* EditorSelectionBridge.swift */; };
 		49D0ECED2F9C1D9D0047540A /* EditorLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECEC2F9C1D9D0047540A /* EditorLanguage.swift */; };
 		49D0ECEF2F9C1DB20047540A /* MacintoraEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECEE2F9C1DB20047540A /* MacintoraEditor.swift */; };
@@ -332,6 +334,8 @@
 		49C62C1B27DD7BAF00DE69E4 /* MainDocumentVM.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainDocumentVM.swift; sourceTree = "<group>"; };
 		49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionListView.swift; sourceTree = "<group>"; };
 		49CE5FEF27279F3A009C2A94 /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
+		49141400000000000000A001 /* PlsqlBlockDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlsqlBlockDetector.swift; sourceTree = "<group>"; };
+		49141400000000000000A003 /* PlsqlBlockDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlsqlBlockDetectorTests.swift; sourceTree = "<group>"; };
 		49D0ECEA2F9C1D970047540A /* EditorSelectionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSelectionBridge.swift; sourceTree = "<group>"; };
 		49D0ECEC2F9C1D9D0047540A /* EditorLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorLanguage.swift; sourceTree = "<group>"; };
 		49D0ECEE2F9C1DB20047540A /* MacintoraEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraEditor.swift; sourceTree = "<group>"; };
@@ -722,6 +726,7 @@
 				49D0ECEE2F9C1DB20047540A /* MacintoraEditor.swift */,
 				49D0ECF02F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift */,
 				49C0000700000007 /* MacintoraEditor+Completion.swift */,
+				49141400000000000000A001 /* PlsqlBlockDetector.swift */,
 				49C0200000000000 /* Completion */,
 				49DB000D0000000D /* Plugins */,
 			);
@@ -733,6 +738,7 @@
 			children = (
 				49D0ECF32F9C1E1E0047540A /* EditorSelectionBridgeTests.swift */,
 				49D0ECF52F9C1EB90047540A /* GetCurrentSqlTests.swift */,
+				49141400000000000000A003 /* PlsqlBlockDetectorTests.swift */,
 				49C0300000000010 /* Completion */,
 				49DB001E0000001E /* Plugins */,
 			);
@@ -972,6 +978,7 @@
 				AA0000C00000000000000000 /* LegacyDocumentMigrationTests.swift in Sources */,
 				AA0000F00000000000000000 /* FullRefreshReproTests.swift in Sources */,
 				49D0ECF62F9C1EB90047540A /* GetCurrentSqlTests.swift in Sources */,
+				49141400000000000000A004 /* PlsqlBlockDetectorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1088,6 +1095,7 @@
 				49D0ECEB2F9C1D970047540A /* EditorSelectionBridge.swift in Sources */,
 				49D0ED202F9C40000047540A /* EditorTheme.swift in Sources */,
 				49D0ECEF2F9C1DB20047540A /* MacintoraEditor.swift in Sources */,
+				49141400000000000000A002 /* PlsqlBlockDetector.swift in Sources */,
 				49C0100100000001 /* SQLTreeStore.swift in Sources */,
 				49C0100200000002 /* SQLContextAnalyzer.swift in Sources */,
 				49C0100300000003 /* AliasResolver.swift in Sources */,
