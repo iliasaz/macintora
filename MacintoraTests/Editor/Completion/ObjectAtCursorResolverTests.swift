@@ -178,4 +178,76 @@ final class ObjectAtCursorResolverTests: XCTestCase {
         let result = ObjectAtCursorResolver.parseAndResolve(source, utf16Offset: cursor)
         XCTAssertEqual(result, .schemaObject(owner: "HR", name: "EMPLOYEES"))
     }
+
+    // MARK: - Quoted identifiers
+
+    /// `"MixedCase"` preserves interior case verbatim — Oracle stores quoted
+    /// identifiers exactly as written, so cache lookups must match the same
+    /// way.
+    func test_quotedTable_preservesInteriorCase() {
+        let source = "SELECT * FROM \"MixedCase\""
+        let cursor = (source as NSString).range(of: "MixedCase").location + 3
+        let result = ObjectAtCursorResolver.parseAndResolve(source, utf16Offset: cursor)
+        XCTAssertEqual(result, .schemaObject(owner: nil, name: "MixedCase"))
+    }
+
+    /// Two-part `"Schema"."Table"` — both segments preserve case independently.
+    func test_quotedSchemaAndTable_preserveCase() {
+        let source = "SELECT * FROM \"Schema\".\"Tab\""
+        let cursor = (source as NSString).range(of: "Tab").location + 1
+        let result = ObjectAtCursorResolver.parseAndResolve(source, utf16Offset: cursor)
+        XCTAssertEqual(result, .schemaObject(owner: "Schema", name: "Tab"))
+    }
+
+    /// Mixed: quoted column on an unquoted alias. The alias map lookup folds
+    /// the alias to upper, but the column name is held verbatim.
+    func test_quotedColumnOnUnquotedAlias_preservesColumnCase() {
+        let source = "SELECT a.\"ColumnX\" FROM employees a"
+        let cursor = (source as NSString).range(of: "ColumnX").location + 2
+        let result = ObjectAtCursorResolver.parseAndResolve(source, utf16Offset: cursor)
+        XCTAssertEqual(result,
+                       .column(tableOwner: nil,
+                               tableName: "EMPLOYEES",
+                               columnName: "ColumnX"))
+    }
+
+    /// Mixed-case quoted package member: `"Pkg".proc(…)` should preserve the
+    /// quoted package name, fold the unquoted member name.
+    func test_quotedPackageWithUnquotedMember_preservesCase() {
+        let source = "BEGIN \"Pkg\".do_work(); END;"
+        let cursor = (source as NSString).range(of: "do_work").location + 2
+        let result = ObjectAtCursorResolver.parseAndResolve(source, utf16Offset: cursor)
+        XCTAssertEqual(result,
+                       .packageMember(packageOwner: nil,
+                                      packageName: "Pkg",
+                                      memberName: "DO_WORK"))
+    }
+
+    /// And the inverse: unquoted package, quoted mixed-case member.
+    func test_unquotedPackageWithQuotedMember_preservesCase() {
+        let source = "BEGIN pkg.\"DoWork\"(); END;"
+        let cursor = (source as NSString).range(of: "DoWork").location + 2
+        let result = ObjectAtCursorResolver.parseAndResolve(source, utf16Offset: cursor)
+        XCTAssertEqual(result,
+                       .packageMember(packageOwner: nil,
+                                      packageName: "PKG",
+                                      memberName: "DoWork"))
+    }
+
+    // MARK: - normalizeIdentifier helper
+
+    func test_normalizeIdentifier_unquotedFoldsToUpper() {
+        XCTAssertEqual(ObjectAtCursorResolver.normalizeIdentifier("emp"), "EMP")
+    }
+
+    func test_normalizeIdentifier_quotedPreservesCase() {
+        XCTAssertEqual(ObjectAtCursorResolver.normalizeIdentifier("\"MixedCase\""),
+                       "MixedCase")
+    }
+
+    func test_normalizeIdentifier_emptyAndBareQuotesPassThrough() {
+        XCTAssertEqual(ObjectAtCursorResolver.normalizeIdentifier(""), "")
+        // `""` is the empty quoted identifier — drop the two quotes.
+        XCTAssertEqual(ObjectAtCursorResolver.normalizeIdentifier("\"\""), "")
+    }
 }

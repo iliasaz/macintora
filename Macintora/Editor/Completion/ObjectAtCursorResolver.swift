@@ -151,9 +151,7 @@ struct ObjectAtCursorResolver {
                     continue
                 }
                 if let raw = text(of: n, in: source) {
-                    return classifyBareIdentifier(raw,
-                                                  cursorByte: n.byteRange.lowerBound,
-                                                  source: source)
+                    return classifyBareIdentifier(raw)
                 }
                 return nil
             default:
@@ -179,10 +177,13 @@ struct ObjectAtCursorResolver {
         // at a column. Otherwise, fall through to the schema-object path.
         if let qualifier = parts.qualifier, parts.owner == nil {
             let aliases = aliasResolver.aliases(near: node, source: source)
+            // Alias map is keyed by Oracle-folded uppercase, so we always
+            // probe with the uppercase form of the qualifier text — even
+            // when the qualifier is itself a quoted identifier.
             if let resolved = aliases[qualifier.uppercased()] ?? nil {
                 return .column(tableOwner: resolved.owner,
                                tableName: resolved.name,
-                               columnName: parts.name.uppercased())
+                               columnName: Self.normalizeIdentifier(parts.name))
             }
         }
         return referenceFromParts(parts, source: source, cursorByte: node.byteRange.lowerBound)
@@ -207,22 +208,22 @@ struct ObjectAtCursorResolver {
 
         // 1-part `f(…)` → schema object lookup (procedure/function/synonym).
         if parts.owner == nil, parts.qualifier == nil {
-            return .schemaObject(owner: nil, name: parts.name.uppercased())
+            return .schemaObject(owner: nil, name: Self.normalizeIdentifier(parts.name))
         }
         // 2-part `[pkg.]proc(…)` → package member is the most likely interpretation.
         if parts.owner == nil, let qualifier = parts.qualifier {
             return .packageMember(packageOwner: nil,
-                                  packageName: qualifier.uppercased(),
-                                  memberName: parts.name.uppercased())
+                                  packageName: Self.normalizeIdentifier(qualifier),
+                                  memberName: Self.normalizeIdentifier(parts.name))
         }
         // 3-part `owner.pkg.proc(…)` → owner-qualified package member.
         if let owner = parts.owner, let qualifier = parts.qualifier {
-            return .packageMember(packageOwner: owner.uppercased(),
-                                  packageName: qualifier.uppercased(),
-                                  memberName: parts.name.uppercased())
+            return .packageMember(packageOwner: Self.normalizeIdentifier(owner),
+                                  packageName: Self.normalizeIdentifier(qualifier),
+                                  memberName: Self.normalizeIdentifier(parts.name))
         }
-        return .schemaObject(owner: parts.owner?.uppercased(),
-                             name: parts.name.uppercased())
+        return .schemaObject(owner: parts.owner.map(Self.normalizeIdentifier),
+                             name: Self.normalizeIdentifier(parts.name))
     }
 
     /// Classifies a `column_reference` / `field` node. Returns nil when the
@@ -242,12 +243,12 @@ struct ObjectAtCursorResolver {
         if let resolved = aliases[qualifier.uppercased()] ?? nil {
             return .column(tableOwner: resolved.owner,
                            tableName: resolved.name,
-                           columnName: column.uppercased())
+                           columnName: Self.normalizeIdentifier(column))
         }
         // Unknown qualifier — could still be `schema.column` in a SELECT-list
         // hint we can't disambiguate. Defer to schemaObject so the popover
         // can at least show what the qualifier resolves to.
-        return .schemaObject(owner: nil, name: qualifier.uppercased())
+        return .schemaObject(owner: nil, name: Self.normalizeIdentifier(qualifier))
     }
 
     /// 1-part bare identifier with no qualifying parent. Could be:
@@ -257,14 +258,11 @@ struct ObjectAtCursorResolver {
     ///     lookup; only returned as `.column` when exactly one in-scope table
     ///     would carry it (we do NOT fetch here, so the fetcher resolves the
     ///     ambiguity later via cache + alias map).
-    private func classifyBareIdentifier(_ raw: String,
-                                        cursorByte: UInt32,
-                                        source: String) -> ResolvedDBReference {
-        let upper = raw.uppercased()
+    private func classifyBareIdentifier(_ raw: String) -> ResolvedDBReference {
         // Don't try to be clever with bare identifiers — return them as
         // schema objects; the fetcher's table+package multi-probe is the
         // right place to make the call.
-        return .schemaObject(owner: nil, name: upper)
+        return .schemaObject(owner: nil, name: Self.normalizeIdentifier(raw))
     }
 
     // MARK: - Source-text fallback
@@ -278,60 +276,34 @@ struct ObjectAtCursorResolver {
                                        utf16Offset: Int,
                                        tree: SwiftTreeSitter.Tree?) -> ResolvedDBReference {
         // Identifier at cursor: walk both ways from `utf16Offset` to capture
-        // the full token, not just the prefix to the cursor. `SourceScanner`
-        // gives us only the leading half; mirror it forward.
+        // the full token, not just the prefix to the cursor. Quoted
+        // identifiers (`"MixedCase"`) are walked as a unit so the quotes
+        // survive into the normalizer below.
         let nsSource = source as NSString
         let safeCursor = max(0, min(utf16Offset, nsSource.length))
 
-        var start = safeCursor
-        while start > 0 {
-            let c = nsSource.character(at: start - 1)
-            guard let scalar = Unicode.Scalar(c), SourceScanner.isIdentifierChar(scalar) else { break }
-            start -= 1
+        guard let token = Self.identifierToken(in: nsSource, around: safeCursor) else {
+            return .unresolved
         }
-        var end = safeCursor
-        while end < nsSource.length {
-            let c = nsSource.character(at: end)
-            guard let scalar = Unicode.Scalar(c), SourceScanner.isIdentifierChar(scalar) else { break }
-            end += 1
-        }
-        guard end > start else { return .unresolved }
-        let name = nsSource.substring(with: NSRange(location: start, length: end - start))
+        let start = token.start
+        let end = token.end
+        let name = token.text
 
-        // Look back for `qualifier.` immediately preceding the name.
+        // Look back for `qualifier.` immediately preceding the name. Skip a
+        // single space — `t .col` happens enough that requiring contiguity
+        // would surprise users.
         var qualifier: String? = nil
-        if start > 0, nsSource.character(at: start - 1) == 0x2E {
-            let qEnd = start - 1
-            var qStart = qEnd
-            while qStart > 0 {
-                let c = nsSource.character(at: qStart - 1)
-                guard let scalar = Unicode.Scalar(c), SourceScanner.isIdentifierChar(scalar) else { break }
-                qStart -= 1
-            }
-            if qStart < qEnd {
-                qualifier = nsSource.substring(with: NSRange(location: qStart, length: qEnd - qStart))
-            }
+        var qualifierStart: Int? = nil
+        if let q = Self.identifierTokenBeforeDot(in: nsSource, endingAt: start) {
+            qualifier = q.text
+            qualifierStart = q.start
         }
 
         // Look back for an outer schema qualifier `owner.qualifier.name`.
         var owner: String? = nil
-        if let q = qualifier {
-            // Locate the start of the qualifier substring we already pulled.
-            // `qualifier.length + 1` (for the dot) gives us a probe before it.
-            let qLen = q.utf16.count
-            let probe = start - 1 - qLen
-            if probe > 0, nsSource.character(at: probe - 1) == 0x2E {
-                let oEnd = probe - 1
-                var oStart = oEnd
-                while oStart > 0 {
-                    let c = nsSource.character(at: oStart - 1)
-                    guard let scalar = Unicode.Scalar(c), SourceScanner.isIdentifierChar(scalar) else { break }
-                    oStart -= 1
-                }
-                if oStart < oEnd {
-                    owner = nsSource.substring(with: NSRange(location: oStart, length: oEnd - oStart))
-                }
-            }
+        if let qStart = qualifierStart,
+           let o = Self.identifierTokenBeforeDot(in: nsSource, endingAt: qStart) {
+            owner = o.text
         }
 
         // If a qualifier exists, it could be either an alias (resolve via
@@ -348,21 +320,21 @@ struct ObjectAtCursorResolver {
             if let resolved = aliases[qualifier.uppercased()] ?? nil {
                 return .column(tableOwner: resolved.owner,
                                tableName: resolved.name,
-                               columnName: name.uppercased())
+                               columnName: Self.normalizeIdentifier(name))
             }
             // Not an alias — treat as schema-or-package.
             if let owner {
-                return .packageMember(packageOwner: owner.uppercased(),
-                                      packageName: qualifier.uppercased(),
-                                      memberName: name.uppercased())
+                return .packageMember(packageOwner: Self.normalizeIdentifier(owner),
+                                      packageName: Self.normalizeIdentifier(qualifier),
+                                      memberName: Self.normalizeIdentifier(name))
             }
             return .packageMember(packageOwner: nil,
-                                  packageName: qualifier.uppercased(),
-                                  memberName: name.uppercased())
+                                  packageName: Self.normalizeIdentifier(qualifier),
+                                  memberName: Self.normalizeIdentifier(name))
         }
 
         // No qualifier — return the bare identifier as a schema object lookup.
-        return .schemaObject(owner: nil, name: name.uppercased())
+        return .schemaObject(owner: nil, name: Self.normalizeIdentifier(name))
     }
 
     // MARK: - Helpers
@@ -435,17 +407,19 @@ struct ObjectAtCursorResolver {
     private func referenceFromParts(_ parts: ObjectParts,
                                     source: String,
                                     cursorByte: UInt32) -> ResolvedDBReference {
-        let nameUpper = parts.name.uppercased()
-        guard !nameUpper.isEmpty else { return .unresolved }
+        let normalizedName = Self.normalizeIdentifier(parts.name)
+        guard !normalizedName.isEmpty else { return .unresolved }
 
         if let qualifier = parts.qualifier {
             // 2-part `qualifier.name`: ambiguous between `schema.object` and
             // `package.member`. Default to schema-object; the fetcher tries
             // package-member as a fallback. This keeps the simple table
             // case (`hr.employees`) cheap.
-            return .schemaObject(owner: qualifier.uppercased(), name: nameUpper)
+            return .schemaObject(owner: Self.normalizeIdentifier(qualifier),
+                                 name: normalizedName)
         }
-        return .schemaObject(owner: parts.owner?.uppercased(), name: nameUpper)
+        return .schemaObject(owner: parts.owner.map(Self.normalizeIdentifier),
+                             name: normalizedName)
     }
 
     private func firstNamedChild(of node: SwiftTreeSitter.Node) -> SwiftTreeSitter.Node? {
@@ -472,6 +446,112 @@ struct ObjectAtCursorResolver {
         default:
             return false
         }
+    }
+
+    /// Folds an Oracle identifier to its catalog form. Quoted identifiers
+    /// (`"MixedCase"`) preserve their interior case verbatim — that's what
+    /// Oracle's data dictionary stores. Unquoted identifiers fold to upper.
+    /// Empty strings and the bare `""` pass through unchanged.
+    static func normalizeIdentifier(_ raw: String) -> String {
+        if raw.count >= 2, raw.hasPrefix("\""), raw.hasSuffix("\"") {
+            return String(raw.dropFirst().dropLast())
+        }
+        return raw.uppercased()
+    }
+
+    /// Walks forward and backward from `cursor` (an NSString offset) to find
+    /// the surrounding identifier token, including quoted forms. Returns the
+    /// raw substring with quotes intact when present — `normalizeIdentifier`
+    /// strips them on the way out. Returns nil if `cursor` doesn't sit on an
+    /// identifier-shaped run.
+    private static func identifierToken(
+        in nsSource: NSString,
+        around cursor: Int
+    ) -> (start: Int, end: Int, text: String)? {
+        // Quoted identifier: detect by looking for `"` to the left without a
+        // closing `"` between it and the cursor. The grammar's Oracle quoted
+        // identifier may not contain `"` inside (escaping not supported), so
+        // a single backwards scan suffices.
+        var qLeft = cursor
+        while qLeft > 0 {
+            let c = nsSource.character(at: qLeft - 1)
+            if c == 0x22 {  // '"'
+                qLeft -= 1
+                break
+            }
+            // The cursor's quoted run ends at the first newline or closing
+            // quote — bail out as soon as we see something obviously outside.
+            if c == 0x0A || c == 0x0D { qLeft = -1; break }
+            qLeft -= 1
+            if cursor - qLeft > 256 { qLeft = -1; break }   // safety bound
+        }
+        if qLeft >= 0 && qLeft < cursor && nsSource.character(at: qLeft) == 0x22 {
+            // Find the matching closing quote at or after the cursor.
+            var qRight = cursor
+            while qRight < nsSource.length {
+                let c = nsSource.character(at: qRight)
+                if c == 0x22 {
+                    qRight += 1
+                    let range = NSRange(location: qLeft, length: qRight - qLeft)
+                    return (qLeft, qRight, nsSource.substring(with: range))
+                }
+                if c == 0x0A || c == 0x0D { break }
+                qRight += 1
+            }
+            // No closing quote yet — fall through to the unquoted walk.
+        }
+
+        var start = cursor
+        while start > 0 {
+            let c = nsSource.character(at: start - 1)
+            guard let scalar = Unicode.Scalar(c), SourceScanner.isIdentifierChar(scalar) else { break }
+            start -= 1
+        }
+        var end = cursor
+        while end < nsSource.length {
+            let c = nsSource.character(at: end)
+            guard let scalar = Unicode.Scalar(c), SourceScanner.isIdentifierChar(scalar) else { break }
+            end += 1
+        }
+        guard end > start else { return nil }
+        return (start, end, nsSource.substring(with: NSRange(location: start, length: end - start)))
+    }
+
+    /// Probes for an identifier (quoted or unquoted) immediately preceding a
+    /// `.` at NSString offset `nameStart - 1`. Returns nil when there is no
+    /// dot, or the dot isn't followed by an identifier-shaped run.
+    private static func identifierTokenBeforeDot(
+        in nsSource: NSString,
+        endingAt nameStart: Int
+    ) -> (start: Int, end: Int, text: String)? {
+        guard nameStart > 0, nsSource.character(at: nameStart - 1) == 0x2E else {
+            return nil
+        }
+        // Walk backwards from just before the dot. Quoted forms end with `"`;
+        // unquoted forms end with an identifier char.
+        let probe = nameStart - 1
+        if probe > 0, nsSource.character(at: probe - 1) == 0x22 {
+            // Quoted qualifier — find the matching opening quote.
+            var qLeft = probe - 2
+            while qLeft >= 0 {
+                let c = nsSource.character(at: qLeft)
+                if c == 0x22 {
+                    let range = NSRange(location: qLeft, length: probe - qLeft)
+                    return (qLeft, probe, nsSource.substring(with: range))
+                }
+                if c == 0x0A || c == 0x0D { return nil }
+                qLeft -= 1
+            }
+            return nil
+        }
+        var qStart = probe
+        while qStart > 0 {
+            let c = nsSource.character(at: qStart - 1)
+            guard let scalar = Unicode.Scalar(c), SourceScanner.isIdentifierChar(scalar) else { break }
+            qStart -= 1
+        }
+        guard qStart < probe else { return nil }
+        return (qStart, probe, nsSource.substring(with: NSRange(location: qStart, length: probe - qStart)))
     }
 
     /// Converts a node's UTF-16-LE byte range to a `String` slice. Mirrors
