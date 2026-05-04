@@ -128,7 +128,7 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = STTextView.scrollableTextView()
+        let scrollView = MacintoraSTTextView.scrollableTextView()
         guard let textView = scrollView.documentView as? STTextView else {
             return scrollView
         }

@@ -141,6 +141,7 @@
 		49D0ECEB2F9C1D970047540A /* EditorSelectionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECEA2F9C1D970047540A /* EditorSelectionBridge.swift */; };
 		49D0ECED2F9C1D9D0047540A /* EditorLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECEC2F9C1D9D0047540A /* EditorLanguage.swift */; };
 		49D0ECEF2F9C1DB20047540A /* MacintoraEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECEE2F9C1DB20047540A /* MacintoraEditor.swift */; };
+		49D0ECF82F9C1DC00047540A /* MacintoraSTTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECF72F9C1DC00047540A /* MacintoraSTTextView.swift */; };
 		49D0ECF12F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECF02F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift */; };
 		49D0ECF42F9C1E1E0047540A /* EditorSelectionBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECF32F9C1E1E0047540A /* EditorSelectionBridgeTests.swift */; };
 		49D0ECF62F9C1EB90047540A /* GetCurrentSqlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D0ECF52F9C1EB90047540A /* GetCurrentSqlTests.swift */; };
@@ -351,6 +352,7 @@
 		49D0ECEA2F9C1D970047540A /* EditorSelectionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSelectionBridge.swift; sourceTree = "<group>"; };
 		49D0ECEC2F9C1D9D0047540A /* EditorLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorLanguage.swift; sourceTree = "<group>"; };
 		49D0ECEE2F9C1DB20047540A /* MacintoraEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraEditor.swift; sourceTree = "<group>"; };
+		49D0ECF72F9C1DC00047540A /* MacintoraSTTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraSTTextView.swift; sourceTree = "<group>"; };
 		49D0ECF02F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MacintoraEditor+Coordinator.swift"; sourceTree = "<group>"; };
 		49D0ECF32F9C1E1E0047540A /* EditorSelectionBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorSelectionBridgeTests.swift; sourceTree = "<group>"; };
 		49D0ECF52F9C1EB90047540A /* GetCurrentSqlTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetCurrentSqlTests.swift; sourceTree = "<group>"; };
@@ -750,6 +752,7 @@
 				49D0ECEC2F9C1D9D0047540A /* EditorLanguage.swift */,
 				49D0ED212F9C40000047540A /* EditorTheme.swift */,
 				49D0ECEE2F9C1DB20047540A /* MacintoraEditor.swift */,
+				49D0ECF72F9C1DC00047540A /* MacintoraSTTextView.swift */,
 				49D0ECF02F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift */,
 				49C0000700000007 /* MacintoraEditor+Completion.swift */,
 				49141400000000000000A001 /* PlsqlBlockDetector.swift */,
@@ -1124,6 +1127,7 @@
 				49D0ECEB2F9C1D970047540A /* EditorSelectionBridge.swift in Sources */,
 				49D0ED202F9C40000047540A /* EditorTheme.swift in Sources */,
 				49D0ECEF2F9C1DB20047540A /* MacintoraEditor.swift in Sources */,
+				49D0ECF82F9C1DC00047540A /* MacintoraSTTextView.swift in Sources */,
 				49141400000000000000A002 /* PlsqlBlockDetector.swift in Sources */,
 				49C0100100000001 /* SQLTreeStore.swift in Sources */,
 				49C0100200000002 /* SQLContextAnalyzer.swift in Sources */,
