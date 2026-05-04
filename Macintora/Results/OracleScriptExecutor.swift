@@ -58,8 +58,12 @@ struct OracleScriptExecutor: ConnectionExecutor, Sendable {
 
     @concurrent
     func cancel() async {
-        // No-op: cancellation propagates from the runner's parent Task into
-        // the in-flight `try await` on the row iterator.
+        // Issue #15: send a TNS BREAK so the server actually
+        // interrupts the in-flight statement. Task cancellation
+        // alone doesn't propagate to oracle-nio's awaited promise,
+        // so the next unit would otherwise queue behind a runaway
+        // statement until it finished naturally.
+        conn.cancel()
     }
 
     @concurrent
