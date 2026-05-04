@@ -18,6 +18,37 @@ import AppKit
 import SwiftUI
 
 struct WindowLayoutPersister: NSViewRepresentable {
+    /// Smallest pane size we'll accept on restore. Below this any pane in
+    /// the app is unusable (sidebar collapses, result grid disappears) and
+    /// strongly suggests the saved sizes don't belong to the current
+    /// layout.
+    static let minPaneAxis: CGFloat = 80
+
+    /// Pure validator for persisted pane sizes against the current split's
+    /// total axis. Exposed for unit tests; the production caller is
+    /// `AccessorView.restorePositions(for:key:)`.
+    ///
+    /// Returns `true` when the stored sizes can be applied without driving
+    /// AppKit's constraint engine into the runaway update-pass loop that
+    /// crashes the app at launch on monitor changes.
+    ///
+    /// Rules:
+    /// - At least two panes (one divider).
+    /// - Total axis is positive (caller has gated on this; included for
+    ///   defence in depth).
+    /// - Sum of stored sizes fits inside the current axis with a small
+    ///   rounding overshoot allowance.
+    /// - No pane is below `minPane` (would otherwise leave an invisible
+    ///   pane the user can only recover by dragging a hairline divider).
+    static func paneSizesAreUsable(_ sizes: [Double],
+                                   totalAxis: CGFloat,
+                                   minPane: CGFloat = WindowLayoutPersister.minPaneAxis) -> Bool {
+        guard sizes.count > 1, totalAxis > 0 else { return false }
+        let sum = sizes.reduce(0, +)
+        guard sum > 0, sum <= Double(totalAxis) * 1.05 else { return false }
+        return sizes.allSatisfy { $0 >= Double(minPane) }
+    }
+
     let windowAutosaveName: String
     let splitAutosavePrefix: String
 
@@ -76,18 +107,18 @@ struct WindowLayoutPersister: NSViewRepresentable {
         // MARK: - Window frame
 
         private func configureWindow(_ window: NSWindow) {
-            let frameKey = "NSWindow Frame \(windowAutosaveName)"
-            if UserDefaults.standard.object(forKey: frameKey) == nil,
-               let screen = window.screen ?? NSScreen.main {
-                // First launch: roughly a quarter of the visible screen area
-                // (half × half), centered.
-                let visible = screen.visibleFrame
-                let w = visible.width / 2
-                let h = visible.height / 2
-                let x = visible.minX + (visible.width - w) / 2
-                let y = visible.minY + (visible.height - h) / 2
-                window.setFrame(NSRect(x: x, y: y, width: w, height: h), display: true)
-            }
+            // First-launch sizing is owned by SwiftUI's
+            // `.defaultSize(width:height:)` on the App scene (1100×700).
+            // Forcing a manual half-screen `setFrame` here resized the
+            // window mid-layout — which on monitor changes (where the
+            // persisted frame had been dropped by `WindowFrameSanitiser`)
+            // drove SwiftUI's NavigationSplitView constraint engine past
+            // its update-pass budget and aborted the app at launch with
+            // an `NSGenericException` ("more Update Constraints in Window
+            // passes than there are views"). The autosave replay path
+            // alone is safe: when the entry is missing, `defaultSize`
+            // wins; when it's present, AppKit replays it before any
+            // SwiftUI layout pass.
             window.setFrameAutosaveName(windowAutosaveName)
             // setFrameAutosaveName has already replayed any persisted frame.
             // If the persisted frame lived on a now-disconnected display, the
@@ -163,11 +194,31 @@ struct WindowLayoutPersister: NSViewRepresentable {
         }
 
         private func restorePositions(for split: NSSplitView, key: String) {
-            guard let sizes = UserDefaults.standard.array(forKey: key) as? [Double] else { return }
-            guard sizes.count == split.arrangedSubviews.count, sizes.count > 1 else { return }
+            guard let stored = UserDefaults.standard.array(forKey: key) as? [Double] else { return }
+            // Pane structure changed since save (different SwiftUI view tree
+            // or app version) — drop the slot so the next save writes a
+            // fresh, matching layout.
+            guard stored.count == split.arrangedSubviews.count, stored.count > 1 else {
+                UserDefaults.standard.removeObject(forKey: key)
+                return
+            }
+            // Bounds aren't laid out yet on this run; skip without dropping
+            // so the sizes can be reused on a subsequent launch.
+            let total = split.isVertical ? split.bounds.width : split.bounds.height
+            guard total > 0 else { return }
+            // Stored sizes are stale relative to current bounds — for
+            // example, the user disconnected a wide external display and
+            // the saved pane widths now exceed the available axis. Apply
+            // them and AppKit thrashes the constraint engine
+            // ("more Update Constraints in Window passes than there are
+            // views") and aborts the app at launch.
+            guard WindowLayoutPersister.paneSizesAreUsable(stored, totalAxis: total) else {
+                UserDefaults.standard.removeObject(forKey: key)
+                return
+            }
             var cumulative: CGFloat = 0
-            for i in 0..<(sizes.count - 1) {
-                cumulative += CGFloat(sizes[i])
+            for i in 0..<(stored.count - 1) {
+                cumulative += CGFloat(stored[i])
                 split.setPosition(cumulative, ofDividerAt: i)
             }
         }

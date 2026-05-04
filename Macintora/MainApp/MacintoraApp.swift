@@ -40,6 +40,7 @@ let log = Logger().default
 @MainActor
 final class MacintoraAppDelegate: NSObject {
     private let sessionRestorer = SessionRestorer()
+    private var launchGuard = LaunchGuard()
     private var pendingRestoreOpens = 0
     private var sessionObservers: [any NSObjectProtocol] = []
     /// Snapshots are no-ops while a restore is in progress; otherwise the
@@ -81,6 +82,11 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
         // bundle happens to leave behind.
         if Self.isRunningInTestHost { return }
 
+        // Mark this launch as in-flight before doing anything that could
+        // crash. Captures the *previous* run's clean-exit signal so we can
+        // decide whether to attempt session restore.
+        let previousRunWasClean = launchGuard.beginLaunch()
+
         // `OperationQueue.main` runs callbacks on the main thread, but the
         // closure type isn't compile-time MainActor — wrap each body with
         // `MainActor.assumeIsolated`.
@@ -97,7 +103,21 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
             }
         )
 
-        restoreSessionIfNeeded()
+        if previousRunWasClean {
+            restoreSessionIfNeeded()
+        } else {
+            log.notice("Skipping session restore — previous launch did not exit cleanly. The session list is preserved and will be reopened normally on the next clean launch.")
+        }
+
+        // Clear the launch flag after a short grace period so a force-quit
+        // (or any other non-`applicationWillTerminate` exit) during normal
+        // use doesn't suppress restore on the *next* launch. The window
+        // here just needs to be long enough for a startup crash to happen
+        // before we decide the run is healthy.
+        Task { @MainActor [launchGuard] in
+            try? await Task.sleep(for: .seconds(5))
+            launchGuard.markCleanShutdown()
+        }
     }
 
     private static var isRunningInTestHost: Bool {
@@ -117,6 +137,7 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
         if Self.isRunningInTestHost { return }
         restoreInProgress = false
         snapshotSession()
+        launchGuard.markCleanShutdown()
     }
 }
 

@@ -27,6 +27,7 @@
 		49B0C0DE0000000000000132 /* DBCacheVMInitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */; };
 		49DB102000000020 /* WindowFrameSanitiser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002000000020 /* WindowFrameSanitiser.swift */; };
 		49DB302100000021 /* WindowFrameSanitiserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002100000021 /* WindowFrameSanitiserTests.swift */; };
+		49DB302200000022 /* WindowLayoutPersisterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002200000022 /* WindowLayoutPersisterTests.swift */; };
 		49DB300C0000000C /* ObjectAtCursorResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000C0000000C /* ObjectAtCursorResolverTests.swift */; };
 		49DB301000000010 /* QuickViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001000000010 /* QuickViewControllerTests.swift */; };
 		49DB301100000011 /* QuickViewHotkeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001100000011 /* QuickViewHotkeyTests.swift */; };
@@ -337,6 +338,7 @@
 		49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheVMInitTests.swift; sourceTree = "<group>"; };
 		49DB002000000020 /* WindowFrameSanitiser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFrameSanitiser.swift; sourceTree = "<group>"; };
 		49DB002100000021 /* WindowFrameSanitiserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFrameSanitiserTests.swift; sourceTree = "<group>"; };
+		49DB002200000022 /* WindowLayoutPersisterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowLayoutPersisterTests.swift; sourceTree = "<group>"; };
 		49DB000C0000000C /* ObjectAtCursorResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectAtCursorResolverTests.swift; sourceTree = "<group>"; };
 		49DB001000000010 /* QuickViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewControllerTests.swift; sourceTree = "<group>"; };
 		49DB001100000011 /* QuickViewHotkeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewHotkeyTests.swift; sourceTree = "<group>"; };
@@ -522,6 +524,7 @@
 				AA0000C10000000000000000 /* LegacyDocumentMigrationTests.swift */,
 				AA0000F10000000000000000 /* FullRefreshReproTests.swift */,
 				49DB002100000021 /* WindowFrameSanitiserTests.swift */,
+				49DB002200000022 /* WindowLayoutPersisterTests.swift */,
 				49B0C0DE0000000000000040 /* DBBrowser */,
 				49D0ECF22F9C1E070047540A /* Editor */,
 				49D0ED042F9C34410047540A /* Results */,
@@ -1002,6 +1005,7 @@
 				AA00003E0000000000000000 /* ConnectionStoreTests.swift in Sources */,
 				AA0001020000000000000000 /* SessionRestorerTests.swift in Sources */,
 				49DB302100000021 /* WindowFrameSanitiserTests.swift in Sources */,
+				49DB302200000022 /* WindowLayoutPersisterTests.swift in Sources */,
 				490E96E02FA429E100DDF37F /* SqlPlusInterpreterTests.swift in Sources */,
 				AA0000400000000000000000 /* ConnectionDetailsCodableTests.swift in Sources */,
 				AA0000C00000000000000000 /* LegacyDocumentMigrationTests.swift in Sources */,
