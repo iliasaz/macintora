@@ -95,3 +95,6 @@ Package.resolved
 
 # Per-session Xcode derived-data log files (e.g. .derived-data-log-0CA5RPJ1)
 .derived-data-log-*
+
+# Claude Code local state (agent memory, worktrees, local settings)
+.claude/
