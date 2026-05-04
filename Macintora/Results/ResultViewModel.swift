@@ -166,6 +166,12 @@ public final class ResultViewModel: nonisolated ObservableObject {
     }
 
     func cancel() {
+        // Issue #15: send a server-side TNS BREAK so the in-flight
+        // statement actually stops. `Task.cancel()` alone doesn't
+        // propagate to oracle-nio's awaited promise, so the next
+        // execute would otherwise queue behind the runaway statement
+        // until it finished naturally.
+        resultsController.document?.conn?.cancel()
         currentTask?.cancel()
         currentTask = nil
         // Bug B: drop the iterator reference so oracle-nio's
