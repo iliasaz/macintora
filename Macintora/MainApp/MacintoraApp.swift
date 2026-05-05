@@ -43,6 +43,7 @@ final class MacintoraAppDelegate: NSObject {
     private var launchGuard = LaunchGuard()
     private var pendingRestoreOpens = 0
     private var sessionObservers: [any NSObjectProtocol] = []
+    private var transformationKeyMonitor: Any?
     /// Snapshots are no-ops while a restore is in progress; otherwise the
     /// auto-created Untitled doc that SwiftUI shows during launch wipes the
     /// persisted URL list before restore opens have populated documents.
@@ -61,6 +62,16 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Wire ⌘U / ⌘L to NSText's `uppercaseWord:` / `lowercaseWord:` via
+        // a local event monitor. Setting `keyEquivalent` on AppKit's
+        // auto-injected Edit > Transformations menu items doesn't reliably
+        // route keyboard presses through to the responder chain (the
+        // binding is visible in the menu but key-equivalent dispatch
+        // silently no-ops in this app — likely SwiftUI's command
+        // reconciliation interferes). The monitor sees the keyDown
+        // before NSWindow.sendEvent and dispatches via NSApp.sendAction.
+        installTransformationKeyMonitor()
+
         // When the app is launched as an XCTest host, skip session restore
         // and snapshot wiring entirely. Otherwise the test launch would
         // clobber the user's persisted session list with whatever the test
@@ -107,6 +118,33 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
 
     private static var isRunningInTestHost: Bool {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
+    /// Catch ⌘U / ⌘L pre-window-dispatch and route them to NSText's
+    /// `uppercaseWord:` / `lowercaseWord:` via the responder chain.
+    /// `NSApp.sendAction(_:to:from:)` returns `true` only when a responder
+    /// in the chain handled the action; in that case we consume the event.
+    /// Otherwise we let it propagate (e.g. the user pressed ⌘U while a
+    /// non-text responder was focused — original behavior preserved).
+    private func installTransformationKeyMonitor() {
+        guard transformationKeyMonitor == nil else { return }
+        transformationKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            guard mods == .command else { return event }
+            switch event.charactersIgnoringModifiers?.lowercased() {
+            case "u":
+                if NSApp.sendAction(#selector(NSText.uppercaseWord(_:)), to: nil, from: nil) {
+                    return nil
+                }
+            case "l":
+                if NSApp.sendAction(#selector(NSText.lowercaseWord(_:)), to: nil, from: nil) {
+                    return nil
+                }
+            default:
+                break
+            }
+            return event
+        }
     }
 
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {

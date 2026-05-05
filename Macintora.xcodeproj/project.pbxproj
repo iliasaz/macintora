@@ -144,6 +144,7 @@
 		49DB301300000013 /* QuickViewContentRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001300000013 /* QuickViewContentRenderTests.swift */; };
 		49DB301500000015 /* QuickViewEndToEndTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001500000015 /* QuickViewEndToEndTests.swift */; };
 		49DB301600000016 /* QuickViewClickGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001600000016 /* QuickViewClickGateTests.swift */; };
+		49DB401B0000001B /* EditTransformationsKeyEquivalentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001B0000001B /* EditTransformationsKeyEquivalentTests.swift */; };
 		49DB401400000014 /* QuickViewUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001400000014 /* QuickViewUITests.swift */; };
 		49EAEFA128C048B8008F0B80 /* QuickFilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA028C048B8008F0B80 /* QuickFilterView.swift */; };
 		49EAEFA328C0493F008F0B80 /* DBDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EAEFA228C0493F008F0B80 /* DBDetailView.swift */; };
@@ -350,6 +351,7 @@
 		49DB001000000010 /* QuickViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewControllerTests.swift; sourceTree = "<group>"; };
 		49DB001200000012 /* EditorQuickViewBoxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorQuickViewBoxTests.swift; sourceTree = "<group>"; };
 		49DB001300000013 /* QuickViewContentRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewContentRenderTests.swift; sourceTree = "<group>"; };
+		49DB001B0000001B /* EditTransformationsKeyEquivalentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTransformationsKeyEquivalentTests.swift; sourceTree = "<group>"; };
 		49DB001400000014 /* QuickViewUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewUITests.swift; sourceTree = "<group>"; };
 		49DB001500000015 /* QuickViewEndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewEndToEndTests.swift; sourceTree = "<group>"; };
 		49DB001600000016 /* QuickViewClickGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewClickGateTests.swift; sourceTree = "<group>"; };
@@ -813,6 +815,7 @@
 				BB0000020000000000000000 /* MacintoraUITests.swift */,
 				490E96E52FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift */,
 				490E96E92FA43C6300DDF37F /* ScriptRunnerUXTests.swift */,
+				49DB001B0000001B /* EditTransformationsKeyEquivalentTests.swift */,
 				49DB001400000014 /* QuickViewUITests.swift */,
 			);
 			path = MacintoraUITests;
@@ -1152,6 +1155,7 @@
 				490E96E62FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift in Sources */,
 				490E96EA2FA43C6300DDF37F /* ScriptRunnerUXTests.swift in Sources */,
 				49DB401400000014 /* QuickViewUITests.swift in Sources */,
+				49DB401B0000001B /* EditTransformationsKeyEquivalentTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
