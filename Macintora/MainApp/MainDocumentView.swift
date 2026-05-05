@@ -21,6 +21,7 @@ struct MainDocumentView: View {
     @State private var selectedTab: String = "queryResults"
     @FocusState private var focusedView: FocusedView?
     @Environment(\.openDocument) private var openDocument
+    @Environment(\.openWindow) private var openWindow
     @AppStorage("wordWrap") private var wordWrapping = false
 
     private var store: ConnectionStore {
@@ -42,6 +43,11 @@ struct MainDocumentView: View {
     @State private var quickViewBox = EditorQuickViewBox()
     /// Bridge for the ⌥⌘B "Open in DB Browser" menu command.
     @State private var openInBrowserBox = EditorOpenInBrowserBox()
+    /// Bridge for the ⌃⇧⌘S "Session Browser" menu command. The trigger is
+    /// installed in `.onAppear` and captures both `openWindow` and a
+    /// `[weak document]` reference so the menu command can stay free of
+    /// `@FocusedValue(\.mainConnection)` reads.
+    @State private var sessionBrowserBox = SessionBrowserBox()
 
     var selectedObject: String {
         if editorSelection.isEmpty { return "" }
@@ -81,56 +87,52 @@ struct MainDocumentView: View {
             }
             .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 420)
         } detail: {
-            VStack {
-                VSplitView {
-                    MacintoraEditor(
-                        text: $document.model.text,
-                        selection: $editorSelection,
-                        language: .sql,
-                        isEditable: true,
-                        isSelectable: true,
-                        wordWrap: $wordWrapping,
-                        showsLineNumbers: true,
-                        highlightsSelectedLine: true,
-                        completionConfig: completionConfig,
-                        quickViewBox: quickViewBox,
-                        openInBrowserBox: openInBrowserBox
-                    )
-                        .frame(maxWidth: .infinity, minHeight: 120, idealHeight: 320, maxHeight: .infinity)
-                        .focused($focusedView, equals: .codeEditor)
+            VSplitView {
+                MacintoraEditor(
+                    text: $document.model.text,
+                    selection: $editorSelection,
+                    language: .sql,
+                    isEditable: true,
+                    isSelectable: true,
+                    wordWrap: $wordWrapping,
+                    showsLineNumbers: true,
+                    highlightsSelectedLine: true,
+                    completionConfig: completionConfig,
+                    quickViewBox: quickViewBox,
+                    openInBrowserBox: openInBrowserBox
+                )
+                    .frame(maxWidth: .infinity, minHeight: 120, idealHeight: 320, maxHeight: .infinity)
+                    .focused($focusedView, equals: .codeEditor)
 
-                    ResultViewWrapper(
-                        resultsController: resultsController,
-                        onRevealSource: { utf16Range in
-                            if let range = EditorSelectionBridge.range(forUTF16: utf16Range, in: document.model.text) {
-                                editorSelection = range
-                                focusedView = .codeEditor
-                            }
+                ResultViewWrapper(
+                    resultsController: resultsController,
+                    onRevealSource: { utf16Range in
+                        if let range = EditorSelectionBridge.range(forUTF16: utf16Range, in: document.model.text) {
+                            editorSelection = range
+                            focusedView = .codeEditor
                         }
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 200, idealHeight: 280, maxHeight: .infinity)
-                    .modifier(SubstitutionSheetModifier(controller: resultsController))
-                    .modifier(BindPromptSheetModifier(controller: resultsController))
-                }
+                    }
+                )
+                .frame(maxWidth: .infinity, minHeight: 200, idealHeight: 280, maxHeight: .infinity)
+                .modifier(SubstitutionSheetModifier(controller: resultsController))
+                .modifier(BindPromptSheetModifier(controller: resultsController))
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            WindowLayoutPersister(
-                windowAutosaveName: "Macintora.MainDocument",
-                splitAutosavePrefix: "Macintora.MainDocument.split"
-            )
-            .frame(width: 0, height: 0)
-        )
         .focusedSceneValue(\.mainConnection, document.mainConnection)
         .focusedSceneValue(\.selectedObjectName, selectedObject)
         .focusedSceneValue(\.editorQuickViewBox, quickViewBox)
         .focusedSceneValue(\.editorOpenInBrowserBox, openInBrowserBox)
+        .focusedSceneValue(\.sessionBrowserBox, sessionBrowserBox)
         .tnsImportPromptOnFirstLaunch()
         .onAppear {
             document.prepareOnAppear(store: injectedStore, keychain: keychain)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
                 self.focusedView = .codeEditor
+            }
+            let openWindow = self.openWindow
+            sessionBrowserBox.trigger = { [weak document] in
+                guard let document else { return }
+                openWindow(value: SBInputValue(mainConnection: document.mainConnection))
             }
             if completionConfig == nil {
                 let tns = document.mainConnection.mainConnDetails.tns

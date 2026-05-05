@@ -157,8 +157,7 @@ final class MainDocumentVM: ObservableObject, @unchecked Sendable {
     /// (`ResultsController`, auto-connect) are wired up by `MainDocumentView`
     /// via `prepareOnAppear()`, which runs on the main actor.
     required init(text: String = """
-select user, systimestamp, sys_context('userenv','sid') sid, sys_context('userenv','con_name') pdb
-  , sys_context('userenv','current_edition_name') edition, sys_context('userenv','instance') instance
+select user, systimestamp, sys_context('userenv','sid') sid, sys_context('userenv','con_name') pdb, sys_context('userenv','current_edition_name') edition, sys_context('userenv','instance') instance
 from dual;\n\n
 """
     ) {

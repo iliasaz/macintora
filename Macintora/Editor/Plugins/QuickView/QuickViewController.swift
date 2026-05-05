@@ -87,25 +87,30 @@ final class QuickViewController {
 
     // MARK: - Open in DB Browser triggers
 
-    /// Resolves the token at the editor's current keyboard cursor and dispatches
-    /// to `openInBrowserHandler`. Used by the ⌥⌘B hotkey path.
+    /// Dispatches to `openInBrowserHandler` for the cursor location. Always
+    /// fires, even when the cursor isn't on a resolvable token —
+    /// `DBBrowserInputMapper` maps `.unresolved` to a bare `DBCacheInputValue`,
+    /// so the handler opens (or focuses) the browser without a search target.
+    /// This lets the ⇧⌘I menu command be a single "open Database Browser"
+    /// entry that pre-focuses an object iff the cursor is on one.
     func openInBrowserAtCursor(textView: STTextView) {
         let offset = textView.selectedRange().location
-        openInBrowser(textView: textView, utf16Offset: offset)
+        let source = textView.text ?? ""
+        let tree   = treeStore.tree
+        let reference = resolver.resolve(utf16Offset: offset, source: source, tree: tree)
+        logger.info("OpenInBrowser at cursor: \(String(describing: reference), privacy: .public)")
+        openInBrowserHandler?(reference)
     }
 
     /// Resolves the token at `utf16Offset` and dispatches to
-    /// `openInBrowserHandler`. Used by the right-click menu and ⌥⌘+Click.
+    /// `openInBrowserHandler`. Used by the right-click menu and ⌥⌘+Click —
+    /// gated on `.unresolved` because those paths only make sense on a token.
     func openInBrowserAtTextLocation(textView: STTextView, utf16Offset: Int) {
-        openInBrowser(textView: textView, utf16Offset: utf16Offset)
-    }
-
-    private func openInBrowser(textView: STTextView, utf16Offset: Int) {
         let source = textView.text ?? ""
         let tree   = treeStore.tree
         let reference = resolver.resolve(utf16Offset: utf16Offset, source: source, tree: tree)
         guard reference != .unresolved else {
-            logger.debug("OpenInBrowser: cursor not on a resolvable token")
+            logger.debug("OpenInBrowser: location not on a resolvable token")
             return
         }
         logger.info("OpenInBrowser trigger: \(String(describing: reference), privacy: .public)")

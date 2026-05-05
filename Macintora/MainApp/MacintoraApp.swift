@@ -58,21 +58,6 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
         UserDefaults.standard.register(defaults: [
             "NSShowAppCentricOpenPanelInsteadOfUntitledFile": false
         ])
-
-        // Validate the persisted window frame BEFORE any window opens. If
-        // the saved frame lives on a now-disconnected display (or otherwise
-        // doesn't meaningfully intersect any current screen) AppKit's
-        // `setFrameAutosaveName` replays the bad frame, the window appears
-        // off-screen, and SwiftUI's NavigationSplitView immediately drives
-        // `_NSSplitViewItemViewWrapper.updateConstraints` past AppKit's
-        // "more passes than views" safety net and crashes. The post-window
-        // sanity check in `WindowLayoutPersister.ensureFrameIsOnScreen`
-        // can't help — by the time `viewDidMoveToWindow` fires, the bad
-        // layout has already aborted the app.
-        WindowFrameSanitiser.sanitisePersistedFrames(
-            autosaveNames: ["Macintora.MainDocument"],
-            in: .standard,
-            screens: NSScreen.screens)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -202,6 +187,7 @@ extension MacintoraAppDelegate {
         let urls = NSDocumentController.shared.documents.compactMap(\.fileURL)
         sessionRestorer.saveSession(urls: urls)
     }
+
 }
 
 @main
@@ -222,12 +208,19 @@ struct MacOraApp: App {
                 }
         }
         .defaultSize(width: 1100, height: 700)
+        // Bind the NSWindow's minimum size to the content's `.frame(minWidth:minHeight:)`
+        // above. Without this, SwiftUI's default `automatic` resizability lets
+        // the user drag the window past the content minimum — at which point
+        // NavigationSplitView's column constraints can't be satisfied and the
+        // constraint engine thrashes ("more Update Constraints in Window
+        // passes than there are views in the window") and aborts.
+        .windowResizability(.contentMinSize)
         .handlesExternalEvents(matching: ["file"])
         .commands {
+            TextEditingCommands()
             SidebarCommands()
             ToolbarCommands()
             MainDocumentMenuCommands()
-            TextEditingCommands()
             CommandGroup(after: .newItem) {
                 Button("New Tab") {
                     let doc = try! NSDocumentController.shared.makeUntitledDocument(ofType: NSDocumentController.shared.defaultType!)
@@ -269,19 +262,10 @@ struct MacOraApp: App {
 }
 
 struct MainDocumentMenuCommands: Commands {
-//    @FocusedValue(\.cacheConnectionDetails) var cacheConnectionDetails: ConnectionDetails?
-    @FocusedValue(\.selectedObjectName) var selectedObjectName: String?
-    @FocusedValue(\.mainConnection) var mainConnection
     @FocusedValue(\.editorQuickViewBox) var quickViewBox
     @FocusedValue(\.editorOpenInBrowserBox) var openInBrowserBox
-    @Environment(\.openWindow) var openWindow
-
+    @FocusedValue(\.sessionBrowserBox) var sessionBrowserBox
     @Environment(\.openSettings) private var openSettings
-
-    @AppStorage(QuickViewHotkey.storageKey) private var quickViewHotkeyRaw: String = QuickViewHotkey.default.rawValue
-    private var quickViewHotkey: QuickViewHotkey {
-        QuickViewHotkey(rawValue: quickViewHotkeyRaw) ?? .default
-    }
 
     var body: some Commands {
         CommandMenu("Database") {
@@ -292,20 +276,25 @@ struct MainDocumentMenuCommands: Commands {
 
             Divider()
 
+            // The trigger handles both "cursor on token" (opens scrolled to
+            // the object) and "cursor not on token" (opens a plain browser
+            // for the editor's connection). The connection comes from the
+            // closure captured in `wireOpenInBrowserHandler`, so the menu
+            // doesn't need a `mainConnection` of its own.
             Button("Database Browser") {
-                openWindow(value: DBCacheInputValue(mainConnection: mainConnection ?? .preview(), selectedObjectName: selectedObjectName))
+                openInBrowserBox?.trigger?()
             }
-            .disabled(mainConnection?.mainConnDetails == nil)
-                .presentedWindowStyle(TitleBarWindowStyle())
-                .keyboardShortcut("d", modifiers: [.command])
+            .disabled(openInBrowserBox == nil)
+            .keyboardShortcut("i", modifiers: [.command, .shift])
 
+            // Same pattern as Database Browser: the trigger captures the
+            // document + `OpenWindowAction` at install time, so this menu
+            // doesn't need to know the focused connection.
             Button("Session Browser") {
-                log.viewCycle.debug("Opening SB with mainConnection: \(mainConnection?.description ?? "no main connection")")
-                openWindow(value: SBInputValue(mainConnection: mainConnection ?? .preview()))
+                sessionBrowserBox?.trigger?()
             }
-                .disabled(mainConnection?.mainConnDetails == nil)
-                .presentedWindowStyle(TitleBarWindowStyle())
-                .keyboardShortcut("s", modifiers: [.command, .control, .shift])
+            .disabled(sessionBrowserBox == nil)
+            .keyboardShortcut("s", modifiers: [.command, .control, .shift])
 
             Divider()
 
@@ -317,17 +306,10 @@ struct MainDocumentMenuCommands: Commands {
                 quickViewBox?.trigger?()
             }
             .disabled(quickViewBox == nil)
-            .quickViewShortcut(quickViewHotkey)
-
-            Button("Open in DB Browser") {
-                openInBrowserBox?.trigger?()
-            }
-            .disabled(openInBrowserBox == nil)
-            .keyboardShortcut("b", modifiers: [.command, .option])
+            .keyboardShortcut("i", modifiers: [.command])
         }
     }
 }
-
 
 //struct DocumentFocusedKey: FocusedValueKey {
 //    typealias Value = ConnectionDetails

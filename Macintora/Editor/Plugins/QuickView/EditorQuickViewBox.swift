@@ -56,18 +56,3 @@ extension FocusedValues {
     }
 }
 
-// MARK: - View modifier
-
-extension View {
-    /// Conditionally applies the `.keyboardShortcut(...)` modifier only when
-    /// the hotkey enum carries a key equivalent. When the user has chosen
-    /// "Disabled", no shortcut is bound.
-    @ViewBuilder
-    func quickViewShortcut(_ hotkey: QuickViewHotkey) -> some View {
-        if let key = hotkey.keyEquivalent {
-            self.keyboardShortcut(key, modifiers: hotkey.modifiers)
-        } else {
-            self
-        }
-    }
-}

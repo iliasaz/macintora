@@ -55,14 +55,6 @@ struct EditorSettings: View {
     @AppStorage(ScriptRunnerDefaults.dbmsOutputInline) private var scriptDbmsOutputInline: Bool = true
     @AppStorage(ScriptRunnerDefaults.miniGridRowCap) private var scriptMiniGridRowCap: Int = 200
     @AppStorage(ScriptRunnerDefaults.alwaysStopOnError) private var scriptAlwaysStopOnError: Bool = false
-    @AppStorage(QuickViewHotkey.storageKey) private var quickViewHotkeyRaw: String = QuickViewHotkey.default.rawValue
-
-    private var quickViewHotkeyBinding: Binding<QuickViewHotkey> {
-        Binding(
-            get: { QuickViewHotkey(rawValue: quickViewHotkeyRaw) ?? .default },
-            set: { quickViewHotkeyRaw = $0.rawValue }
-        )
-    }
 
     private var editorThemeBinding: Binding<EditorTheme> {
         Binding(
@@ -112,13 +104,6 @@ struct EditorSettings: View {
                         Text(mode.displayName).tag(mode)
                     }
                 }
-
-                Picker("Quick View Hotkey", selection: quickViewHotkeyBinding) {
-                    ForEach(QuickViewHotkey.allCases) { hotkey in
-                        Text(hotkey.displayName).tag(hotkey)
-                    }
-                }
-                .help("Shortcut to open the DB Object Quick View popover at the cursor.")
 
                 Section("Script Runner") {
                     Toggle("Show DBMS_OUTPUT inline", isOn: $scriptDbmsOutputInline)

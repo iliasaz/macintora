@@ -13,6 +13,26 @@ import STTextView
 
 final class MacintoraSTTextView: STTextView {
 
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        // SQL editor: keep AppKit's spell/grammar/text-replacement machinery
+        // out of the way. NSSpellChecker hops to a default-QoS thread for NLP
+        // and surfaces as a "Hang Risk: priority inversion" diagnostic when
+        // the user-interactive main thread waits on it. The four `lazy var`s
+        // below otherwise default-initialize through NSSpellChecker, which is
+        // the priority-inversion path — assigning before any read short-circuits
+        // the lazy initializer.
+        isContinuousSpellCheckingEnabled = false
+        isGrammarCheckingEnabled = false
+        isAutomaticSpellingCorrectionEnabled = false
+        isAutomaticTextReplacementEnabled = false
+        isAutomaticQuoteSubstitutionEnabled = false
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
     override func insertTab(_ sender: Any?) {
         let selection = textSelection
         guard selection.length > 0 else {
