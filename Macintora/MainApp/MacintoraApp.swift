@@ -259,6 +259,8 @@ struct MacOraApp: App {
             SidebarCommands()
             ToolbarCommands()
             MainDocumentMenuCommands()
+            EditorMenuCommands()
+            HelpMenuCommands()
             CommandGroup(after: .newItem) {
                 Button("New Tab") {
                     let doc = try! NSDocumentController.shared.makeUntitledDocument(ofType: NSDocumentController.shared.defaultType!)
@@ -296,6 +298,15 @@ struct MacOraApp: App {
                 .environment(\.connectionStore, connectionStore)
                 .environment(\.keychainService, keychainService)
         }
+
+        // Read-only cheatsheet listing every Macintora-specific shortcut.
+        // Opened from `HelpMenuCommands` via `openWindow(id:)`. Content-sized
+        // so the window snaps to the layout's intrinsic size on first open
+        // and the user can't drag it down to a useless thumbnail.
+        Window("Keyboard Shortcuts", id: KeyboardShortcuts.windowID) {
+            KeyboardShortcutsView()
+        }
+        .windowResizability(.contentSize)
     }
 }
 
@@ -303,7 +314,20 @@ struct MainDocumentMenuCommands: Commands {
     @FocusedValue(\.editorQuickViewBox) var quickViewBox
     @FocusedValue(\.editorOpenInBrowserBox) var openInBrowserBox
     @FocusedValue(\.sessionBrowserBox) var sessionBrowserBox
+    @FocusedValue(\.worksheetCommandsBox) var worksheetCommandsBox
+    @FocusedValue(\.worksheetIsConnected) var worksheetIsConnected
+    @FocusedValue(\.worksheetIsExecuting) var worksheetIsExecuting
     @Environment(\.openSettings) private var openSettings
+
+    private var canRunStatement: Bool {
+        worksheetCommandsBox != nil
+            && worksheetIsConnected == .connected
+            && worksheetIsExecuting != true
+    }
+
+    private var canStop: Bool {
+        worksheetCommandsBox != nil && worksheetIsExecuting == true
+    }
 
     var body: some Commands {
         CommandMenu("Database") {
@@ -345,6 +369,94 @@ struct MainDocumentMenuCommands: Commands {
             }
             .disabled(quickViewBox == nil)
             .keyboardShortcut("i", modifiers: [.command])
+
+            Divider()
+
+            // Worksheet execution. The toolbar buttons remain the primary
+            // affordance — these menu items exist for HIG compliance and
+            // Help-menu search discoverability. Disabled state mirrors the
+            // toolbar: connected + not executing for run-style commands;
+            // executing only for Stop.
+            Button("Run") {
+                worksheetCommandsBox?.runCurrent?()
+            }
+            .disabled(!canRunStatement)
+            .keyboardShortcut("r", modifiers: [.command])
+
+            Button("Stop") {
+                worksheetCommandsBox?.stop?()
+            }
+            .disabled(!canStop)
+            .keyboardShortcut("b", modifiers: [.command])
+
+            Divider()
+
+            Button("Run Script") {
+                worksheetCommandsBox?.runScript?()
+            }
+            .disabled(!canRunStatement)
+            .keyboardShortcut("r", modifiers: [.command, .shift])
+
+            Button("Run From Cursor / Selection") {
+                worksheetCommandsBox?.runFromCursorOrSelection?()
+            }
+            .disabled(!canRunStatement)
+            .keyboardShortcut("r", modifiers: [.command, .option])
+
+            Divider()
+
+            Button("Explain Plan") {
+                worksheetCommandsBox?.explainPlan?()
+            }
+            .disabled(!canRunStatement)
+            .keyboardShortcut("e", modifiers: [.command])
+
+            Button("Compile") {
+                worksheetCommandsBox?.compile?()
+            }
+            .disabled(!canRunStatement)
+            .keyboardShortcut("c", modifiers: [.command, .option])
+
+            Divider()
+
+            // Format works offline — only requires a focused worksheet.
+            Button("Format") {
+                worksheetCommandsBox?.format?()
+            }
+            .disabled(worksheetCommandsBox == nil)
+            .keyboardShortcut("f", modifiers: [.command, .control])
+        }
+    }
+}
+
+/// Editor-affordance commands that aren't database-driven. Lives next to
+/// the system's Edit > Transformations entries via `after: .textFormatting`.
+struct EditorMenuCommands: Commands {
+    @FocusedValue(\.editorToggleCommentBox) var toggleCommentBox
+
+    var body: some Commands {
+        CommandGroup(after: .textFormatting) {
+            Button("Toggle Line Comment") {
+                toggleCommentBox?.trigger?()
+            }
+            .disabled(toggleCommentBox == nil)
+            .keyboardShortcut("/", modifiers: [.command])
+        }
+    }
+}
+
+/// Help menu entry that opens the cheatsheet window listing every
+/// Macintora-specific shortcut. The window itself is defined as a `Window`
+/// scene in `MacOraApp.body` so it gets state restoration and a fixed,
+/// content-sized layout.
+struct HelpMenuCommands: Commands {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some Commands {
+        CommandGroup(after: .help) {
+            Button("Keyboard Shortcuts…") {
+                openWindow(id: KeyboardShortcuts.windowID)
+            }
         }
     }
 }

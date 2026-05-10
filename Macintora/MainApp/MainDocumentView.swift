@@ -48,6 +48,16 @@ struct MainDocumentView: View {
     /// `[weak document]` reference so the menu command can stay free of
     /// `@FocusedValue(\.mainConnection)` reads.
     @State private var sessionBrowserBox = SessionBrowserBox()
+    /// Bridge for the Database menu's worksheet commands (Run, Stop, Run
+    /// Script, Run From Cursor / Selection, Explain Plan, Compile, Format).
+    /// Triggers are installed in `.onAppear` and read live state via
+    /// captured bindings so menu invocations always see the current
+    /// document selection.
+    @State private var worksheetCommandsBox = WorksheetCommandsBox()
+    /// Bridge for the ⌘/ "Toggle Line Comment" menu command. The trigger
+    /// is installed by the editor coordinator once the AppKit text view is
+    /// available.
+    @State private var toggleCommentBox = EditorToggleCommentBox()
 
     var selectedObject: String {
         if editorSelection.isEmpty { return "" }
@@ -99,7 +109,8 @@ struct MainDocumentView: View {
                     highlightsSelectedLine: true,
                     completionConfig: completionConfig,
                     quickViewBox: quickViewBox,
-                    openInBrowserBox: openInBrowserBox
+                    openInBrowserBox: openInBrowserBox,
+                    toggleCommentBox: toggleCommentBox
                 )
                     .frame(maxWidth: .infinity, minHeight: 120, idealHeight: 320, maxHeight: .infinity)
                     .focused($focusedView, equals: .codeEditor)
@@ -123,6 +134,10 @@ struct MainDocumentView: View {
         .focusedSceneValue(\.editorQuickViewBox, quickViewBox)
         .focusedSceneValue(\.editorOpenInBrowserBox, openInBrowserBox)
         .focusedSceneValue(\.sessionBrowserBox, sessionBrowserBox)
+        .focusedSceneValue(\.worksheetCommandsBox, worksheetCommandsBox)
+        .focusedSceneValue(\.editorToggleCommentBox, toggleCommentBox)
+        .focusedSceneValue(\.worksheetIsConnected, document.isConnected)
+        .focusedSceneValue(\.worksheetIsExecuting, document.resultsController?.isExecuting ?? false)
         .tnsImportPromptOnFirstLaunch()
         .onAppear {
             document.prepareOnAppear(store: injectedStore, keychain: keychain)
@@ -133,6 +148,39 @@ struct MainDocumentView: View {
             sessionBrowserBox.trigger = { [weak document] in
                 guard let document else { return }
                 openWindow(value: SBInputValue(mainConnection: document.mainConnection))
+            }
+            // Worksheet commands. The closures capture `$editorSelection` so
+            // each menu invocation reads the current selection rather than
+            // a snapshot taken at install time. The toolbar buttons remain
+            // the primary affordance — these triggers exist so the menu
+            // items in `MainDocumentMenuCommands` route to the same VM
+            // methods without needing a reference to the document.
+            let selectionBinding = $editorSelection
+            worksheetCommandsBox.runCurrent = { [weak document] in
+                document?.runCurrentSQL(for: selectionBinding.wrappedValue)
+            }
+            worksheetCommandsBox.stop = { [weak document] in
+                document?.stopRunningSQL()
+            }
+            worksheetCommandsBox.runScript = { [weak document] in
+                document?.runScript()
+            }
+            worksheetCommandsBox.runFromCursorOrSelection = { [weak document] in
+                let selection = selectionBinding.wrappedValue
+                if selection.isEmpty {
+                    document?.runScriptFromCursor(selection.lowerBound)
+                } else {
+                    document?.runScriptSelection(selection)
+                }
+            }
+            worksheetCommandsBox.explainPlan = { [weak document] in
+                document?.explainPlan(for: selectionBinding.wrappedValue)
+            }
+            worksheetCommandsBox.compile = { [weak document] in
+                document?.compileSource(for: selectionBinding.wrappedValue)
+            }
+            worksheetCommandsBox.format = { [weak document] in
+                document?.format(of: selectionBinding)
             }
             if completionConfig == nil {
                 let tns = document.mainConnection.mainConnDetails.tns
@@ -193,8 +241,7 @@ struct MainDocumentView: View {
                     }
                 }
                 .disabled(document.isConnected != .connected)
-                .keyboardShortcut(document.resultsController?.isExecuting ?? false ? "b" : "r", modifiers: .command)
-                .help("Execute current statement")
+                .help(document.resultsController?.isExecuting ?? false ? "Stop (⌘B)" : "Run Statement (⌘R)")
                 .accessibilityIdentifier("toolbar.run")
                 .accessibilityLabel("Run")
 
@@ -208,8 +255,7 @@ struct MainDocumentView: View {
                     focusedView = .codeEditor
                 } label: { Image(systemName: "play.square") }
                     .disabled(document.isConnected != .connected)
-                    .keyboardShortcut("r", modifiers: [.command, .shift])
-                    .help("Run entire script")
+                    .help("Run Script (⇧⌘R)")
                     .accessibilityIdentifier("toolbar.runScript")
                     .accessibilityLabel("Run Script")
 
@@ -225,8 +271,7 @@ struct MainDocumentView: View {
                     focusedView = .codeEditor
                 } label: { Image(systemName: "play.square.stack") }
                     .disabled(document.isConnected != .connected)
-                    .keyboardShortcut("r", modifiers: [.command, .option])
-                    .help(editorSelection.isEmpty ? "Run script from cursor" : "Run selection as script")
+                    .help(editorSelection.isEmpty ? "Run From Cursor (⌥⌘R)" : "Run Selection as Script (⌥⌘R)")
                     .accessibilityIdentifier("toolbar.runScriptFromCursor")
                     .accessibilityLabel("Run From Cursor")
 
@@ -240,9 +285,8 @@ struct MainDocumentView: View {
                     Image(systemName: "list.number")
                 }
                 .disabled(document.isConnected != .connected || document.resultsController?.isExecuting ?? false)
-                .keyboardShortcut("e", modifiers: .command)
-                .help("Explain plan of current statement")
-                
+                .help("Explain Plan (⌘E)")
+
                 // copy current sql into a new tab
                 Button {
                     Task {
@@ -256,24 +300,22 @@ struct MainDocumentView: View {
                     }
                 } label: { Image(systemName: "doc.on.doc") }
                     .keyboardShortcut("t", modifiers: [.command, .shift])
-                    .help("New Tab")
-                
+                    .help("New Tab (⇧⌘T)")
+
                 // format sql
                 Button {
                     document.format(of: $editorSelection)
                     focusedView = .codeEditor
                 } label: { Image(systemName: "wand.and.stars") }
-                    .keyboardShortcut("f", modifiers: [.command, .control])
-                    .help("Format")
-                
+                    .help("Format (⌃⌘F)")
+
                 // compile source
                 Button {
                     document.compileSource(for: editorSelection)
                     focusedView = .codeEditor
                 } label: { Image(systemName: "ellipsis.curlybraces") }
                     .disabled(document.isConnected != .connected || document.resultsController?.isExecuting ?? false)
-                    .keyboardShortcut("c", modifiers: [.command, .option])
-                    .help("Compile")
+                    .help("Compile (⌥⌘C)")
                 
                 Spacer()
 

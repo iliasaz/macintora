@@ -138,6 +138,12 @@
 		49DB100A0000000A /* STDBObjectQuickViewPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000A0000000A /* STDBObjectQuickViewPlugin.swift */; };
 		49DB100B0000000B /* EditorQuickViewBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000B0000000B /* EditorQuickViewBox.swift */; };
 		49DB100F0000000F /* EditorOpenInBrowserBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000F0000000F /* EditorOpenInBrowserBox.swift */; };
+		49DB102000000020 /* WorksheetCommandsBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002000000020 /* WorksheetCommandsBox.swift */; };
+		49DB102100000021 /* EditorToggleCommentBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002100000021 /* EditorToggleCommentBox.swift */; };
+		49DB102200000022 /* KeyboardShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002200000022 /* KeyboardShortcuts.swift */; };
+		49DB302300000023 /* WorksheetCommandsBoxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002300000023 /* WorksheetCommandsBoxTests.swift */; };
+		49DB302400000024 /* EditorToggleCommentBoxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002400000024 /* EditorToggleCommentBoxTests.swift */; };
+		49DB302500000025 /* KeyboardShortcutsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB002500000025 /* KeyboardShortcutsTests.swift */; };
 		49DB300C0000000C /* ObjectAtCursorResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB000C0000000C /* ObjectAtCursorResolverTests.swift */; };
 		49DB301000000010 /* QuickViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001000000010 /* QuickViewControllerTests.swift */; };
 		49DB301200000012 /* EditorQuickViewBoxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DB001200000012 /* EditorQuickViewBoxTests.swift */; };
@@ -246,6 +252,12 @@
 		4944594B28D51D31007AB2BF /* SBMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBMainView.swift; sourceTree = "<group>"; };
 		4944594D28D539D2007AB2BF /* SBVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBVM.swift; sourceTree = "<group>"; };
 		49DB001A0000001A /* SessionBrowserBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionBrowserBox.swift; sourceTree = "<group>"; };
+		49DB002000000020 /* WorksheetCommandsBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorksheetCommandsBox.swift; sourceTree = "<group>"; };
+		49DB002100000021 /* EditorToggleCommentBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorToggleCommentBox.swift; sourceTree = "<group>"; };
+		49DB002200000022 /* KeyboardShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcuts.swift; sourceTree = "<group>"; };
+		49DB002300000023 /* WorksheetCommandsBoxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorksheetCommandsBoxTests.swift; sourceTree = "<group>"; };
+		49DB002400000024 /* EditorToggleCommentBoxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorToggleCommentBoxTests.swift; sourceTree = "<group>"; };
+		49DB002500000025 /* KeyboardShortcutsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsTests.swift; sourceTree = "<group>"; };
 		4944594F28D68EFE007AB2BF /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
 		4947FEA5286FA39D00AEBE60 /* TableViewWithPasteboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TableViewWithPasteboard.swift; path = Macintora/Results/TableViewWithPasteboard.swift; sourceTree = SOURCE_ROOT; };
 		4947FEA7286FA3E200AEBE60 /* ResultsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsController.swift; sourceTree = "<group>"; };
@@ -518,6 +530,8 @@
 				AA0000410000000000000000 /* ConnectionDetailsCodableTests.swift */,
 				AA0000C10000000000000000 /* LegacyDocumentMigrationTests.swift */,
 				AA0000F10000000000000000 /* FullRefreshReproTests.swift */,
+				49DB002300000023 /* WorksheetCommandsBoxTests.swift */,
+				49DB002500000025 /* KeyboardShortcutsTests.swift */,
 				49B0C0DE0000000000000040 /* DBBrowser */,
 				49D0ECF22F9C1E070047540A /* Editor */,
 				49D0ED042F9C34410047540A /* Results */,
@@ -538,6 +552,8 @@
 				4982889628B1C41700A28B04 /* Formatter.swift */,
 				49C62C2327E010AE00DE69E4 /* ConnectionListView.swift */,
 				4982890C28B95BC100A28B04 /* SettingsView.swift */,
+				49DB002000000020 /* WorksheetCommandsBox.swift */,
+				49DB002200000022 /* KeyboardShortcuts.swift */,
 				AA0000200000000000000000 /* DB */,
 				AA0000B60000000000000000 /* Connections */,
 			);
@@ -702,6 +718,7 @@
 				49D0ECF02F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift */,
 				49C0000700000007 /* MacintoraEditor+Completion.swift */,
 				49141400000000000000A001 /* PlsqlBlockDetector.swift */,
+				49DB002100000021 /* EditorToggleCommentBox.swift */,
 				49C0200000000000 /* Completion */,
 				49DB000D0000000D /* Plugins */,
 			);
@@ -715,6 +732,7 @@
 				49D0ECF52F9C1EB90047540A /* GetCurrentSqlTests.swift */,
 				49141400000000000000A003 /* PlsqlBlockDetectorTests.swift */,
 				49EE000100000001 /* MacintoraSTTextViewTests.swift */,
+				49DB002400000024 /* EditorToggleCommentBoxTests.swift */,
 				49C0300000000010 /* Completion */,
 				49DB001E0000001E /* Plugins */,
 			);
@@ -1004,6 +1022,9 @@
 				49B0C0DE0000000000000130 /* DBBrowserInputMapperTests.swift in Sources */,
 				49B0C0DE0000000000000131 /* DBBrowserWindowRegistryTests.swift in Sources */,
 				49B0C0DE0000000000000132 /* DBCacheVMInitTests.swift in Sources */,
+				49DB302300000023 /* WorksheetCommandsBoxTests.swift in Sources */,
+				49DB302400000024 /* EditorToggleCommentBoxTests.swift in Sources */,
+				49DB302500000025 /* KeyboardShortcutsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1142,6 +1163,9 @@
 				49DB100A0000000A /* STDBObjectQuickViewPlugin.swift in Sources */,
 				49DB100B0000000B /* EditorQuickViewBox.swift in Sources */,
 				49DB100F0000000F /* EditorOpenInBrowserBox.swift in Sources */,
+				49DB102000000020 /* WorksheetCommandsBox.swift in Sources */,
+				49DB102100000021 /* EditorToggleCommentBox.swift in Sources */,
+				49DB102200000022 /* KeyboardShortcuts.swift in Sources */,
 				49B0C0DE0000000000000120 /* DBBrowserInputMapper.swift in Sources */,
 				49B0C0DE0000000000000121 /* DBBrowserWindowRegistry.swift in Sources */,
 			);
