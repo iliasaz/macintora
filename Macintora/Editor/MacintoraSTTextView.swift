@@ -46,6 +46,112 @@ final class MacintoraSTTextView: STTextView {
         outdentLines(touching: textSelection)
     }
 
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if mods == .command, event.charactersIgnoringModifiers == "/" {
+            toggleLineComment(nil)
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
+    /// Toggle SQL line comments (`-- `) on every line touched by the current
+    /// selection. Behavior matches Xcode/VS Code: if every non-blank affected
+    /// line is already commented, all are uncommented; otherwise every
+    /// non-blank affected line gets a `-- ` prefix at its first non-whitespace
+    /// column. Blank/whitespace-only lines are left alone so toggling doesn't
+    /// dirty empty lines in diffs.
+    @objc func toggleLineComment(_ sender: Any?) {
+        let selection = textSelection
+        let lineRanges = affectedLineRanges(for: selection)
+        guard !lineRanges.isEmpty else { return }
+        let fullText = (text ?? "") as NSString
+        let marker = "--"
+        let prefix = "-- "
+
+        var nonBlank: [(line: NSRange, contentStart: Int)] = []
+        for line in lineRanges {
+            guard line.length > 0 else { continue }
+            let lineEnd = line.location + line.length
+            var i = line.location
+            var contentStart: Int?
+            while i < lineEnd {
+                let ch = fullText.substring(with: NSRange(location: i, length: 1))
+                if ch == "\n" || ch == "\r" { break }
+                if ch != " " && ch != "\t" { contentStart = i; break }
+                i += 1
+            }
+            if let cs = contentStart { nonBlank.append((line, cs)) }
+        }
+        guard !nonBlank.isEmpty else { return }
+
+        let allCommented = nonBlank.allSatisfy { entry in
+            let lineEnd = entry.line.location + entry.line.length
+            guard entry.contentStart + 2 <= lineEnd else { return false }
+            return fullText.substring(with: NSRange(location: entry.contentStart, length: 2)) == marker
+        }
+
+        // (range to replace, replacement) pairs in document order.
+        var edits: [(range: NSRange, replacement: String)] = []
+        if allCommented {
+            for entry in nonBlank {
+                let lineEnd = entry.line.location + entry.line.length
+                var removeLen = 2
+                if entry.contentStart + removeLen < lineEnd,
+                   fullText.substring(with: NSRange(location: entry.contentStart + removeLen,
+                                                    length: 1)) == " " {
+                    removeLen += 1
+                }
+                edits.append((NSRange(location: entry.contentStart, length: removeLen), ""))
+            }
+        } else {
+            for entry in nonBlank {
+                edits.append((NSRange(location: entry.contentStart, length: 0), prefix))
+            }
+        }
+
+        breakUndoCoalescing()
+        undoManager?.beginUndoGrouping()
+        for edit in edits.reversed() {
+            replaceCharacters(in: edit.range, with: edit.replacement)
+        }
+        undoManager?.endUndoGrouping()
+        breakUndoCoalescing()
+
+        let totalDelta = edits.reduce(0) { acc, edit in
+            acc + (edit.replacement as NSString).length - edit.range.length
+        }
+
+        if selection.length == 0 {
+            // Empty selection: only the caret's line was edited (at most). Adjust
+            // caret by the delta of the edit on that line, snapping into the
+            // edit's start if the caret was inside a removed marker.
+            var caret = selection.location
+            for edit in edits {
+                let editEnd = edit.range.location + edit.range.length
+                let delta = (edit.replacement as NSString).length - edit.range.length
+                if edit.range.location >= caret {
+                    // Insertion at or after caret leaves caret put (Xcode behavior
+                    // for prefix-at-caret). Removal entirely after caret also
+                    // leaves caret put.
+                    continue
+                }
+                if editEnd > caret {
+                    // Caret was inside the removed range — snap to its start.
+                    caret = edit.range.location
+                } else {
+                    caret += delta
+                }
+            }
+            textSelection = NSRange(location: caret, length: 0)
+        } else {
+            let firstStart = lineRanges.first!.location
+            let originalLastEnd = lineRanges.last!.location + lineRanges.last!.length
+            let newLength = max(0, (originalLastEnd - firstStart) + totalDelta)
+            textSelection = NSRange(location: firstStart, length: newLength)
+        }
+    }
+
     private func indentLines(touching selection: NSRange) {
         let lineRanges = affectedLineRanges(for: selection)
         guard !lineRanges.isEmpty else { return }
