@@ -47,10 +47,15 @@ extension DBCacheObject {
         set { self.owner_ = newValue }
     }
     
-    public class func fetchRequest(limit: Int, predicate: NSPredicate? = nil) -> NSFetchRequest<DBCacheObject> {
+    /// Builds the list-pane fetch request. `limit == 0` means no cap (rely on
+    /// Core Data faulting + `List`'s lazy row materialisation for effectively
+    /// infinite scroll); any positive value caps the result set.
+    public class func fetchRequest(limit: Int = 0, predicate: NSPredicate? = nil) -> NSFetchRequest<DBCacheObject> {
         let request = DBCacheObject.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(key: "owner_", ascending: true), NSSortDescriptor(key: "type_", ascending: true), NSSortDescriptor(key: "name_", ascending: true)]
-        request.fetchLimit = limit
+        if limit > 0 {
+            request.fetchLimit = limit
+        }
         if let predicate = predicate {
             request.predicate = predicate
         }

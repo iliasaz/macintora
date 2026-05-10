@@ -79,11 +79,13 @@ struct PackageProceduresListView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        Group {
             if procedures.isEmpty {
-                Text("No procedures or functions cached for this object.")
-                    .foregroundStyle(.secondary)
-                    .padding()
+                ContentUnavailableView(
+                    "No Subprograms Cached",
+                    systemImage: "curlybraces",
+                    description: Text("No procedures or functions cached for this object.")
+                )
             } else {
                 List {
                     ForEach(groups) { group in
@@ -91,7 +93,7 @@ struct PackageProceduresListView: View {
                             if group.parameters.isEmpty {
                                 Text("(no parameters)")
                                     .foregroundStyle(.secondary)
-                                    .font(Font(NSFont(name: "Source Code Pro", size: NSFont.systemFontSize)!))
+                                    .font(.system(.body, design: .monospaced))
                             } else {
                                 ForEach(group.parameters) { arg in
                                     ArgumentRow(argument: arg)
@@ -103,14 +105,9 @@ struct PackageProceduresListView: View {
                     }
                 }
                 .listStyle(.inset)
-                .font(Font(NSFont(name: "Source Code Pro", size: NSFont.systemFontSize)!))
+                .font(.system(.body, design: .monospaced))
             }
         }
-        .padding()
-        .overlay(
-            RoundedRectangle(cornerRadius: 25)
-                .stroke(.quaternary, lineWidth: 2)
-        )
         .padding([.top, .leading, .trailing])
     }
 }
@@ -158,7 +155,7 @@ private struct ProcedureHeader: View {
             }
             Spacer()
         }
-        .font(Font(NSFont(name: "Source Code Pro", size: NSFont.systemFontSize)!))
+        .font(.system(.body, design: .monospaced))
     }
 }
 

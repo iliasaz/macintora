@@ -243,7 +243,6 @@ final class DBCacheVM: nonisolated ObservableObject {
     @AppStorage("cacheUpdateBatchSize") private var cacheUpdateBatchSize: Int = 200
     @AppStorage("includeSystemObjects") private var includeSystemObjects = false
     @AppStorage("cacheUpdateSessionLimit") private var cacheUpdateSessionLimit: Int = 5
-    @AppStorage("searchLimit") var searchLimit: Int = 20
 
     let connDetails: ConnectionDetails
     private var client: OracleClient?

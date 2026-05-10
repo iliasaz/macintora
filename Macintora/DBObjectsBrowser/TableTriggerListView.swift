@@ -13,28 +13,27 @@ struct TableTriggerListView: View {
     @FetchRequest private var triggers: FetchedResults<DBCacheTrigger>
     private var dbObject: DBCacheObject
     @State private var selectedIndexRow: DBCacheTrigger.ID?
-    
-    
+
+
     init(dbObject: DBCacheObject) {
         self.dbObject = dbObject
         _triggers = FetchRequest<DBCacheTrigger>(sortDescriptors: [], predicate: NSPredicate.init(format: "objectName = %@ and objectOwner = %@", dbObject.name, dbObject.owner))
     }
-    
+
     var body: some View {
         Table(triggers, selection: $selectedIndexRow) {
             TableColumn("Trigger Name", value: \.name )
             TableColumn("Trigger Owner", value: \.owner )
             TableColumn("Enabled?") { value in
-                Toggle("", isOn: Binding(get: {value.isEnabled}, set: {_ in }))
-                    .toggleStyle(.checkbox)
+                BoolIndicator(value: value.isEnabled, trueColor: .green, falseColor: .red)
             }
             TableColumn("Type", value: \.type )
             TableColumn("Action Type", value: \.actionType )
             TableColumn("Event", value: \.event )
         }
-        .font(Font(NSFont(name: "Source Code Pro", size: NSFont.systemFontSize)!))
+        .font(.system(.body, design: .monospaced))
     }
-    
+
 }
 
 //struct TableIndexListView_Previews: PreviewProvider {
@@ -42,4 +41,3 @@ struct TableTriggerListView: View {
 //        TableIndexListView()
 //    }
 //}
-

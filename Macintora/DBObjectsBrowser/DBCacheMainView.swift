@@ -44,6 +44,12 @@ struct DBCacheInputValue: Hashable, Codable, Equatable {
     }
 }
 
+/// Search-field focus identifier. `@FocusState` toggled by ⌘F via the
+/// `DBBrowserCommandsBox.focusSearch` hook.
+private enum DBBrowserFocus: Hashable {
+    case search
+}
+
 struct DBCacheMainView: View {
     @ObservedObject var cache: DBCacheVM
     @Environment(\.managedObjectContext) private var viewContext
@@ -51,13 +57,18 @@ struct DBCacheMainView: View {
     @Environment(\.keychainService) private var keychain
     @State private var reportDisplayed = false
     @State private var columnVisibility = NavigationSplitViewVisibility.all
+    @State private var filterInspectorPresented = false
     @SectionedFetchRequest var items: SectionedFetchResults<String?, DBCacheObject>
     @State private var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
+    @State private var commandsBox = DBBrowserCommandsBox()
+    @FocusState private var focus: DBBrowserFocus?
 
     init(cache: DBCacheVM) {
         self.cache = cache
+        // No fetch cap: rely on Core Data faulting + List's lazy row
+        // materialisation. Effective infinite scroll for free.
         _items = SectionedFetchRequest(
-            fetchRequest: DBCacheObject.fetchRequest(limit: cache.searchLimit, predicate: cache.searchCriteria.predicate),
+            fetchRequest: DBCacheObject.fetchRequest(predicate: cache.searchCriteria.predicate),
             sectionIdentifier: \DBCacheObject.owner_,
             animation: .default)
     }
@@ -80,28 +91,33 @@ struct DBCacheMainView: View {
             }
         }
     }
-    
+
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            VStack(alignment: .leading, spacing: 0) {
-                headerView
-                    .frame(minWidth: 200)
-                QuickFilterView(quickFilters: $cache.searchCriteria)
-                Spacer()
-            }
-            .padding()
-        } content: {
             DBCacheSidebarList(items: items, listSelection: $listSelection)
         } detail: {
             if let selectedItem = listSelection {
                 DBDetailView(dbObject: Binding(get: { selectedItem }, set: {_ in }))
                     .environmentObject(cache)
                     .frame(minWidth: 400, idealWidth: 600, maxWidth: .infinity, idealHeight: 1000, maxHeight: .infinity)
+            } else if items.isEmpty {
+                ContentUnavailableView.search
             } else {
-                Text("Nothing selected")
+                ContentUnavailableView(
+                    "No Object Selected",
+                    systemImage: "tablecells",
+                    description: Text("Pick an object from the list to view details.")
+                )
             }
         }
-        .searchable(text: query, placement: .sidebar, prompt: "type something")
+        .navigationTitle(cache.connDetails.tns)
+        .navigationSubtitle(navigationSubtitle)
+        .searchable(text: query, placement: .sidebar, prompt: "Filter objects")
+        .searchFocused($focus, equals: .search)
+        .inspector(isPresented: $filterInspectorPresented) {
+            QuickFilterView(quickFilters: $cache.searchCriteria)
+                .inspectorColumnWidth(min: 220, ideal: 260, max: 360)
+        }
         .background(WindowObserver { window in
             DBBrowserWindowRegistry.shared.register(vm: cache, window: window)
         })
@@ -109,53 +125,86 @@ struct DBCacheMainView: View {
             cache.store = injectedStore
             cache.keychain = keychain
             performAutoSelect()
+            wireCommandsBox()
         }
         .onDisappear {
             DBBrowserWindowRegistry.shared.deregister(vm: cache)
         }
-        .onChange(of: cache.searchCriteria.predicate) { _, value in
+        .onChange(of: cache.searchCriteria) { _, value in
             listSelection = nil
-            items.nsPredicate = value
+            items.nsPredicate = value.predicate
+            value.persist()
         }
         .onChange(of: items.count) { _, _ in
             performAutoSelect()
         }
+        .focusedSceneValue(\.dbBrowserCommandsBox, commandsBox)
+        .focusedSceneValue(\.dbBrowserIsReloading, cache.isReloading)
         .toolbar { toolbarContent }
+    }
+
+    private var navigationSubtitle: String {
+        let version = cache.dbVersionFull ?? "—"
+        return "\(version) · updated \(cache.lastUpdatedStr)"
+    }
+
+    private func wireCommandsBox() {
+        let cache = self.cache
+        commandsBox.incrementalRefresh = { [weak cache] in
+            guard let cache, !cache.isReloading else { return }
+            cache.updateCache()
+        }
+        commandsBox.fullRefresh = { [weak cache] in
+            guard let cache, !cache.isReloading else { return }
+            cache.updateCache(ignoreLastUpdate: true)
+        }
+        commandsBox.fullRefreshAndCompact = { [weak cache] in
+            guard let cache, !cache.isReloading else { return }
+            cache.updateCache(ignoreLastUpdate: true, withCleanup: true)
+        }
+        commandsBox.compactOnly = { [weak cache] in
+            guard let cache, !cache.isReloading else { return }
+            cache.updateCache(cleanupOnly: true)
+        }
+        commandsBox.clear = { [weak cache] in
+            cache?.clearCache()
+        }
+        commandsBox.showCounts = {
+            self.reportDisplayed = true
+        }
+        commandsBox.focusSearch = {
+            self.focus = .search
+        }
+        commandsBox.clearSearch = { [weak cache] in
+            cache?.searchCriteria.searchText = ""
+        }
+        commandsBox.selectMainTab = {
+            UserDefaults.standard.set(DBDetailTab.main.rawValue, forKey: "dbDetailSelectedTab")
+        }
+        commandsBox.selectDetailsTab = {
+            UserDefaults.standard.set(DBDetailTab.details.rawValue, forKey: "dbDetailSelectedTab")
+        }
     }
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .principal) {
             Menu {
-                Button(cache.isReloading ? "Working..." : "Incremental Refresh") {
-                    guard !cache.isReloading else { return }
-                    cache.updateCache()
-                }
-
-                Button(cache.isReloading ? "Working..." : "Full Refresh (No Vacuum)") {
-                    guard !cache.isReloading else { return }
-                    cache.updateCache(ignoreLastUpdate: true)
-                }
-
-                Button(cache.isReloading ? "Working..." : "Full Refresh + Vacuum") {
-                    guard !cache.isReloading else { return }
-                    cache.updateCache(ignoreLastUpdate: true, withCleanup: true)
-                }
-
-                Button(cache.isReloading ? "Working..." : "Vacuum Only") {
-                    guard !cache.isReloading else { return }
-                    cache.updateCache(cleanupOnly: true)
-                }
-
+                Button("Incremental Refresh") { commandsBox.incrementalRefresh?() }
+                Button("Full Refresh") { commandsBox.fullRefresh?() }
+                Button("Full Refresh & Compact") { commandsBox.fullRefreshAndCompact?() }
+                Button("Compact Cache") { commandsBox.compactOnly?() }
             } label: {
-                Label(cache.isReloading ? "Working..." : "Refresh", systemImage: "arrow.triangle.2.circlepath")
+                Label("Refresh", systemImage: "arrow.clockwise")
             }
+            .disabled(cache.isReloading)
             .help("Refresh Cache")
 
-            Button { cache.clearCache() } label: {
+            Button { commandsBox.clear?() } label: {
                 Label("Clear", systemImage: "trash")
             }
             .help("Clear Cache")
+            .disabled(cache.isReloading)
         }
 
         ToolbarItemGroup(placement: .status) {
@@ -163,39 +212,42 @@ struct DBCacheMainView: View {
                 Label("Counts", systemImage: "sum")
             }
             .sheet(isPresented: $reportDisplayed) {
-                VStack {
-                    Text(cache.reportCacheCounts())
-                        .textSelection(.enabled)
-                        .lineLimit(20)
-                        .frame(width: 300.0, height: 200.0, alignment: .topLeading)
-                        .padding()
-                    Button { reportDisplayed.toggle() } label: { Text("Dismiss") }
-                    .padding()
-                }.padding()
+                cacheCountsSheet
             }
             .help("Show Cache counts")
 
-            Image(systemName: "arrow.triangle.2.circlepath")
-                .rotationEffect(Angle.degrees(cache.isReloading ? 360 : 0))
-                .animation(.linear(duration: 2.0).repeat(while: cache.isReloading, autoreverses: false), value: cache.isReloading)
-                .foregroundColor(cache.isReloading ? .red : .green)
-        }
-    }
-    
-    var headerView: some View {
-        // db name and cache update timestamp
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("\(cache.connDetails.tns)").font(.headline)
-                Text("- \(cache.dbVersionFull ?? "(unknown)")")
+            Button {
+                filterInspectorPresented.toggle()
+            } label: {
+                Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
             }
-                .padding(.vertical,3)
-            Text("Cache updated: \(cache.lastUpdatedStr)")
-                .font(.subheadline)
-                .padding(.horizontal)
+            .help("Filter")
+
+            if cache.isReloading {
+                ProgressView()
+                    .controlSize(.small)
+                    .help("Refreshing cache…")
+            }
         }
     }
-    
+
+    private var cacheCountsSheet: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Cache Counts").font(.headline)
+            Text(cache.reportCacheCounts())
+                .textSelection(.enabled)
+                .monospaced()
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack {
+                Spacer()
+                Button("Done") { reportDisplayed = false }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(minWidth: 320, idealWidth: 360, minHeight: 200)
+    }
+
     var query: Binding<String> {
         Binding {
             cache.searchCriteria.searchText
@@ -203,7 +255,6 @@ struct DBCacheMainView: View {
             listSelection = nil
             cache.searchCriteria.searchText = newValue
             items.nsPredicate = cache.searchCriteria.predicate
-//            totalCountMatched = 0
         }
     }
 }
@@ -213,20 +264,25 @@ private struct DBCacheSidebarList: View {
     @Binding var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
 
     var body: some View {
-        List(selection: $listSelection) {
-            ForEach(items) { section in
-                Section(header: Text(section.id ?? "(unknown)")) {
-                    ForEach(section) { item in
-                        NavigationLink(value: item) {
-                            DBCacheListEntryView(dbObject: item)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .contentShape(Rectangle())
+        Group {
+            if items.isEmpty {
+                ContentUnavailableView.search
+            } else {
+                List(selection: $listSelection) {
+                    ForEach(items) { section in
+                        Section {
+                            ForEach(section) { item in
+                                DBCacheListEntryView(dbObject: item)
+                                    .tag(item)
+                            }
+                        } header: {
+                            Text(section.id ?? "(unknown)")
                         }
                     }
                 }
+                .listStyle(.sidebar)
             }
         }
-        .listStyle(SidebarListStyle())
     }
 }
 

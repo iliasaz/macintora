@@ -8,14 +8,18 @@
 import SwiftUI
 import CoreData
 
+private enum DBIndexTab: String, CaseIterable, Codable {
+    case columns
+    case sql
+}
 
 struct DBIndexDetailView: View {
     @Environment(\.managedObjectContext) var context
-    @State private var selectedTab: String = "columns"
+    @AppStorage("dbIndexDetailSelectedTab") private var selectedTab: DBIndexTab = .columns
     @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
     @FetchRequest private var columns: FetchedResults<DBCacheIndexColumn>
     @Binding var dbObject: DBCacheObject
-    
+
     let columnLabels = ["position", "columnName", "isDescending", "length"]
     let booleanColumnLabels = ["isDescending"]
     var columnSortFn = { (lhs: NSManagedObject, rhs: NSManagedObject) in (lhs as! DBCacheIndexColumn).position < (rhs as! DBCacheIndexColumn).position }
@@ -25,49 +29,37 @@ struct DBIndexDetailView: View {
         _indexes = FetchRequest<DBCacheIndex>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
         _columns = FetchRequest<DBCacheIndexColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "indexName_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
     }
-    
-    var tableHeader: some View {
-        HStack {
-            VStack(alignment: .centreLine, spacing: 3) {
-                FormField(label: "Partitioned?") {
-                    Toggle("", isOn: .constant(indexes.first?.isPartitioned ?? false))
-                }
-                FormField(label: "Row Count") {
-                    Text(indexes.first?.numRows.formatted() ?? Constants.nullValue)
-                }
-                
+
+    private var indexForm: some View {
+        Form {
+            LabeledContent("Partitioned") {
+                BoolIndicator(value: indexes.first?.isPartitioned ?? false)
             }
-            Spacer()
-            VStack(alignment: .centreLine, spacing: 3) {
-                FormField(label: "Last Analyzed") {
-                    Text(indexes.first?.lastAnalyzed?.ISO8601Format() ?? Constants.nullValue)
-                }
-            }
-            Spacer()
+            LabeledContent("Row Count", value: indexes.first?.numRows.formatted() ?? Constants.nullValue)
+            LabeledContent("Last Analyzed", value: indexes.first?.lastAnalyzed?.formatted(date: .abbreviated, time: .shortened) ?? Constants.nullValue)
         }
-        .padding()
+        .formStyle(.grouped)
     }
-    
+
     var body: some View {
         VStack {
-            tableHeader
-            
+            indexForm
+
             TabView(selection: $selectedTab) {
-                DetailGridView(rows: Array(columns).sorted(by: columnSortFn), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
-                    .id(dbObject.id)
-                    .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
-                    .tabItem {
-                        Text("Columns")
-                    }.tag("columns")
+                Tab("Columns", systemImage: "rectangle.split.3x1", value: DBIndexTab.columns) {
+                    DetailGridView(rows: Array(columns).sorted(by: columnSortFn), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
+                        .id(dbObject.id)
+                        .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
+                }
 
-                Text("Index DDL")
-                    .tabItem {
-                        Text("SQL")
-                    }.tag("sql")
-
-
+                Tab("SQL", systemImage: "doc.text", value: DBIndexTab.sql) {
+                    ContentUnavailableView(
+                        "Index DDL Not Available",
+                        systemImage: "doc.text",
+                        description: Text("DDL preview for indexes is not yet implemented.")
+                    )
+                }
             }
-            .font(.headline)
         }
         .frame(minWidth: 200, idealWidth: 400, maxWidth: .infinity)
         .padding()
@@ -86,4 +78,3 @@ struct DBIndexDetailView: View {
 //            .environment(\.managedObjectContext, cache.persistenceController.container.viewContext)
 //    }
 //}
-

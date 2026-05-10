@@ -13,41 +13,36 @@ struct TableIndexListView: View {
     @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
     private var dbObject: DBCacheObject
     @State private var selectedIndexRow: DBCacheIndex.ID?
-    
-    
+
+
     init(dbObject: DBCacheObject) {
         self.dbObject = dbObject
         _indexes = FetchRequest<DBCacheIndex>(sortDescriptors: [NSSortDescriptor(key: "name_", ascending: true)], predicate: NSPredicate.init(format: "tableName_ = %@ and tableOwner_ = %@", dbObject.name, dbObject.owner))
     }
-    
+
     var body: some View {
         Table(indexes, selection: $selectedIndexRow) {
             TableColumn("Index Name", value: \.name )
             TableColumn("Type", value: \.type)
             TableColumn("Index Owner", value: \.owner )
             TableColumn("Valid?") { value in
-                Toggle("", isOn: Binding(get: {value.isValid}, set: {_ in }))
-                    .toggleStyle(.checkbox)
+                BoolIndicator(value: value.isValid, trueColor: .green, falseColor: .red)
             }
             TableColumn("Visible?") { value in
-                Toggle("", isOn: Binding(get: {value.isVisible}, set: {_ in }))
-                    .toggleStyle(.checkbox)
+                BoolIndicator(value: value.isVisible)
             }
             TableColumn("Unique?") { value in
-                Toggle("", isOn: Binding(get: {value.isUnique}, set: {_ in }))
-                    .toggleStyle(.checkbox)
+                BoolIndicator(value: value.isUnique)
             }
             TableColumn("Tablespace", value: \.tablespaceName )
             TableColumn("Last Analyzed") { value in
-                Text(value.lastAnalyzed?.ISO8601Format() ?? "")
+                Text(value.lastAnalyzed?.formatted(date: .abbreviated, time: .shortened) ?? "")
             }
             TableColumn("Degree", value: \.degree )
-            TableColumn("Tablespace", value: \.tablespaceName )
-            
         }
-        .font(Font(NSFont(name: "Source Code Pro", size: NSFont.systemFontSize)!))
+        .font(.system(.body, design: .monospaced))
     }
-    
+
 }
 
 //struct TableIndexListView_Previews: PreviewProvider {

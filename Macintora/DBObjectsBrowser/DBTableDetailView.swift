@@ -7,14 +7,19 @@
 
 import SwiftUI
 import CoreData
-// STTextViewUI was an experimental dep on a parallel branch; oracle-nio's
-// pbxproj doesn't reference it. The SQL view below falls back to a plain
-// ScrollView + Text with monospaced font, which is what the migration
-// branch had in use.
+
+/// Sub-tabs inside the "Details" tab for tables/views. Codable so we can
+/// persist the last user-picked tab across selections.
+private enum DBTableDetailTab: String, CaseIterable, Codable {
+    case columns
+    case indexes
+    case triggers
+    case sql
+}
 
 struct DBTableDetailView: View {
     @Environment(\.managedObjectContext) var context
-    @State private var selectedTab: String = "columns"
+    @AppStorage("dbTableDetailSelectedTab") private var selectedTab: DBTableDetailTab = .columns
     @FetchRequest private var tables: FetchedResults<DBCacheTable>
     @FetchRequest private var columns: FetchedResults<DBCacheTableColumn>
     @Binding var dbObject: DBCacheObject
@@ -30,129 +35,93 @@ struct DBTableDetailView: View {
         _tables = FetchRequest<DBCacheTable>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
         _columns = FetchRequest<DBCacheTableColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "tableName_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
     }
-    
+
     var sqlText: String { tables.first?.sqltext ?? "" }
-//    var text: Binding<String> = Binding(get: {sqlText}, set: {_ in})
-    
-    var tableHeader: some View {
-        HStack {
-            VStack(alignment: .centreLine, spacing: 3) {
-                FormField(label: "Partitioned?") {
-                    Toggle("", isOn: .constant(tables.first?.isPartitioned ?? false))
-                }
-                FormField(label: "Row Count") {
-                    Text(tables.first?.numRows.formatted() ?? Constants.nullValue)
-                }
-                
+
+    private var tableHeader: some View {
+        Form {
+            LabeledContent("Partitioned") {
+                BoolIndicator(value: tables.first?.isPartitioned ?? false)
             }
-            Spacer()
-            VStack(alignment: .centreLine, spacing: 3) {
-                FormField(label: "Last Analyzed") {
-                    Text(tables.first?.lastAnalyzed?.ISO8601Format() ?? Constants.nullValue)
-                }
-            }
-            Spacer()
+            LabeledContent("Row Count", value: tables.first?.numRows.formatted() ?? Constants.nullValue)
+            LabeledContent("Last Analyzed", value: tables.first?.lastAnalyzed?.formatted(date: .abbreviated, time: .shortened) ?? Constants.nullValue)
         }
-        .padding()
-        .overlay(
-            RoundedRectangle(cornerRadius: 25)
-                .stroke(.quaternary, lineWidth: 2)
-        )
+        .formStyle(.grouped)
     }
-    
-    var viewHeader: some View {
-        HStack {
-            VStack(alignment: .centreLine, spacing: 3) {
-                FormField(label: "Editioning?") {
-                    Toggle("", isOn: .constant(tables.first?.isEditioning ?? false))
-                }
-                FormField(label: "Read Only?") {
-                    Toggle("", isOn: .constant(tables.first?.isReadOnly ?? false))
-                }
-                
+
+    private var viewHeader: some View {
+        Form {
+            LabeledContent("Editioning") {
+                BoolIndicator(value: tables.first?.isEditioning ?? false)
             }
-            Spacer()
+            LabeledContent("Read Only") {
+                BoolIndicator(value: tables.first?.isReadOnly ?? false)
+            }
         }
-        .padding()
-        .overlay(
-            RoundedRectangle(cornerRadius: 25)
-                .stroke(.quaternary, lineWidth: 2)
-        )
+        .formStyle(.grouped)
     }
-    
+
     var body: some View {
         VStack {
             if tables.first?.isView ?? false { viewHeader } else { tableHeader }
-            
+
             TabView(selection: $selectedTab) {
-                DetailGridView(rows: Array(columns).sorted(by: columnSortFn), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
-                    .id(dbObject.id)
-                    .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
-                    .tabItem {
-                        Text("Columns")
-                    }.tag("columns")
-                
-                if !(tables.first?.isView ?? false) {
-                    TableIndexListView(dbObject: dbObject)
+                Tab("Columns", systemImage: "rectangle.split.3x1", value: DBTableDetailTab.columns) {
+                    DetailGridView(rows: Array(columns).sorted(by: columnSortFn), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
+                        .id(dbObject.id)
                         .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
-                        .tabItem {
-                            Text("Indexes")
-                        }.tag("indexes")
-                    
-                    TableTriggerListView(dbObject: dbObject)
-                        .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
-                        .tabItem {
-                            Text("Triggers")
-                        }.tag("triggers")
                 }
-                
-                if tables.first?.isView ?? false {
-                    VStack {
-                        Button {
-                            let formatter = Formatter()
-                            formatter.formattedSource = "...formatting, please wait..."
 
-                            SwiftUIWindow.open {window in
-                                let _ = (window.title = dbObject.name)
-                                FormattedView(formatter: formatter)
-                            }
-                            .closeOnEscape(true)
-
-                            formatter.formatSource(name: dbObject.name, text: tables.first?.sqltext)
-
-                        } label: { Text("Format Source") }
-
-                        //                        CodeEditor(source: .constant(tables.first?.sqltext ?? "N/A"), language: .pgsql, theme: .atelierDuneLight, flags: [.selectable], autoscroll: false, wordWrap: .constant(true))
-                        //                        ScrollView {
-                        //                            Text("\(sqlText)")
-                        //                                .monospaced()
-                        //                                .textSelection(.enabled)
-                        //                                .lineLimit(nil)
-                        //                                .multilineTextAlignment(.leading)
-                        //                                .frame(maxWidth: .infinity)
-                        //                        }
-
-                        //                        CodeEditTextView( Binding<String>(get: { sqlText }, set: {_ in }), language: .sql, theme: sqlTheme, font: sourceFont, tabWidth: tabWidth, lineHeight: lineHeight, wrapLines: true, editorOverscroll: editorOverscroll, cursorPosition: $cursorPosition, isEditable: true)
-                        
-                        ScrollView {
-                            Text(sqlText)
-                                .monospaced()
-                                .textSelection(.enabled)
-                                .lineLimit(nil)
-                                .multilineTextAlignment(.leading)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(8)
-                        }
-
-
+                if !(tables.first?.isView ?? false) {
+                    Tab("Indexes", systemImage: "list.bullet.indent", value: DBTableDetailTab.indexes) {
+                        TableIndexListView(dbObject: dbObject)
+                            .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
                     }
-                    .tabItem {
-                        Text("SQL")
-                    }.tag("sql")
+
+                    Tab("Triggers", systemImage: "bolt", value: DBTableDetailTab.triggers) {
+                        TableTriggerListView(dbObject: dbObject)
+                            .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
+                    }
+                }
+
+                if tables.first?.isView ?? false {
+                    Tab("SQL", systemImage: "doc.text", value: DBTableDetailTab.sql) {
+                        viewSqlTab
+                    }
                 }
             }
         }
         .padding()
+    }
+
+    private var viewSqlTab: some View {
+        VStack {
+            HStack {
+                Spacer()
+                Button("Format Source") {
+                    let formatter = Formatter()
+                    formatter.formattedSource = "...formatting, please wait..."
+
+                    SwiftUIWindow.open { window in
+                        let _ = (window.title = dbObject.name)
+                        FormattedView(formatter: formatter)
+                    }
+                    .closeOnEscape(true)
+
+                    formatter.formatSource(name: dbObject.name, text: tables.first?.sqltext)
+                }
+            }
+
+            ScrollView {
+                Text(sqlText)
+                    .font(.system(.body, design: .monospaced))
+                    .textSelection(.enabled)
+                    .lineLimit(nil)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+            }
+        }
     }
 }
 

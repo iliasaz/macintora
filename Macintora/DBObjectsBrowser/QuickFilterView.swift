@@ -7,57 +7,53 @@
 
 import SwiftUI
 
-struct GridControlGroupStyle: ControlGroupStyle {
-    func makeBody(configuration: Configuration) -> some View {
-//        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100, maximum: .infinity), spacing: 0, alignment: .leading)], alignment: .leading, spacing: 2) {
-        LazyVGrid(columns: [GridItem(.fixed(120)), GridItem(.fixed(110))], alignment: .leading, spacing: 5) {
-            configuration.content
-                .toggleStyle(.switch)
-        }
-    }
-}
-
 struct QuickFilterView: View {
     @Binding var quickFilters: DBCacheSearchCriteria
-    @State private var isQuickFilterViewExpanded = true
 
     var body: some View {
-        Group {
-            VStack {
-                ControlGroup {
-                    Toggle(isOn: $quickFilters.showTables) { Text( "Tables").frame(width: 70, alignment: .leading) }
-                    Toggle(isOn: $quickFilters.showViews) { Text("Views").frame(width: 70, alignment: .leading)}
-                    Toggle(isOn: $quickFilters.showIndexes) { Text("Indexes").frame(width: 70, alignment: .leading)}
-                    Toggle(isOn: $quickFilters.showPackages) { Text("Packages").frame(width: 70, alignment: .leading)}
-                    Toggle(isOn: $quickFilters.showTypes) { Text("Types").frame(width: 70, alignment: .leading)}
-                    Toggle(isOn: $quickFilters.showTriggers) { Text("Triggers").frame(width: 70, alignment: .leading)}
-                    Toggle(isOn: $quickFilters.showProcedures) { Text("Procedures").frame(width: 70, alignment: .leading)}
-                    Toggle(isOn: $quickFilters.showFunctions) { Text("Functions").frame(width: 70, alignment: .leading)}
+        Form {
+            Section("Object Types") {
+                LazyVGrid(
+                    columns: [
+                        GridItem(.flexible(minimum: 100), alignment: .leading),
+                        GridItem(.flexible(minimum: 100), alignment: .leading)
+                    ],
+                    alignment: .leading,
+                    spacing: 6
+                ) {
+                    Toggle("Tables", isOn: $quickFilters.showTables)
+                    Toggle("Views", isOn: $quickFilters.showViews)
+                    Toggle("Indexes", isOn: $quickFilters.showIndexes)
+                    Toggle("Packages", isOn: $quickFilters.showPackages)
+                    Toggle("Types", isOn: $quickFilters.showTypes)
+                    Toggle("Triggers", isOn: $quickFilters.showTriggers)
+                    Toggle("Procedures", isOn: $quickFilters.showProcedures)
+                    Toggle("Functions", isOn: $quickFilters.showFunctions)
                 }
-                .controlGroupStyle(GridControlGroupStyle())
-                
+                .toggleStyle(.switch)
+                .controlSize(.small)
+
                 if quickFilters.selectedTypeFilter != nil {
                     Button("Show all types") {
                         quickFilters.selectedTypeFilter = nil
                     }
                     .controlSize(.small)
                 }
-
-                TextField("Schemas, ex. SYSTEM,SYS", text: $quickFilters.ownerString)
-                    .lineLimit(3, reservesSpace: true)
-                    .textFieldStyle(.roundedBorder)
-                    .disableAutocorrection(true)
-
-                TextField("Object Prefix, ex. DBMS,DBA", text: $quickFilters.prefixString)
-                    .lineLimit(3, reservesSpace: true)
-                    .textFieldStyle(.roundedBorder)
-                    .disableAutocorrection(true)
-//                Button("save") {
-//                    quickFilters.changed.toggle()
-//                }
             }
-            .padding(.vertical)
+
+            Section("Schemas") {
+                TextField("ex. SYSTEM, SYS", text: $quickFilters.ownerString)
+                    .textFieldStyle(.roundedBorder)
+                    .disableAutocorrection(true)
+            }
+
+            Section("Object Prefix") {
+                TextField("ex. DBMS, DBA", text: $quickFilters.prefixString)
+                    .textFieldStyle(.roundedBorder)
+                    .disableAutocorrection(true)
+            }
         }
+        .formStyle(.grouped)
     }
 }
 

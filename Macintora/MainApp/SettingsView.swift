@@ -127,7 +127,6 @@ struct DBBrowserSettings: View {
     @AppStorage("cacheUpdatePrefetchSize") private var cacheUpdatePrefetchSize: Int = 10000
     @AppStorage("cacheUpdateBatchSize") private var cacheUpdateBatchSize: Int = 200
     @AppStorage("cacheUpdateSessionLimit") private var cacheUpdateSessionLimit: Int = 5
-    @AppStorage("searchLimit") private var searchLimit: Int = 20
 
     var body: some View {
         VStack {
@@ -141,10 +140,6 @@ struct DBBrowserSettings: View {
                     .textFieldStyle(.roundedBorder)
 
                 TextField("Cache Update Max Sessions", value: $cacheUpdateSessionLimit, format: .number)
-                    .disableAutocorrection(true)
-                    .textFieldStyle(.roundedBorder)
-
-                TextField("Search Limit", value: $searchLimit, format: .number)
                     .disableAutocorrection(true)
                     .textFieldStyle(.roundedBorder)
 
