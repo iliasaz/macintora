@@ -53,6 +53,7 @@ struct MacintoraEditor: View {
     let completionConfig: EditorCompletionConfig?
     let quickViewBox: EditorQuickViewBox?
     let openInBrowserBox: EditorOpenInBrowserBox?
+    let toggleCommentBox: EditorToggleCommentBox?
 
     @AppStorage("editorTheme") private var editorThemeRaw: String = EditorTheme.default.rawValue
 
@@ -68,7 +69,8 @@ struct MacintoraEditor: View {
         accessibilityIdentifier: String = "editor.main",
         completionConfig: EditorCompletionConfig? = nil,
         quickViewBox: EditorQuickViewBox? = nil,
-        openInBrowserBox: EditorOpenInBrowserBox? = nil
+        openInBrowserBox: EditorOpenInBrowserBox? = nil,
+        toggleCommentBox: EditorToggleCommentBox? = nil
     ) {
         self._text = text
         self._selection = selection
@@ -82,6 +84,7 @@ struct MacintoraEditor: View {
         self.completionConfig = completionConfig
         self.quickViewBox = quickViewBox
         self.openInBrowserBox = openInBrowserBox
+        self.toggleCommentBox = toggleCommentBox
     }
 
     private var editorTheme: EditorTheme {
@@ -102,7 +105,8 @@ struct MacintoraEditor: View {
             theme: editorTheme,
             completionConfig: completionConfig,
             quickViewBox: quickViewBox,
-            openInBrowserBox: openInBrowserBox
+            openInBrowserBox: openInBrowserBox,
+            toggleCommentBox: toggleCommentBox
         )
         .id(editorTheme)
     }
@@ -122,6 +126,7 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
     let completionConfig: EditorCompletionConfig?
     let quickViewBox: EditorQuickViewBox?
     let openInBrowserBox: EditorOpenInBrowserBox?
+    let toggleCommentBox: EditorToggleCommentBox?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, selection: $selection)
@@ -165,6 +170,10 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
                 mainConnectionProvider: config.mainConnectionProvider)
             context.coordinator.bindOpenInBrowserBox(openInBrowserBox, textView: textView)
         }
+        // Toggle Line Comment doesn't depend on completion/Quick View, so wire
+        // it whether or not `completionConfig` is set — read-only viewers
+        // typically pass nil here.
+        context.coordinator.bindToggleCommentBox(toggleCommentBox, textView: textView)
 
         // Install the Neon syntax-highlighting plugin before the first text
         // assignment so the initial parse fires on the seeded content.
@@ -208,6 +217,9 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
             if context.coordinator.openInBrowserBoxRef !== openInBrowserBox {
                 context.coordinator.bindOpenInBrowserBox(openInBrowserBox, textView: textView)
             }
+        }
+        if context.coordinator.toggleCommentBoxRef !== toggleCommentBox {
+            context.coordinator.bindToggleCommentBox(toggleCommentBox, textView: textView)
         }
 
         if textView.isEditable != isEditable { textView.isEditable = isEditable }

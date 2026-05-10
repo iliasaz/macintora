@@ -207,7 +207,7 @@ final class MacintoraUITests: XCTestCase {
     /// and the wrapper's re-entrancy guard must keep the binding and view in
     /// sync while typing.
     ///
-    /// The timing budget is generous (30 s for 20 statements, ~840 chars): the
+    /// The timing budget is generous (30 s for the fixture, ~200 chars): the
     /// XCUITest keystroke path itself costs ~25 ms per character. The point
     /// is to catch *severe* regressions (main-thread-blocking full re-parse),
     /// not to benchmark the highlighter. The storage check below is the real
@@ -225,16 +225,22 @@ final class MacintoraUITests: XCTestCase {
         textView.typeKey("a", modifierFlags: .command)
         textView.typeKey(.delete, modifierFlags: [])
 
-        let stmts = (0..<6)
+        let statementCount = 6
+        let stmts = (0..<statementCount)
             .map { "SELECT \($0) FROM dual WHERE x = \($0);\n" }
             .joined()
         let start = Date()
         textView.typeText(stmts)
         let elapsed = Date().timeIntervalSince(start)
 
+        // Assert the first and last statements survived. Driving the needles
+        // off `statementCount` so trimming the fixture in the future can't
+        // silently desync the assertion from the typed payload again.
+        let firstNeedle = "SELECT 0 FROM dual"
+        let lastNeedle = "SELECT \(statementCount - 1) FROM dual"
         let contents = (textView.value as? String) ?? ""
         XCTAssertTrue(
-            contents.contains("SELECT 0 FROM dual") && contents.contains("SELECT 19 FROM dual"),
+            contents.contains(firstNeedle) && contents.contains(lastNeedle),
             "first and/or last statement missing from storage — keystrokes were dropped. value tail=\"\(contents.suffix(180))\""
         )
         XCTAssertLessThan(

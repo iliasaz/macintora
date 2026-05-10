@@ -48,12 +48,38 @@ struct MainDocumentView: View {
     /// `[weak document]` reference so the menu command can stay free of
     /// `@FocusedValue(\.mainConnection)` reads.
     @State private var sessionBrowserBox = SessionBrowserBox()
+    /// Bridge for the Database menu's worksheet commands (Run, Stop, Run
+    /// Script, Run From Cursor / Selection, Explain Plan, Compile, Format).
+    /// Triggers are installed in `.onAppear` and read live state via
+    /// captured bindings so menu invocations always see the current
+    /// document selection.
+    @State private var worksheetCommandsBox = WorksheetCommandsBox()
+    /// Bridge for the ⌘/ "Toggle Line Comment" menu command. The trigger
+    /// is installed by the editor coordinator once the AppKit text view is
+    /// available.
+    @State private var toggleCommentBox = EditorToggleCommentBox()
 
     var selectedObject: String {
         if editorSelection.isEmpty { return "" }
         let s = String(document.model.text[editorSelection])
         if s.count > 128 { return "" }
         return s
+    }
+
+    /// Published `worksheetIsConnected` value. Returns the real document
+    /// state, except when `UITestProbe` is forcing `.connected` so the UI
+    /// tests for ⌘R / ⌘E / ⌘C / ⇧⌘R / ⌥⌘R / ⌃⌘F can hit menu items that
+    /// gate on a live connection without actually opening one.
+    private var probedIsConnected: ConnectionStatus {
+        UITestProbe.shared.forceConnected ? .connected : document.isConnected
+    }
+
+    /// Published `worksheetIsExecuting` value with the same probe-override
+    /// pattern. `-uiTestForceExecuting` flips it to `true` so the Stop menu
+    /// item enables for that test.
+    private var probedIsExecuting: Bool {
+        UITestProbe.shared.forceExecuting
+            || (document.resultsController?.isExecuting ?? false)
     }
 
     init(document: MainDocumentVM) {
@@ -99,7 +125,8 @@ struct MainDocumentView: View {
                     highlightsSelectedLine: true,
                     completionConfig: completionConfig,
                     quickViewBox: quickViewBox,
-                    openInBrowserBox: openInBrowserBox
+                    openInBrowserBox: openInBrowserBox,
+                    toggleCommentBox: toggleCommentBox
                 )
                     .frame(maxWidth: .infinity, minHeight: 120, idealHeight: 320, maxHeight: .infinity)
                     .focused($focusedView, equals: .codeEditor)
@@ -123,6 +150,11 @@ struct MainDocumentView: View {
         .focusedSceneValue(\.editorQuickViewBox, quickViewBox)
         .focusedSceneValue(\.editorOpenInBrowserBox, openInBrowserBox)
         .focusedSceneValue(\.sessionBrowserBox, sessionBrowserBox)
+        .focusedSceneValue(\.worksheetCommandsBox, worksheetCommandsBox)
+        .focusedSceneValue(\.editorToggleCommentBox, toggleCommentBox)
+        .focusedSceneValue(\.worksheetIsConnected, probedIsConnected)
+        .focusedSceneValue(\.worksheetIsExecuting, probedIsExecuting)
+        .overlay(alignment: .topLeading) { UITestProbeView() }
         .tnsImportPromptOnFirstLaunch()
         .onAppear {
             document.prepareOnAppear(store: injectedStore, keychain: keychain)
@@ -133,6 +165,39 @@ struct MainDocumentView: View {
             sessionBrowserBox.trigger = { [weak document] in
                 guard let document else { return }
                 openWindow(value: SBInputValue(mainConnection: document.mainConnection))
+            }
+            // Worksheet commands. The closures capture `$editorSelection` so
+            // each menu invocation reads the current selection rather than
+            // a snapshot taken at install time. The toolbar buttons remain
+            // the primary affordance — these triggers exist so the menu
+            // items in `MainDocumentMenuCommands` route to the same VM
+            // methods without needing a reference to the document.
+            let selectionBinding = $editorSelection
+            worksheetCommandsBox.runCurrent = { [weak document] in
+                document?.runCurrentSQL(for: selectionBinding.wrappedValue)
+            }
+            worksheetCommandsBox.stop = { [weak document] in
+                document?.stopRunningSQL()
+            }
+            worksheetCommandsBox.runScript = { [weak document] in
+                document?.runScript()
+            }
+            worksheetCommandsBox.runFromCursorOrSelection = { [weak document] in
+                let selection = selectionBinding.wrappedValue
+                if selection.isEmpty {
+                    document?.runScriptFromCursor(selection.lowerBound)
+                } else {
+                    document?.runScriptSelection(selection)
+                }
+            }
+            worksheetCommandsBox.explainPlan = { [weak document] in
+                document?.explainPlan(for: selectionBinding.wrappedValue)
+            }
+            worksheetCommandsBox.compile = { [weak document] in
+                document?.compileSource(for: selectionBinding.wrappedValue)
+            }
+            worksheetCommandsBox.format = { [weak document] in
+                document?.format(of: selectionBinding)
             }
             if completionConfig == nil {
                 let tns = document.mainConnection.mainConnDetails.tns
@@ -175,12 +240,25 @@ struct MainDocumentView: View {
                 .accessibilityIdentifier(document.isConnected == .connected ? "toolbar.disconnect" : "toolbar.connect")
                 .accessibilityLabel(document.isConnected == .connected ? "Disconnect" : "Connect")
 
-                // execute/stop sql
+                // execute/stop sql. The toolbar Button keeps the keyboard
+                // shortcut alongside the equivalent menu item: SwiftUI
+                // toolbar bindings dispatch ahead of NSTextView's responder
+                // chain, which is the only reliable path for shortcuts that
+                // collide with a system action (notably ⌘E, claimed by
+                // NSTextView's `useSelectionForFind:`). The menu items
+                // remain for HIG menu-bar discoverability + Help search.
                 Button {
-                    if document.resultsController?.isExecuting ?? false {
-                        document.stopRunningSQL()
-                    } else {
-                        document.runCurrentSQL(for: editorSelection)
+                    // Use the probed flag so the recorded command name agrees
+                    // with the keyboardShortcut binding (which is also driven
+                    // by `probedIsExecuting`). In production `probedIsExecuting`
+                    // is just `document.resultsController?.isExecuting`.
+                    let isExecuting = probedIsExecuting
+                    UITestProbe.shared.dispatch(isExecuting ? "Stop" : "Run") {
+                        if isExecuting {
+                            document.stopRunningSQL()
+                        } else {
+                            document.runCurrentSQL(for: editorSelection)
+                        }
                     }
                     focusedView = .codeEditor
                 } label: {
@@ -192,88 +270,100 @@ struct MainDocumentView: View {
                         Image(systemName: "play")
                     }
                 }
-                .disabled(document.isConnected != .connected)
-                .keyboardShortcut(document.resultsController?.isExecuting ?? false ? "b" : "r", modifiers: .command)
-                .help("Execute current statement")
+                .disabled(probedIsConnected != .connected)
+                .keyboardShortcut(probedIsExecuting ? "b" : "r", modifiers: .command)
+                .help(document.resultsController?.isExecuting ?? false ? "Stop (⌘B)" : "Run Statement (⌘R)")
                 .accessibilityIdentifier("toolbar.run")
                 .accessibilityLabel("Run")
 
                 // run script (whole file)
                 Button {
-                    if document.resultsController?.isExecuting ?? false {
-                        document.stopRunningSQL()
-                    } else {
-                        document.runScript()
+                    UITestProbe.shared.dispatch("Run Script") {
+                        if document.resultsController?.isExecuting ?? false {
+                            document.stopRunningSQL()
+                        } else {
+                            document.runScript()
+                        }
                     }
                     focusedView = .codeEditor
                 } label: { Image(systemName: "play.square") }
-                    .disabled(document.isConnected != .connected)
+                    .disabled(probedIsConnected != .connected)
                     .keyboardShortcut("r", modifiers: [.command, .shift])
-                    .help("Run entire script")
+                    .help("Run Script (⇧⌘R)")
                     .accessibilityIdentifier("toolbar.runScript")
                     .accessibilityLabel("Run Script")
 
                 // run from cursor / run selection
                 Button {
-                    if document.resultsController?.isExecuting ?? false {
-                        document.stopRunningSQL()
-                    } else if !editorSelection.isEmpty {
-                        document.runScriptSelection(editorSelection)
-                    } else {
-                        document.runScriptFromCursor(editorSelection.lowerBound)
+                    UITestProbe.shared.dispatch("Run From Cursor / Selection") {
+                        if document.resultsController?.isExecuting ?? false {
+                            document.stopRunningSQL()
+                        } else if !editorSelection.isEmpty {
+                            document.runScriptSelection(editorSelection)
+                        } else {
+                            document.runScriptFromCursor(editorSelection.lowerBound)
+                        }
                     }
                     focusedView = .codeEditor
                 } label: { Image(systemName: "play.square.stack") }
-                    .disabled(document.isConnected != .connected)
+                    .disabled(probedIsConnected != .connected)
                     .keyboardShortcut("r", modifiers: [.command, .option])
-                    .help(editorSelection.isEmpty ? "Run script from cursor" : "Run selection as script")
+                    .help(editorSelection.isEmpty ? "Run From Cursor (⌥⌘R)" : "Run Selection as Script (⌥⌘R)")
                     .accessibilityIdentifier("toolbar.runScriptFromCursor")
                     .accessibilityLabel("Run From Cursor")
 
                 // explain plan
                 Button {
-                    if !(document.resultsController?.isExecuting ?? false) {
-                        document.explainPlan(for: editorSelection)
+                    UITestProbe.shared.dispatch("Explain Plan") {
+                        if !(document.resultsController?.isExecuting ?? false) {
+                            document.explainPlan(for: editorSelection)
+                        }
                     }
                     focusedView = .codeEditor
                 } label: {
                     Image(systemName: "list.number")
                 }
-                .disabled(document.isConnected != .connected || document.resultsController?.isExecuting ?? false)
+                .disabled(probedIsConnected != .connected || probedIsExecuting)
                 .keyboardShortcut("e", modifiers: .command)
-                .help("Explain plan of current statement")
-                
+                .help("Explain Plan (⌘E)")
+
                 // copy current sql into a new tab
                 Button {
-                    Task {
-                        if let url = document.newDocument(from: editorSelection) {
-                            let (doc,_): (NSDocument, Bool) = try await NSDocumentController.shared.openDocument(withContentsOf: url, display: false)
-                            NSDocumentController.shared.addDocument(doc)
-                            doc.makeWindowControllers()
-                            doc.windowControllers.first?.window?.tabbingMode = .preferred
-                            doc.showWindows()
+                    UITestProbe.shared.dispatch("New Tab from Selection") {
+                        Task {
+                            if let url = document.newDocument(from: editorSelection) {
+                                let (doc,_): (NSDocument, Bool) = try await NSDocumentController.shared.openDocument(withContentsOf: url, display: false)
+                                NSDocumentController.shared.addDocument(doc)
+                                doc.makeWindowControllers()
+                                doc.windowControllers.first?.window?.tabbingMode = .preferred
+                                doc.showWindows()
+                            }
                         }
                     }
                 } label: { Image(systemName: "doc.on.doc") }
                     .keyboardShortcut("t", modifiers: [.command, .shift])
-                    .help("New Tab")
-                
+                    .help("New Tab (⇧⌘T)")
+
                 // format sql
                 Button {
-                    document.format(of: $editorSelection)
+                    UITestProbe.shared.dispatch("Format") {
+                        document.format(of: $editorSelection)
+                    }
                     focusedView = .codeEditor
                 } label: { Image(systemName: "wand.and.stars") }
                     .keyboardShortcut("f", modifiers: [.command, .control])
-                    .help("Format")
-                
+                    .help("Format (⌃⌘F)")
+
                 // compile source
                 Button {
-                    document.compileSource(for: editorSelection)
+                    UITestProbe.shared.dispatch("Compile") {
+                        document.compileSource(for: editorSelection)
+                    }
                     focusedView = .codeEditor
                 } label: { Image(systemName: "ellipsis.curlybraces") }
-                    .disabled(document.isConnected != .connected || document.resultsController?.isExecuting ?? false)
+                    .disabled(probedIsConnected != .connected || probedIsExecuting)
                     .keyboardShortcut("c", modifiers: [.command, .option])
-                    .help("Compile")
+                    .help("Compile (⌥⌘C)")
                 
                 Spacer()
 

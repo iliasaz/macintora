@@ -46,15 +46,6 @@ final class MacintoraSTTextView: STTextView {
         outdentLines(touching: textSelection)
     }
 
-    override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        if mods == .command, event.charactersIgnoringModifiers == "/" {
-            toggleLineComment(nil)
-            return true
-        }
-        return super.performKeyEquivalent(with: event)
-    }
-
     /// Toggle SQL line comments (`-- `) on every line touched by the current
     /// selection. Behavior matches Xcode/VS Code: if every non-blank affected
     /// line is already commented, all are uncommented; otherwise every

@@ -60,6 +60,9 @@ extension MacintoraEditorRepresentable {
         /// can detect identity changes and avoid double-binding.
         weak var openInBrowserBoxRef: EditorOpenInBrowserBox?
 
+        /// Weak reference back to the SwiftUI-owned Toggle Line Comment box.
+        weak var toggleCommentBoxRef: EditorToggleCommentBox?
+
         /// Last UTF-16 cursor location seen in the selection callback. Used to
         /// detect when the cursor moves outside the in-progress identifier so
         /// auto-trigger can be cancelled.
@@ -155,6 +158,20 @@ extension MacintoraEditorRepresentable {
             box.trigger = { [weak controller, weak textView] in
                 guard let controller, let textView else { return }
                 controller.openInBrowserAtCursor(textView: textView)
+            }
+        }
+
+        /// Wires the SwiftUI-owned `EditorToggleCommentBox` to this editor's
+        /// text view. The box's `trigger` becomes the path the ⌘/ menu
+        /// command uses to call `MacintoraSTTextView.toggleLineComment`.
+        @MainActor
+        func bindToggleCommentBox(_ box: EditorToggleCommentBox?, textView: STTextView) {
+            toggleCommentBoxRef?.trigger = nil
+            toggleCommentBoxRef = box
+            guard let box else { return }
+            box.trigger = { [weak textView] in
+                guard let textView = textView as? MacintoraSTTextView else { return }
+                textView.toggleLineComment(nil)
             }
         }
 
