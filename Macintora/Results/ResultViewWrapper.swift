@@ -104,13 +104,13 @@ struct ResultViewWrapper: View {
                 Button {
                     self.queryResults.refreshData()
                 } label: {
-                    Image(systemName: "arrow.clockwise").foregroundColor(Color.blue)
+                    Image(systemName: "arrow.clockwise").foregroundStyle(Color.blue)
                 }
                 .help("Refresh")
                 
                 Button {
                     sqlShown.toggle()
-                } label: { Text("SQL").foregroundColor(Color.blue)}
+                } label: { Text("SQL").foregroundStyle(Color.blue)}
                     .help("show SQL")
                     .sheet(isPresented: $sqlShown) {
                         VStack {
@@ -147,7 +147,7 @@ struct ResultViewWrapper: View {
                 Button {
                     self.queryResults.getSQLCount()
                 } label: {
-                    Image(systemName: "sum") //.foregroundColor(Color.blue)
+                    Image(systemName: "sum") //.foregroundStyle(Color.blue)
                 }
                 .help("Count")
                 
@@ -182,7 +182,7 @@ struct ResultViewWrapper: View {
             serverTimeToolbar
             
             Toggle(isOn: $queryResults.showingLog) {
-                Image(systemName: "list.dash") //.foregroundColor(Color.blue)
+                Image(systemName: "list.dash") //.foregroundStyle(Color.blue)
             }
             .toggleStyle(.button)
             .padding(.horizontal)

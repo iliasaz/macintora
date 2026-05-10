@@ -282,7 +282,11 @@ class DetailGridViewCoordinator: NSObject, nonisolated NSTableViewDelegate, noni
     }
     
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
-        20.0
+        // Track Dynamic Type rather than the legacy 20-pt hard-coded
+        // value (Item 27): use the user's preferred body font size with
+        // a small leading margin so descenders aren't clipped.
+        let font = NSFont.preferredFont(forTextStyle: .body)
+        return ceil(font.boundingRectForFont.height) + 6
     }
     
     func tableView(_ tableView: NSTableView, sizeToFitWidthOfColumn column: Int) -> CGFloat {

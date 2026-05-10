@@ -228,11 +228,11 @@ struct MainDocumentView: View {
                     focusedView = .codeEditor
                 } label: {
                     if document.isConnected == .connected {
-                        Image(systemName: "wifi").foregroundColor(Color.green)
+                        Image(systemName: "wifi").foregroundStyle(Color.green)
                     } else if document.isConnected == .disconnected {
-                        Image(systemName: "wifi.slash").foregroundColor(Color.red)
+                        Image(systemName: "wifi.slash").foregroundStyle(Color.red)
                     } else {
-                        Image(systemName: "wifi").foregroundColor(Color.orange)
+                        Image(systemName: "wifi").foregroundStyle(Color.orange)
                     }
                 }
                 .disabled(document.isConnected == .changing)
@@ -263,9 +263,9 @@ struct MainDocumentView: View {
                     focusedView = .codeEditor
                 } label: {
                     if document.resultsController?.isExecuting ?? false {
-                        Image(systemName: "stop").foregroundColor(Color.red)
+                        Image(systemName: "stop").foregroundStyle(Color.red)
                     } else if document.isConnected == .connected && document.resultsController?.isExecuting == false {
-                        Image(systemName: "play").foregroundColor(Color.green)
+                        Image(systemName: "play").foregroundStyle(Color.green)
                     } else {
                         Image(systemName: "play")
                     }
@@ -372,13 +372,13 @@ struct MainDocumentView: View {
                 } label: {
                     switch document.connectionHealth {
                         case .notConnected:
-                            Image(systemName: "hand.thumbsup").foregroundColor(Color.gray)
+                            Image(systemName: "hand.thumbsup").foregroundStyle(Color.gray)
                         case .ok:
-                            Image(systemName: "hand.thumbsup").foregroundColor(Color.green)
+                            Image(systemName: "hand.thumbsup").foregroundStyle(Color.green)
                         case .lost:
-                            Image(systemName: "hand.thumbsdown.fill").foregroundColor(Color.red)
+                            Image(systemName: "hand.thumbsdown.fill").foregroundStyle(Color.red)
                         case .busy:
-                            Image(systemName: "hand.thumbsup.fill").foregroundColor(Color.orange)
+                            Image(systemName: "hand.thumbsup.fill").foregroundStyle(Color.orange)
                     }
                 }
                 .help("Ping")

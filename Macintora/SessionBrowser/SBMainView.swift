@@ -36,24 +36,24 @@ struct SBMainView: View {
                             Button {
                                 vm.populateData()
                             } label: {
-                                Label("Refresh", systemImage: "arrow.triangle.2.circlepath").foregroundColor(.blue)
+                                Label("Refresh", systemImage: "arrow.triangle.2.circlepath").foregroundStyle(.blue)
                             }
                                 .keyboardShortcut("r", modifiers: .command)
                                 .help("Refresh")
                             
                             Toggle(isOn: $vm.activeOnly) { Label("Active Only", systemImage: vm.activeOnly ? "externaldrive.fill.badge.wifi" : "externaldrive.badge.wifi") }
                                 .toggleStyle(.automatic)
-                                .foregroundColor(vm.activeOnly ? .green : nil)
+                                .foregroundStyle(vm.activeOnly ? AnyShapeStyle(Color.green) : AnyShapeStyle(.primary))
                                 .help("Active Only")
                             
                             Toggle(isOn: $vm.userOnly) { Label("User Only", systemImage: vm.userOnly ? "person.fill" : "person") }
                                 .toggleStyle(.automatic)
-                                .foregroundColor(vm.userOnly ? .green : nil)
+                                .foregroundStyle(vm.userOnly ? AnyShapeStyle(Color.green) : AnyShapeStyle(.primary))
                                 .help("User Only")
                             
                             Toggle(isOn: $vm.localInstanceOnly) { Label("Local Instance Only", systemImage: "server.rack") }
                                 .toggleStyle(.automatic)
-                                .foregroundColor(vm.localInstanceOnly ? .green : nil)
+                                .foregroundStyle(vm.localInstanceOnly ? AnyShapeStyle(Color.green) : AnyShapeStyle(.primary))
                                 .help("Local Instance Only")
                         }
                     }

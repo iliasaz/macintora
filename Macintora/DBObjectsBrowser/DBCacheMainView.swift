@@ -55,9 +55,18 @@ struct DBCacheMainView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.connectionStore) private var injectedStore
     @Environment(\.keychainService) private var keychain
+    @Environment(\.openWindow) private var openWindow
     @State private var reportDisplayed = false
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @State private var filterInspectorPresented = false
+    /// Local mirror of the search field. Debounced into
+    /// `cache.searchCriteria.searchText` so the predicate doesn't recompute
+    /// on every keystroke (HIG: Item 18).
+    @State private var pendingSearchText: String = ""
+    /// Per-connection persisted "last selected object" as
+    /// `owner|name|type`. Backed by UserDefaults (`@AppStorage` doesn't
+    /// support `[String: String]` directly). Restored on first appear when
+    /// no other selection pending was set by `DBCacheInputValue`.
     @SectionedFetchRequest var items: SectionedFetchResults<String?, DBCacheObject>
     @State private var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
     @State private var commandsBox = DBBrowserCommandsBox()
@@ -94,7 +103,11 @@ struct DBCacheMainView: View {
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            DBCacheSidebarList(items: items, listSelection: $listSelection)
+            DBCacheSidebarList(
+                items: items,
+                listSelection: $listSelection,
+                onContextAction: handleRowAction
+            )
         } detail: {
             if let selectedItem = listSelection {
                 DBDetailView(dbObject: Binding(get: { selectedItem }, set: {_ in }))
@@ -112,7 +125,7 @@ struct DBCacheMainView: View {
         }
         .navigationTitle(cache.connDetails.tns)
         .navigationSubtitle(navigationSubtitle)
-        .searchable(text: query, placement: .sidebar, prompt: "Filter objects")
+        .searchable(text: $pendingSearchText, placement: .sidebar, prompt: "Filter objects")
         .searchFocused($focus, equals: .search)
         .inspector(isPresented: $filterInspectorPresented) {
             QuickFilterView(quickFilters: $cache.searchCriteria)
@@ -124,6 +137,8 @@ struct DBCacheMainView: View {
         .onAppear {
             cache.store = injectedStore
             cache.keychain = keychain
+            pendingSearchText = cache.searchCriteria.searchText
+            restoreLastSelectionIfNeeded()
             performAutoSelect()
             wireCommandsBox()
         }
@@ -138,9 +153,83 @@ struct DBCacheMainView: View {
         .onChange(of: items.count) { _, _ in
             performAutoSelect()
         }
+        .onChange(of: listSelection) { _, newValue in
+            saveLastSelection(newValue)
+        }
+        // Debounce search input: each new pendingSearchText cancels the
+        // previous task; only an uncancelled run after 200ms commits to
+        // the criteria. The new value compares unequal so the criteria
+        // `onChange` updates the predicate exactly once per pause.
+        .task(id: pendingSearchText) {
+            // Skip the initial-mount no-op (pendingSearchText already in
+            // sync with criteria after onAppear).
+            if pendingSearchText == cache.searchCriteria.searchText { return }
+            do {
+                try await Task.sleep(for: .milliseconds(200))
+            } catch {
+                return
+            }
+            cache.searchCriteria.searchText = pendingSearchText
+        }
         .focusedSceneValue(\.dbBrowserCommandsBox, commandsBox)
         .focusedSceneValue(\.dbBrowserIsReloading, cache.isReloading)
         .toolbar { toolbarContent }
+    }
+
+    /// Saves the last selected object to UserDefaults keyed by TNS. Intentionally
+    /// no-op when `selected` is nil so transient filter-driven clears (e.g.
+    /// search criteria mutation) don't wipe the persisted last-selection.
+    private func saveLastSelection(_ selected: DBCacheObject?) {
+        guard let obj = selected else { return }
+        let tns = cache.connDetails.tns
+        var dict = UserDefaults.standard.dictionary(forKey: "dbBrowserLastSelection") as? [String: String] ?? [:]
+        dict[tns] = "\(obj.owner)|\(obj.name)|\(obj.type)"
+        UserDefaults.standard.set(dict, forKey: "dbBrowserLastSelection")
+    }
+
+    private func restoreLastSelectionIfNeeded() {
+        guard cache.pendingSelectionName == nil else { return }
+        let tns = cache.connDetails.tns
+        guard
+            let dict = UserDefaults.standard.dictionary(forKey: "dbBrowserLastSelection") as? [String: String],
+            let encoded = dict[tns]
+        else { return }
+        let parts = encoded.split(separator: "|", maxSplits: 2, omittingEmptySubsequences: false).map(String.init)
+        guard parts.count == 3 else { return }
+        cache.pendingSelectionOwner = parts[0]
+        cache.pendingSelectionName  = parts[1]
+        cache.pendingSelectionType  = parts[2]
+    }
+
+    private func handleRowAction(_ action: DBCacheRowAction, _ obj: DBCacheObject) {
+        switch action {
+        case .copyName:
+            copyToPasteboard(obj.name)
+        case .copyQualifiedName:
+            copyToPasteboard("\(obj.owner).\(obj.name)")
+        case .reveal:
+            listSelection = obj
+        case .openInNewWindow:
+            let value = DBCacheInputValue(
+                mainConnection: MainConnection(mainConnDetails: cache.connDetails),
+                selectedOwner: obj.owner,
+                selectedObjectName: obj.name,
+                selectedObjectType: obj.type
+            )
+            openWindow(value: value)
+        case .editSource:
+            Task(priority: .background) {
+                if let url = await cache.editSource(dbObject: obj) {
+                    await MainActor.run { NSWorkspace.shared.open(url) }
+                }
+            }
+        }
+    }
+
+    private func copyToPasteboard(_ string: String) {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(string, forType: .string)
     }
 
     private var navigationSubtitle: String {
@@ -176,6 +265,7 @@ struct DBCacheMainView: View {
             self.focus = .search
         }
         commandsBox.clearSearch = { [weak cache] in
+            self.pendingSearchText = ""
             cache?.searchCriteria.searchText = ""
         }
         commandsBox.selectMainTab = {
@@ -248,20 +338,21 @@ struct DBCacheMainView: View {
         .frame(minWidth: 320, idealWidth: 360, minHeight: 200)
     }
 
-    var query: Binding<String> {
-        Binding {
-            cache.searchCriteria.searchText
-        } set: { newValue in
-            listSelection = nil
-            cache.searchCriteria.searchText = newValue
-            items.nsPredicate = cache.searchCriteria.predicate
-        }
-    }
+}
+
+/// Actions exposed via the sidebar row context menu (HIG, Item 24).
+enum DBCacheRowAction {
+    case copyName
+    case copyQualifiedName
+    case reveal
+    case openInNewWindow
+    case editSource
 }
 
 private struct DBCacheSidebarList: View {
     let items: SectionedFetchResults<String?, DBCacheObject>
     @Binding var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
+    let onContextAction: (DBCacheRowAction, DBCacheObject) -> Void
 
     var body: some View {
         Group {
@@ -274,6 +365,27 @@ private struct DBCacheSidebarList: View {
                             ForEach(section) { item in
                                 DBCacheListEntryView(dbObject: item)
                                     .tag(item)
+                                    .draggable("\(item.owner).\(item.name)") {
+                                        DBCacheListEntryView(dbObject: item)
+                                    }
+                                    .contextMenu {
+                                        Button("Copy Name") {
+                                            onContextAction(.copyName, item)
+                                        }
+                                        Button("Copy Owner.Name") {
+                                            onContextAction(.copyQualifiedName, item)
+                                        }
+                                        Divider()
+                                        Button("Reveal in Sidebar") {
+                                            onContextAction(.reveal, item)
+                                        }
+                                        Button("Open in New Window") {
+                                            onContextAction(.openInNewWindow, item)
+                                        }
+                                        Button("Open Source in Editor") {
+                                            onContextAction(.editSource, item)
+                                        }
+                                    }
                             }
                         } header: {
                             Text(section.id ?? "(unknown)")
