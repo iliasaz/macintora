@@ -263,11 +263,13 @@ struct MacOraApp: App {
             HelpMenuCommands()
             CommandGroup(after: .newItem) {
                 Button("New Tab") {
-                    let doc = try! NSDocumentController.shared.makeUntitledDocument(ofType: NSDocumentController.shared.defaultType!)
-                    NSDocumentController.shared.addDocument(doc)
-                    doc.makeWindowControllers()
-                    doc.windowControllers.first?.window?.tabbingMode = .preferred
-                    doc.showWindows()
+                    UITestProbe.shared.dispatch("New Tab") {
+                        let doc = try! NSDocumentController.shared.makeUntitledDocument(ofType: NSDocumentController.shared.defaultType!)
+                        NSDocumentController.shared.addDocument(doc)
+                        doc.makeWindowControllers()
+                        doc.windowControllers.first?.window?.tabbingMode = .preferred
+                        doc.showWindows()
+                    }
                 }
                     .keyboardShortcut("t", modifiers: [.command])
             }
@@ -332,7 +334,9 @@ struct MainDocumentMenuCommands: Commands {
     var body: some Commands {
         CommandMenu("Database") {
             Button("Manage Connections…") {
-                openSettings()
+                UITestProbe.shared.dispatch("Manage Connections") {
+                    openSettings()
+                }
             }
             .keyboardShortcut("k", modifiers: [.command, .shift])
 
@@ -344,7 +348,9 @@ struct MainDocumentMenuCommands: Commands {
             // closure captured in `wireOpenInBrowserHandler`, so the menu
             // doesn't need a `mainConnection` of its own.
             Button("Database Browser") {
-                openInBrowserBox?.trigger?()
+                UITestProbe.shared.dispatch("Database Browser") {
+                    openInBrowserBox?.trigger?()
+                }
             }
             .disabled(openInBrowserBox == nil)
             .keyboardShortcut("i", modifiers: [.command, .shift])
@@ -353,7 +359,9 @@ struct MainDocumentMenuCommands: Commands {
             // document + `OpenWindowAction` at install time, so this menu
             // doesn't need to know the focused connection.
             Button("Session Browser") {
-                sessionBrowserBox?.trigger?()
+                UITestProbe.shared.dispatch("Session Browser") {
+                    sessionBrowserBox?.trigger?()
+                }
             }
             .disabled(sessionBrowserBox == nil)
             .keyboardShortcut("s", modifiers: [.command, .control, .shift])
@@ -365,7 +373,9 @@ struct MainDocumentMenuCommands: Commands {
             // see the long comment in `EditorQuickViewBox` for the
             // constraint-loop crash that observable trigger reads caused.
             Button("Quick View") {
-                quickViewBox?.trigger?()
+                UITestProbe.shared.dispatch("Quick View") {
+                    quickViewBox?.trigger?()
+                }
             }
             .disabled(quickViewBox == nil)
             .keyboardShortcut("i", modifiers: [.command])
@@ -378,13 +388,17 @@ struct MainDocumentMenuCommands: Commands {
             // toolbar: connected + not executing for run-style commands;
             // executing only for Stop.
             Button("Run") {
-                worksheetCommandsBox?.runCurrent?()
+                UITestProbe.shared.dispatch("Run") {
+                    worksheetCommandsBox?.runCurrent?()
+                }
             }
             .disabled(!canRunStatement)
             .keyboardShortcut("r", modifiers: [.command])
 
             Button("Stop") {
-                worksheetCommandsBox?.stop?()
+                UITestProbe.shared.dispatch("Stop") {
+                    worksheetCommandsBox?.stop?()
+                }
             }
             .disabled(!canStop)
             .keyboardShortcut("b", modifiers: [.command])
@@ -392,13 +406,17 @@ struct MainDocumentMenuCommands: Commands {
             Divider()
 
             Button("Run Script") {
-                worksheetCommandsBox?.runScript?()
+                UITestProbe.shared.dispatch("Run Script") {
+                    worksheetCommandsBox?.runScript?()
+                }
             }
             .disabled(!canRunStatement)
             .keyboardShortcut("r", modifiers: [.command, .shift])
 
             Button("Run From Cursor / Selection") {
-                worksheetCommandsBox?.runFromCursorOrSelection?()
+                UITestProbe.shared.dispatch("Run From Cursor / Selection") {
+                    worksheetCommandsBox?.runFromCursorOrSelection?()
+                }
             }
             .disabled(!canRunStatement)
             .keyboardShortcut("r", modifiers: [.command, .option])
@@ -406,13 +424,17 @@ struct MainDocumentMenuCommands: Commands {
             Divider()
 
             Button("Explain Plan") {
-                worksheetCommandsBox?.explainPlan?()
+                UITestProbe.shared.dispatch("Explain Plan") {
+                    worksheetCommandsBox?.explainPlan?()
+                }
             }
             .disabled(!canRunStatement)
             .keyboardShortcut("e", modifiers: [.command])
 
             Button("Compile") {
-                worksheetCommandsBox?.compile?()
+                UITestProbe.shared.dispatch("Compile") {
+                    worksheetCommandsBox?.compile?()
+                }
             }
             .disabled(!canRunStatement)
             .keyboardShortcut("c", modifiers: [.command, .option])
@@ -421,7 +443,9 @@ struct MainDocumentMenuCommands: Commands {
 
             // Format works offline — only requires a focused worksheet.
             Button("Format") {
-                worksheetCommandsBox?.format?()
+                UITestProbe.shared.dispatch("Format") {
+                    worksheetCommandsBox?.format?()
+                }
             }
             .disabled(worksheetCommandsBox == nil)
             .keyboardShortcut("f", modifiers: [.command, .control])
@@ -437,7 +461,9 @@ struct EditorMenuCommands: Commands {
     var body: some Commands {
         CommandGroup(after: .textFormatting) {
             Button("Toggle Line Comment") {
-                toggleCommentBox?.trigger?()
+                UITestProbe.shared.dispatch("Toggle Line Comment") {
+                    toggleCommentBox?.trigger?()
+                }
             }
             .disabled(toggleCommentBox == nil)
             .keyboardShortcut("/", modifiers: [.command])
