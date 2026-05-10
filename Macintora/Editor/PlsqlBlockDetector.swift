@@ -66,6 +66,10 @@ enum PlsqlBlockDetector {
 
 private enum BlockTokenKind {
     case begin, end, endControl, declare
+    /// A bare `/` on its own line — the Oracle PL/SQL block terminator.
+    /// Used as a hard separator between top-level units when searching for
+    /// an associated `DECLARE`.
+    case slashTerminator
 }
 
 private struct BlockToken {
@@ -109,6 +113,13 @@ private func collectBlockTokens(in text: String) -> [BlockToken] {
                     }
                     i = text.index(after: i)
                 }
+                continue
+            }
+            // Bare `/` on its own line — Oracle's PL/SQL block terminator.
+            // Treat it as a hard top-level statement separator.
+            if isLineStart(i, in: text), isRestOfLineBlank(after: text.index(after: i), in: text) {
+                tokens.append(BlockToken(kind: .slashTerminator, range: i..<text.index(after: i)))
+                i = text.index(after: i)
                 continue
             }
         }
@@ -172,6 +183,24 @@ private func collectBlockTokens(in text: String) -> [BlockToken] {
 
 // MARK: - Helpers
 
+/// True iff `idx` is at the very start of `text` or follows a newline.
+private func isLineStart(_ idx: String.Index, in text: String) -> Bool {
+    if idx == text.startIndex { return true }
+    let prev = text.index(before: idx)
+    return text[prev] == "\n"
+}
+
+/// True iff every character from `start` up to the next newline (or end of
+/// text) is whitespace.
+private func isRestOfLineBlank(after start: String.Index, in text: String) -> Bool {
+    var i = start
+    while i < text.endIndex, text[i] != "\n" {
+        if !text[i].isWhitespace { return false }
+        i = text.index(after: i)
+    }
+    return true
+}
+
 /// Scans forward from `start`, skipping whitespace and identifier characters
 /// (an optional block label after `END`), and returns the index of the first
 /// `;`. Returns `nil` if a non-matching character is encountered first.
@@ -192,7 +221,10 @@ private func findSemicolon(after start: String.Index, in text: String) -> String
 /// Scans backward from `beginIdx - 1` through `tokens`, looking for a
 /// `DECLARE` at nesting depth 0. Depth is maintained by counting:
 ///   `END` → depth++,  `BEGIN` (at depth > 0) → depth--.
-/// If a `BEGIN` at depth 0 is encountered first, returns `nil` (no DECLARE).
+/// Returns `nil` if a `BEGIN` at depth 0 is encountered first (no DECLARE),
+/// or if a `/` block terminator is crossed at depth 0 — the latter means we
+/// passed a separate prior top-level block, so any earlier `DECLARE` belongs
+/// to that block, not ours.
 private func findAssociatedDeclare(before beginIdx: Int, in tokens: [BlockToken]) -> Int? {
     var bwDepth = 0
     var t = beginIdx - 1
@@ -208,6 +240,12 @@ private func findAssociatedDeclare(before beginIdx: Int, in tokens: [BlockToken]
             }
         case .declare:
             if bwDepth == 0 { return t }
+        case .slashTerminator:
+            // A `/` at depth 0 separates top-level units. At depth > 0 the
+            // `/` lies inside a containing block we're walking out of, which
+            // shouldn't really happen with well-formed PL/SQL but we guard
+            // against it by ignoring it.
+            if bwDepth == 0 { return nil }
         case .endControl:
             break
         }

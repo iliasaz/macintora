@@ -32,6 +32,178 @@ final class PlsqlBlockDetectorTests: XCTestCase {
         XCTAssertEqual(result, "begin\nnull;\nend;")
     }
 
+    // MARK: - DECLARE block followed by SQL statement (issue from PR #19 follow-up)
+
+    func test_declareBlock_followedBySelect_cursorInBlock_returnsBlockOnly() {
+        let sql = """
+        declare
+        a number := 0;
+        begin
+        dbms_output.put_line('test');
+        end;
+        /
+
+        select * from dual;
+        """
+        let cursor = sql.range(of: "dbms_output")!.lowerBound
+        let result = PlsqlBlockDetector.plsqlAnonBlockSQL(at: cursor, in: sql)
+        XCTAssertNotNil(result)
+        XCTAssertTrue(result?.hasPrefix("declare") ?? false)
+        XCTAssertTrue(result?.hasSuffix("end;") ?? false)
+        XCTAssertFalse(result?.contains("/") ?? true)
+        XCTAssertFalse(result?.contains("select") ?? true)
+    }
+
+    func test_declareBlock_followedBySelect_cursorOnSelect_returnsNil() {
+        let sql = """
+        declare
+        a number := 0;
+        begin
+        dbms_output.put_line('test');
+        end;
+        /
+
+        select * from dual;
+        """
+        let cursor = sql.range(of: "select")!.lowerBound
+        let result = PlsqlBlockDetector.plsqlAnonBlockSQL(at: cursor, in: sql)
+        XCTAssertNil(result)
+    }
+
+    // MARK: - Multiple top-level blocks separated by `/`
+
+    /// Real-world repro from `plsql-test.macintora`: a SELECT, a plain
+    /// BEGIN/END, a DECLARE block, another plain BEGIN/END, and a final
+    /// SELECT — all separated by `/`. Cursor inside the second plain block
+    /// must NOT pull in the earlier DECLARE; that would yield the previous
+    /// DECLARE's text plus the intervening `/` as the "block" — invalid
+    /// PL/SQL that the server rejects.
+    func test_multipleTopLevelBlocks_cursorInBlockAfterDeclare_returnsOnlyThatBlock() {
+        let sql = """
+        select * from dual;
+
+        begin
+        dbms_output.put_line('test');
+        end;
+        /
+
+        declare
+        a number := 0;
+        begin
+        dbms_output.put_line('test');
+        end;
+        /
+
+        begin
+        dbms_output.put_line('test2');
+        end;
+        /
+
+        select * from dual;
+        """
+        // Cursor on the SECOND plain begin/end (after the DECLARE block).
+        let cursor = sql.range(of: "test2")!.lowerBound
+        let result = PlsqlBlockDetector.plsqlAnonBlockSQL(at: cursor, in: sql)
+        XCTAssertNotNil(result)
+        XCTAssertTrue(result?.hasPrefix("begin") ?? false, "expected plain begin/end, got: \(result ?? "nil")")
+        XCTAssertTrue(result?.hasSuffix("end;") ?? false)
+        XCTAssertFalse(result?.contains("declare") ?? true, "must not pull in the earlier DECLARE")
+        XCTAssertFalse(result?.contains("/") ?? true)
+        XCTAssertEqual(result?.components(separatedBy: "begin").count, 2, "expected exactly one begin")
+    }
+
+    func test_multipleTopLevelBlocks_cursorInPlainBeforeDeclare_returnsOnlyThatBlock() {
+        let sql = """
+        select * from dual;
+
+        begin
+        dbms_output.put_line('plain1');
+        end;
+        /
+
+        declare
+        a number := 0;
+        begin
+        dbms_output.put_line('decl');
+        end;
+        /
+        """
+        let cursor = sql.range(of: "plain1")!.lowerBound
+        let result = PlsqlBlockDetector.plsqlAnonBlockSQL(at: cursor, in: sql)
+        XCTAssertNotNil(result)
+        XCTAssertTrue(result?.hasPrefix("begin") ?? false)
+        XCTAssertFalse(result?.contains("declare") ?? true)
+    }
+
+    func test_multipleTopLevelBlocks_cursorInDeclareBlock_returnsCorrectBlock() {
+        let sql = """
+        begin
+        null;
+        end;
+        /
+
+        declare
+        x number;
+        begin
+        null;
+        end;
+        /
+
+        begin
+        null;
+        end;
+        """
+        let cursor = sql.range(of: "x number")!.lowerBound
+        let result = PlsqlBlockDetector.plsqlAnonBlockSQL(at: cursor, in: sql)
+        XCTAssertNotNil(result)
+        XCTAssertTrue(result?.hasPrefix("declare") ?? false)
+        XCTAssertTrue(result?.hasSuffix("end;") ?? false)
+        // Should be just one DECLARE..END;, not pulling in adjacent plain blocks
+        XCTAssertEqual(result?.components(separatedBy: "begin").count, 2)
+        XCTAssertEqual(result?.components(separatedBy: "end;").count, 2)
+    }
+
+    // MARK: - Nested: DECLARE with inner PROCEDURE
+
+    func test_declare_with_inner_procedure_cursorInOuterBody_returnsOuterBlock() {
+        let sql = """
+        declare
+          procedure p is
+          begin
+            null;
+          end;
+        begin
+          p;
+        end;
+        """
+        let cursor = sql.range(of: "p;\n")!.lowerBound
+        let result = PlsqlBlockDetector.plsqlAnonBlockSQL(at: cursor, in: sql)
+        XCTAssertNotNil(result)
+        XCTAssertTrue(result?.hasPrefix("declare") ?? false)
+        XCTAssertTrue(result?.hasSuffix("end;") ?? false)
+    }
+
+    func test_declare_with_inner_procedure_cursorInProcedureBody_returnsOuterBlock() {
+        let sql = """
+        declare
+          procedure p is
+          begin
+            null;
+          end;
+        begin
+          p;
+        end;
+        """
+        let cursor = sql.range(of: "null")!.lowerBound
+        let result = PlsqlBlockDetector.plsqlAnonBlockSQL(at: cursor, in: sql)
+        XCTAssertNotNil(result)
+        XCTAssertTrue(result?.hasPrefix("declare") ?? false)
+        XCTAssertTrue(result?.hasSuffix("end;") ?? false)
+        // The outer block contains both the inner `end;` and the outer `end;`.
+        let endCount = result?.components(separatedBy: "end;").count ?? 0
+        XCTAssertEqual(endCount, 3)
+    }
+
     // MARK: - DECLARE...BEGIN...END;
 
     func test_declareBlock_cursorInside_returnsFullBlock() {

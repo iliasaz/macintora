@@ -79,6 +79,46 @@ final class GetCurrentSqlTests: XCTestCase {
 
     // MARK: - `exec` → `call` rewrite
 
+    // MARK: - PL/SQL anonymous block routing through getCurrentSql
+
+    func test_caretInsideDeclareBlock_returnsFullBlock() {
+        let sql = """
+        declare
+        a number := 0;
+        begin
+        dbms_output.put_line('test');
+        end;
+        /
+
+        select * from dual;
+        """
+        let doc = MainDocumentVM(text: sql)
+        let caret = sql.range(of: "dbms_output")!.lowerBound
+        let result = doc.getCurrentSql(for: caret..<caret)
+        XCTAssertNotNil(result)
+        XCTAssertTrue(result!.hasPrefix("declare"))
+        XCTAssertTrue(result!.hasSuffix("end;"))
+        XCTAssertFalse(result!.contains("/"))
+        XCTAssertFalse(result!.contains("select"))
+    }
+
+    func test_caretOnSelectAfterDeclareBlock_returnsSelect() {
+        let sql = """
+        declare
+        a number := 0;
+        begin
+        dbms_output.put_line('test');
+        end;
+        /
+
+        select * from dual;
+        """
+        let doc = MainDocumentVM(text: sql)
+        let caret = sql.range(of: "select")!.lowerBound
+        let result = doc.getCurrentSql(for: caret..<caret)
+        XCTAssertEqual(result, "select * from dual")
+    }
+
     func test_caretOnExecLine_rewrittenAsCall() {
         let sql = "exec pkg.do_thing();\n"
         let doc = MainDocumentVM(text: sql)
