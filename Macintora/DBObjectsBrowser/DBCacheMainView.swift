@@ -295,12 +295,6 @@ struct DBCacheMainView: View {
         commandsBox.openFilterPopover = {
             self.filterPopoverPresented = true
         }
-        commandsBox.selectMainTab = {
-            UserDefaults.standard.set(DBDetailTab.main.rawValue, forKey: "dbDetailSelectedTab")
-        }
-        commandsBox.selectDetailsTab = {
-            UserDefaults.standard.set(DBDetailTab.details.rawValue, forKey: "dbDetailSelectedTab")
-        }
     }
 
     @ToolbarContentBuilder

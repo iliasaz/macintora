@@ -500,16 +500,6 @@ struct DBBrowserMenuCommands: Commands {
 
             Divider()
 
-            Button("Main Tab") { box?.selectMainTab?() }
-                .disabled(!isAvailable)
-                .keyboardShortcut("1", modifiers: [.command])
-
-            Button("Details Tab") { box?.selectDetailsTab?() }
-                .disabled(!isAvailable)
-                .keyboardShortcut("2", modifiers: [.command])
-
-            Divider()
-
             Button("Show Counts") { box?.showCounts?() }
                 .disabled(!isAvailable)
 

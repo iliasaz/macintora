@@ -26,8 +26,8 @@ final class DBBrowserCommandsBoxTests: XCTestCase {
         XCTAssertNil(box.showCounts)
         XCTAssertNil(box.focusSearch)
         XCTAssertNil(box.clearSearch)
-        XCTAssertNil(box.selectMainTab)
-        XCTAssertNil(box.selectDetailsTab)
+        XCTAssertNil(box.openSearchPalette)
+        XCTAssertNil(box.openFilterPopover)
         XCTAssertNil(box.editSource)
         XCTAssertNil(box.refreshObject)
     }
@@ -43,8 +43,8 @@ final class DBBrowserCommandsBoxTests: XCTestCase {
         box.showCounts = { calls.append("showCounts") }
         box.focusSearch = { calls.append("focusSearch") }
         box.clearSearch = { calls.append("clearSearch") }
-        box.selectMainTab = { calls.append("selectMainTab") }
-        box.selectDetailsTab = { calls.append("selectDetailsTab") }
+        box.openSearchPalette = { calls.append("openSearchPalette") }
+        box.openFilterPopover = { calls.append("openFilterPopover") }
         box.editSource = { calls.append("editSource") }
         box.refreshObject = { calls.append("refreshObject") }
 
@@ -56,8 +56,8 @@ final class DBBrowserCommandsBoxTests: XCTestCase {
         box.showCounts?()
         box.focusSearch?()
         box.clearSearch?()
-        box.selectMainTab?()
-        box.selectDetailsTab?()
+        box.openSearchPalette?()
+        box.openFilterPopover?()
         box.editSource?()
         box.refreshObject?()
 
@@ -70,8 +70,8 @@ final class DBBrowserCommandsBoxTests: XCTestCase {
             "showCounts",
             "focusSearch",
             "clearSearch",
-            "selectMainTab",
-            "selectDetailsTab",
+            "openSearchPalette",
+            "openFilterPopover",
             "editSource",
             "refreshObject",
         ])

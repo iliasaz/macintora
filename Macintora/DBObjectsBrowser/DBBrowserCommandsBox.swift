@@ -27,8 +27,6 @@ final class DBBrowserCommandsBox {
     var clearSearch: (() -> Void)?
     var openSearchPalette: (() -> Void)?
     var openFilterPopover: (() -> Void)?
-    var selectMainTab: (() -> Void)?
-    var selectDetailsTab: (() -> Void)?
     var editSource: (() -> Void)?
     var refreshObject: (() -> Void)?
 }
