@@ -408,10 +408,12 @@ from dual;\n\n
         } else {
             let cursor = editorSelectionRange.lowerBound
 
-            // PL/SQL anonymous block detection (issue #14):
-            // If the caret is inside BEGIN…END; (optionally preceded by DECLARE),
-            // return the whole block. The `/` terminator is excluded by the detector.
-            if let blockSQL = PlsqlBlockDetector.plsqlAnonBlockSQL(at: cursor, in: model.text) {
+            // PL/SQL anonymous block detection (issue #14, replaced in #23):
+            // If the caret is inside a top-level BEGIN…END; (optionally with
+            // DECLARE), return the whole block range straight from the parse
+            // tree. Cursor inside an ERROR region falls through to the
+            // `;`-splitter rather than running a half-parsed block.
+            if let blockSQL = PlsqlBlockFinder.anonymousBlockSQL(at: cursor, in: model.text) {
                 return blockSQL
             }
 

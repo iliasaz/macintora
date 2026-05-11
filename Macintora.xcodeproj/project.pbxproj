@@ -35,8 +35,8 @@
 		490E96E62FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E52FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift */; };
 		490E96E82FA43A8E00DDF37F /* ScriptBindPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E72FA43A8E00DDF37F /* ScriptBindPromptView.swift */; };
 		490E96EA2FA43C6300DDF37F /* ScriptRunnerUXTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E92FA43C6300DDF37F /* ScriptRunnerUXTests.swift */; };
-		49141400000000000000A002 /* PlsqlBlockDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49141400000000000000A001 /* PlsqlBlockDetector.swift */; };
-		49141400000000000000A004 /* PlsqlBlockDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49141400000000000000A003 /* PlsqlBlockDetectorTests.swift */; };
+		49141400000000000000A002 /* PlsqlBlockFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49141400000000000000A001 /* PlsqlBlockFinder.swift */; };
+		49141400000000000000A004 /* GetCurrentSqlPlsqlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49141400000000000000A003 /* GetCurrentSqlPlsqlTests.swift */; };
 		49438678273753A000D7D464 /* ResultViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49438677273753A000D7D464 /* ResultViewModel.swift */; };
 		4944594C28D51D31007AB2BF /* SBMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594B28D51D31007AB2BF /* SBMainView.swift */; };
 		4944594E28D539D2007AB2BF /* SBVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594D28D539D2007AB2BF /* SBVM.swift */; };
@@ -248,8 +248,8 @@
 		490E96E52FA42DD700DDF37F /* SidebarToggleCrashRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarToggleCrashRegressionTests.swift; sourceTree = "<group>"; };
 		490E96E72FA43A8E00DDF37F /* ScriptBindPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptBindPromptView.swift; sourceTree = "<group>"; };
 		490E96E92FA43C6300DDF37F /* ScriptRunnerUXTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptRunnerUXTests.swift; sourceTree = "<group>"; };
-		49141400000000000000A001 /* PlsqlBlockDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlsqlBlockDetector.swift; sourceTree = "<group>"; };
-		49141400000000000000A003 /* PlsqlBlockDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlsqlBlockDetectorTests.swift; sourceTree = "<group>"; };
+		49141400000000000000A001 /* PlsqlBlockFinder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlsqlBlockFinder.swift; sourceTree = "<group>"; };
+		49141400000000000000A003 /* GetCurrentSqlPlsqlTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetCurrentSqlPlsqlTests.swift; sourceTree = "<group>"; };
 		49438677273753A000D7D464 /* ResultViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResultViewModel.swift; sourceTree = "<group>"; };
 		4944594B28D51D31007AB2BF /* SBMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBMainView.swift; sourceTree = "<group>"; };
 		4944594D28D539D2007AB2BF /* SBVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBVM.swift; sourceTree = "<group>"; };
@@ -722,7 +722,7 @@
 				49D0ECF72F9C1DC00047540A /* MacintoraSTTextView.swift */,
 				49D0ECF02F9C1DBF0047540A /* MacintoraEditor+Coordinator.swift */,
 				49C0000700000007 /* MacintoraEditor+Completion.swift */,
-				49141400000000000000A001 /* PlsqlBlockDetector.swift */,
+				49141400000000000000A001 /* PlsqlBlockFinder.swift */,
 				49DB002100000021 /* EditorToggleCommentBox.swift */,
 				49C0200000000000 /* Completion */,
 				49DB000D0000000D /* Plugins */,
@@ -735,7 +735,7 @@
 			children = (
 				49D0ECF32F9C1E1E0047540A /* EditorSelectionBridgeTests.swift */,
 				49D0ECF52F9C1EB90047540A /* GetCurrentSqlTests.swift */,
-				49141400000000000000A003 /* PlsqlBlockDetectorTests.swift */,
+				49141400000000000000A003 /* GetCurrentSqlPlsqlTests.swift */,
 				49EE000100000001 /* MacintoraSTTextViewTests.swift */,
 				49DB002400000024 /* EditorToggleCommentBoxTests.swift */,
 				49C0300000000010 /* Completion */,
@@ -1024,7 +1024,7 @@
 				AA0000C00000000000000000 /* LegacyDocumentMigrationTests.swift in Sources */,
 				AA0000F00000000000000000 /* FullRefreshReproTests.swift in Sources */,
 				49D0ECF62F9C1EB90047540A /* GetCurrentSqlTests.swift in Sources */,
-				49141400000000000000A004 /* PlsqlBlockDetectorTests.swift in Sources */,
+				49141400000000000000A004 /* GetCurrentSqlPlsqlTests.swift in Sources */,
 				49B0C0DE0000000000000130 /* DBBrowserInputMapperTests.swift in Sources */,
 				49B0C0DE0000000000000131 /* DBBrowserWindowRegistryTests.swift in Sources */,
 				49B0C0DE0000000000000132 /* DBCacheVMInitTests.swift in Sources */,
@@ -1149,7 +1149,7 @@
 				49D0ED202F9C40000047540A /* EditorTheme.swift in Sources */,
 				49D0ECEF2F9C1DB20047540A /* MacintoraEditor.swift in Sources */,
 				49D0ECF82F9C1DC00047540A /* MacintoraSTTextView.swift in Sources */,
-				49141400000000000000A002 /* PlsqlBlockDetector.swift in Sources */,
+				49141400000000000000A002 /* PlsqlBlockFinder.swift in Sources */,
 				49C0100100000001 /* SQLTreeStore.swift in Sources */,
 				49C0100200000002 /* SQLContextAnalyzer.swift in Sources */,
 				49C0100300000003 /* AliasResolver.swift in Sources */,
