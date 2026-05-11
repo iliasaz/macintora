@@ -25,6 +25,10 @@ struct QuickFilterView: View {
 
     var body: some View {
         Form {
+            Section("Presets") {
+                FilterPresetRow(criteria: $quickFilters)
+            }
+
             Section("Object Types") {
                 LazyVGrid(
                     columns: [
@@ -34,14 +38,14 @@ struct QuickFilterView: View {
                     alignment: .leading,
                     spacing: 6
                 ) {
-                    Toggle("Tables", isOn: typeToggle(\.showTables))
-                    Toggle("Views", isOn: typeToggle(\.showViews))
-                    Toggle("Indexes", isOn: typeToggle(\.showIndexes))
-                    Toggle("Packages", isOn: typeToggle(\.showPackages))
-                    Toggle("Types", isOn: typeToggle(\.showTypes))
-                    Toggle("Triggers", isOn: typeToggle(\.showTriggers))
-                    Toggle("Procedures", isOn: typeToggle(\.showProcedures))
-                    Toggle("Functions", isOn: typeToggle(\.showFunctions))
+                    TypeToggle(type: .table,     isOn: typeToggle(\.showTables))
+                    TypeToggle(type: .view,      isOn: typeToggle(\.showViews))
+                    TypeToggle(type: .index,     isOn: typeToggle(\.showIndexes))
+                    TypeToggle(type: .package,   isOn: typeToggle(\.showPackages))
+                    TypeToggle(type: .type,      isOn: typeToggle(\.showTypes))
+                    TypeToggle(type: .trigger,   isOn: typeToggle(\.showTriggers))
+                    TypeToggle(type: .procedure, isOn: typeToggle(\.showProcedures))
+                    TypeToggle(type: .function,  isOn: typeToggle(\.showFunctions))
                 }
                 .toggleStyle(.switch)
                 .controlSize(.small)
@@ -67,6 +71,74 @@ struct QuickFilterView: View {
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+/// Toggle row that pairs the on/off switch with the type's identity colored icon.
+private struct TypeToggle: View {
+    let type: OracleObjectType
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            Label {
+                Text(type.label + "s")
+            } icon: {
+                Image(systemName: type.symbolName)
+                    .foregroundStyle(type.tint)
+            }
+        }
+    }
+}
+
+/// Horizontal pill row of preset chips. The chip whose state matches the
+/// current criteria is highlighted; if no preset matches, "Custom" lights up.
+private struct FilterPresetRow: View {
+    @Binding var criteria: DBCacheSearchCriteria
+
+    var body: some View {
+        let current = criteria.matchingPreset
+        HStack(spacing: 6) {
+            ForEach(DBCacheFilterPreset.allCases) { preset in
+                PresetChip(label: preset.label, isOn: current == preset) {
+                    criteria.applyPreset(preset)
+                }
+            }
+            PresetChip(label: "Custom", isOn: current == nil, action: nil)
+            Spacer(minLength: 0)
+        }
+        .controlSize(.small)
+    }
+}
+
+private struct PresetChip: View {
+    let label: String
+    let isOn: Bool
+    let action: (() -> Void)?
+
+    var body: some View {
+        if let action {
+            Button(action: action) {
+                chipBody
+            }
+            .buttonStyle(.plain)
+        } else {
+            chipBody
+        }
+    }
+
+    @ViewBuilder
+    private var chipBody: some View {
+        Text(label)
+            .font(.caption)
+            .fontWeight(.medium)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 3)
+            .foregroundStyle(isOn ? .white : .secondary)
+            .background {
+                Capsule().fill(isOn ? Color.accentColor : Color.secondary.opacity(0.12))
+            }
+            .contentShape(.capsule)
     }
 }
 

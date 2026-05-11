@@ -138,3 +138,72 @@ struct DBCacheSearchCriteria: Equatable {
         static let prefixList = "prefixList"
     }
 }
+
+/// Canned starting points for the quick-filter popover. The "Custom" preset is
+/// implicit — it's whatever the user's toggles are *not* matching, so it isn't
+/// applied; it just labels the current state.
+enum DBCacheFilterPreset: String, CaseIterable, Identifiable {
+    case `default`
+    case tablesOnly
+    case codeOnly
+    case schemaReview
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .default:      "Default"
+        case .tablesOnly:   "Tables only"
+        case .codeOnly:     "Code only"
+        case .schemaReview: "Schema review"
+        }
+    }
+}
+
+extension DBCacheSearchCriteria {
+    /// Applies a preset to the per-type toggles. Doesn't touch owner / prefix /
+    /// search text — those are user-curated and should persist across preset
+    /// flips. Clears the transient single-type override so the toggles take
+    /// effect immediately.
+    mutating func applyPreset(_ preset: DBCacheFilterPreset) {
+        ignoreTypeFilter = false
+        selectedTypeFilter = nil
+        switch preset {
+        case .default:
+            showTables = true; showViews = true; showIndexes = true
+            showPackages = true; showProcedures = true; showFunctions = true
+            showTriggers = true; showTypes = true
+        case .tablesOnly:
+            showTables = true; showViews = false; showIndexes = false
+            showPackages = false; showProcedures = false; showFunctions = false
+            showTriggers = false; showTypes = false
+        case .codeOnly:
+            showTables = false; showViews = false; showIndexes = false
+            showPackages = true; showProcedures = true; showFunctions = true
+            showTriggers = true; showTypes = true
+        case .schemaReview:
+            // Everything except indexes — most reviewers don't need to scroll
+            // past dozens of secondary indexes.
+            showTables = true; showViews = true; showIndexes = false
+            showPackages = true; showProcedures = true; showFunctions = true
+            showTriggers = true; showTypes = true
+        }
+    }
+
+    /// Best-fit preset for the current toggle state, or nil if it doesn't
+    /// match any canned preset (i.e. the user has a Custom configuration).
+    var matchingPreset: DBCacheFilterPreset? {
+        for preset in DBCacheFilterPreset.allCases {
+            var probe = self
+            probe.applyPreset(preset)
+            if probe.showTables == showTables, probe.showViews == showViews,
+               probe.showIndexes == showIndexes, probe.showPackages == showPackages,
+               probe.showProcedures == showProcedures, probe.showFunctions == showFunctions,
+               probe.showTriggers == showTriggers, probe.showTypes == showTypes,
+               selectedTypeFilter == nil, !ignoreTypeFilter {
+                return preset
+            }
+        }
+        return nil
+    }
+}

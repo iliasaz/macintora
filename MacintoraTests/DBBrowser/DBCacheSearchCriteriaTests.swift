@@ -175,6 +175,78 @@ final class DBCacheSearchCriteriaTests: XCTestCase {
         XCTAssertEqual(reloaded.prefixString, "DBMS")
     }
 
+    // MARK: - Presets
+
+    func test_tablesOnlyPreset_disablesEveryNonTableToggle() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.applyPreset(.tablesOnly)
+        XCTAssertTrue(criteria.showTables)
+        XCTAssertFalse(criteria.showViews)
+        XCTAssertFalse(criteria.showIndexes)
+        XCTAssertFalse(criteria.showPackages)
+        XCTAssertFalse(criteria.showProcedures)
+        XCTAssertFalse(criteria.showFunctions)
+        XCTAssertFalse(criteria.showTriggers)
+        XCTAssertFalse(criteria.showTypes)
+    }
+
+    func test_codeOnlyPreset_disablesDataTypesAndIndexes() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.applyPreset(.codeOnly)
+        XCTAssertFalse(criteria.showTables)
+        XCTAssertFalse(criteria.showViews)
+        XCTAssertFalse(criteria.showIndexes)
+        XCTAssertTrue(criteria.showPackages)
+        XCTAssertTrue(criteria.showProcedures)
+        XCTAssertTrue(criteria.showFunctions)
+        XCTAssertTrue(criteria.showTriggers)
+        XCTAssertTrue(criteria.showTypes)
+    }
+
+    func test_schemaReviewPreset_dropsIndexesKeepsEverythingElse() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.applyPreset(.schemaReview)
+        XCTAssertTrue(criteria.showTables)
+        XCTAssertTrue(criteria.showViews)
+        XCTAssertFalse(criteria.showIndexes)
+        XCTAssertTrue(criteria.showPackages)
+    }
+
+    func test_applyingPreset_clearsForcedTypeFilter() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.selectedTypeFilter = "PROCEDURE"
+        criteria.ignoreTypeFilter = true
+        criteria.applyPreset(.tablesOnly)
+        XCTAssertNil(criteria.selectedTypeFilter, "preset must clear single-type override")
+        XCTAssertFalse(criteria.ignoreTypeFilter)
+    }
+
+    func test_matchingPreset_returnsDefaultWhenEverythingOn() {
+        let criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        XCTAssertEqual(criteria.matchingPreset, .default)
+    }
+
+    func test_matchingPreset_returnsTablesOnlyAfterApplying() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.applyPreset(.tablesOnly)
+        XCTAssertEqual(criteria.matchingPreset, .tablesOnly)
+    }
+
+    func test_matchingPreset_returnsNilWhenStateDoesNotMatch_aPreset() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.applyPreset(.default)
+        criteria.showFunctions = false       // one toggle off -> no longer "default"
+        XCTAssertNil(criteria.matchingPreset, "should fall back to Custom (nil)")
+    }
+
+    func test_matchingPreset_returnsNilWhileSingleTypeForced() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.selectedTypeFilter = "VIEW"
+        XCTAssertNil(criteria.matchingPreset)
+    }
+
+    // MARK: - Persistence round-trip cont.
+
     func test_perTNSStrings_areKeyedByTNS() {
         var alpha = DBCacheSearchCriteria(for: "\(Self.testTNS).alpha")
         alpha.ownerString = "AONLY"
