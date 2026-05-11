@@ -36,6 +36,10 @@ final class DBCacheSearchCriteriaTests: XCTestCase {
         for key in Self.boolKeys + Self.dictKeys {
             savedDefaults[key] = d.object(forKey: key)
         }
+        // The type toggles are stored globally (not per-TNS), so a developer's
+        // own saved prefs would otherwise leak in. Force a known all-on
+        // baseline; tearDown restores whatever was there before.
+        for key in Self.boolKeys { d.set(true, forKey: key) }
     }
 
     override func tearDown() {
@@ -79,6 +83,29 @@ final class DBCacheSearchCriteriaTests: XCTestCase {
 
         XCTAssertFalse(criteria.predicate.predicateFormat.contains("type_"),
                        "no type clause expected when every toggle is off; format = \(criteria.predicate.predicateFormat)")
+    }
+
+    func test_ignoreTypeFilter_dropsTypeClauseEntirely_butKeepsOtherClauses() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.searchText = "RAISE_SALARY"
+        criteria.ownerString = "HR"
+        let before = criteria
+        criteria.ignoreTypeFilter = true
+
+        XCTAssertNotEqual(before, criteria, "toggling ignoreTypeFilter must change the predicate")
+        let format = criteria.predicate.predicateFormat
+        XCTAssertFalse(format.contains("type_"), "no type clause expected; format = \(format)")
+        XCTAssertTrue(format.contains("name_ CONTAINS[c] \"RAISE_SALARY\""), "format = \(format)")
+        XCTAssertTrue(format.contains("owner_ IN") && format.contains("HR"), "format = \(format)")
+    }
+
+    func test_selectedTypeFilter_winsOverIgnoreTypeFilter() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.ignoreTypeFilter = true
+        criteria.selectedTypeFilter = "PROCEDURE"
+
+        let format = criteria.predicate.predicateFormat
+        XCTAssertTrue(format.contains("type_ ==") && format.contains("PROCEDURE"), "format = \(format)")
     }
 
     func test_selectedTypeFilter_overridesToggles() {

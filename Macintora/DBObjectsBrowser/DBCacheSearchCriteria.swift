@@ -37,6 +37,14 @@ struct DBCacheSearchCriteria: Equatable {
     /// Cleared when the user resets the type filter from `QuickFilterView`.
     var selectedTypeFilter: String? = nil
 
+    /// When true, the per-type `showXXX` toggles are ignored entirely so the
+    /// list isn't constrained by object type. Set when the DB Browser is
+    /// opened pre-focused on an object whose type isn't known up front (a bare
+    /// `owner.name` reference): the user asked for that object, so the type
+    /// toggles must not hide it. Cleared as soon as the user touches a type
+    /// toggle in `QuickFilterView`. Session-only — never persisted.
+    var ignoreTypeFilter: Bool = false
+
     private let tns: String
 
     var ownerInclusionList: [String] {
@@ -87,7 +95,7 @@ struct DBCacheSearchCriteria: Equatable {
 
         if let forced = selectedTypeFilter {
             predicates.append(NSPredicate(format: "type_ = %@", forced))
-        } else {
+        } else if !ignoreTypeFilter {
             var typeInclusionList = [String]()
             if showTables { typeInclusionList.append("TABLE") }
             if showTypes { typeInclusionList.append("TYPE") }

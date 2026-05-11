@@ -297,6 +297,10 @@ final class DBCacheVM: nonisolated ObservableObject {
         }
         if let type = selectedObjectType {
             searchCriteria.selectedTypeFilter = type
+        } else if selectedObjectName != nil {
+            // Opened pre-focused on a bare `owner.name` reference of unknown
+            // type — don't let the per-type toggles hide the requested object.
+            searchCriteria.ignoreTypeFilter = true
         }
         self.initialDetailTab = initialDetailTab
         self.pendingSelectionName  = selectedObjectName
