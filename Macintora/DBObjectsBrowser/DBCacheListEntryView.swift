@@ -10,25 +10,44 @@ import SwiftUI
 struct DBCacheListEntryView: View {
     @ObservedObject var dbObject: DBCacheObject
     @Environment(\.managedObjectContext) private var managedObjectContext
-    
+
     var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                switch dbObject.type {
-                    case "TABLE": Image(systemName: "tablecells").foregroundColor(Color.blue)
-                    case "VIEW": Image(systemName: "tablecells.badge.ellipsis").foregroundColor(Color.blue)
-                    case "TYPE": Image(systemName: "t.square").foregroundColor(Color.blue)
-                    case "PACKAGE": Image(systemName: "ellipsis.curlybraces").foregroundColor(Color.blue)
-                    case "INDEX": Image(systemName: "decrease.indent").foregroundColor(Color.blue)
-                    case "TRIGGER": Image(systemName: "bolt").foregroundColor(Color.blue)
-                    case "PROCEDURE": Image(systemName: "curlybraces").foregroundColor(Color.blue)
-                    case "FUNCTION": Image(systemName: "f.cursive").foregroundColor(Color.blue)
-                    default: Image(systemName: "questionmark.square").foregroundColor(Color.blue)
-                }
-                Text(dbObject.name)
-                    .lineLimit(1)
+        HStack(spacing: 6) {
+            Image(systemName: symbolName)
+                .foregroundStyle(iconTint)
+                .frame(width: 16)
+            Text(dbObject.name)
+                .lineLimit(1)
+            if !dbObject.isValid {
+                Image(systemName: "exclamationmark.circle.fill")
+                    .foregroundStyle(.red)
+                    .help("Invalid object")
+                    .accessibilityLabel("Invalid")
             }
+            Spacer(minLength: 0)
         }
+        .contentShape(.rect)
+    }
+
+    private var symbolName: String {
+        switch dbObject.type {
+        case "TABLE":     return "tablecells"
+        case "VIEW":      return "tablecells.badge.ellipsis"
+        case "TYPE":      return "shippingbox"
+        case "PACKAGE":   return "ellipsis.curlybraces"
+        case "INDEX":     return "list.bullet.indent"
+        case "TRIGGER":   return "bolt"
+        case "PROCEDURE": return "curlybraces"
+        case "FUNCTION":  return "f.cursive"
+        default:          return "questionmark.square"
+        }
+    }
+
+    /// Per-type tint role. HIG: "Avoid stylizing your app by specifying a
+    /// fixed color for all sidebar icons." Tint roles let the accent color
+    /// drive presentation while still giving each type a distinguishable hue.
+    private var iconTint: HierarchicalShapeStyle {
+        .secondary
     }
 }
 

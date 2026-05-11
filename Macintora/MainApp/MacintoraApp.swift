@@ -260,6 +260,7 @@ struct MacOraApp: App {
             ToolbarCommands()
             MainDocumentMenuCommands()
             EditorMenuCommands()
+            DBBrowserMenuCommands()
             HelpMenuCommands()
             CommandGroup(after: .newItem) {
                 Button("New Tab") {
@@ -449,6 +450,64 @@ struct MainDocumentMenuCommands: Commands {
             }
             .disabled(worksheetCommandsBox == nil)
             .keyboardShortcut("f", modifiers: [.command, .control])
+        }
+    }
+}
+
+/// Menu peers for every DB Browser toolbar action. HIG: "Make every toolbar
+/// item available as a command in the menu bar." Disabled state mirrors the
+/// browser's `isReloading` so refresh items can't fire while a refresh is
+/// in flight.
+struct DBBrowserMenuCommands: Commands {
+    @FocusedValue(\.dbBrowserCommandsBox) var box
+    @FocusedValue(\.dbBrowserIsReloading) var isReloading
+
+    private var isAvailable: Bool { box != nil }
+    private var canRefresh: Bool { isAvailable && (isReloading != true) }
+
+    var body: some Commands {
+        CommandMenu("DB Browser") {
+            Button("Incremental Refresh") { box?.incrementalRefresh?() }
+                .disabled(!canRefresh)
+                .keyboardShortcut("r", modifiers: [.command])
+
+            Button("Full Refresh") { box?.fullRefresh?() }
+                .disabled(!canRefresh)
+                .keyboardShortcut("r", modifiers: [.command, .shift])
+
+            Button("Full Refresh & Compact") { box?.fullRefreshAndCompact?() }
+                .disabled(!canRefresh)
+
+            Button("Compact Cache") { box?.compactOnly?() }
+                .disabled(!canRefresh)
+                .keyboardShortcut("r", modifiers: [.command, .option])
+
+            Divider()
+
+            Button("Focus Search") { box?.focusSearch?() }
+                .disabled(!isAvailable)
+                .keyboardShortcut("f", modifiers: [.command])
+
+            Button("Clear Search") { box?.clearSearch?() }
+                .disabled(!isAvailable)
+
+            Divider()
+
+            Button("Main Tab") { box?.selectMainTab?() }
+                .disabled(!isAvailable)
+                .keyboardShortcut("1", modifiers: [.command])
+
+            Button("Details Tab") { box?.selectDetailsTab?() }
+                .disabled(!isAvailable)
+                .keyboardShortcut("2", modifiers: [.command])
+
+            Divider()
+
+            Button("Show Counts") { box?.showCounts?() }
+                .disabled(!isAvailable)
+
+            Button("Clear Cache") { box?.clear?() }
+                .disabled(!canRefresh)
         }
     }
 }

@@ -45,6 +45,24 @@ final class DBCacheVMInitTests: XCTestCase {
         XCTAssertEqual(vm.pendingSelectionName, "EMPLOYEES")
     }
 
+    func test_selectedObjectNameWithoutType_ignoresTypeFilter() {
+        // A bare `owner.name` reference: the per-type toggles must not be
+        // allowed to hide the requested object.
+        let vm = DBCacheVM(connDetails: connDetails,
+                          persistenceController: persistence,
+                          selectedOwner: "HR",
+                          selectedObjectName: "RAISE_SALARY") // a procedure, say
+        XCTAssertTrue(vm.searchCriteria.ignoreTypeFilter)
+        XCTAssertNil(vm.searchCriteria.selectedTypeFilter)
+        XCTAssertFalse(vm.searchCriteria.predicate.predicateFormat.contains("type_"),
+                       "predicate must not constrain by type; format = \(vm.searchCriteria.predicate.predicateFormat)")
+    }
+
+    func test_defaultInit_doesNotIgnoreTypeFilter() {
+        let vm = DBCacheVM(connDetails: connDetails, persistenceController: persistence)
+        XCTAssertFalse(vm.searchCriteria.ignoreTypeFilter)
+    }
+
     func test_selectedOwner_seedsOwnerStringAndPending() {
         let vm = DBCacheVM(connDetails: connDetails,
                           persistenceController: persistence,
@@ -59,6 +77,8 @@ final class DBCacheVMInitTests: XCTestCase {
                           selectedObjectType: "TABLE")
         XCTAssertEqual(vm.searchCriteria.selectedTypeFilter, "TABLE")
         XCTAssertEqual(vm.pendingSelectionType, "TABLE")
+        // A known type pins via selectedTypeFilter, so the broad bypass stays off.
+        XCTAssertFalse(vm.searchCriteria.ignoreTypeFilter)
     }
 
     func test_initialDetailTab_isStoredAndNotClearedByInit() {

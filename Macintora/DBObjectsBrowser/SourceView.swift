@@ -32,9 +32,9 @@ struct SourceView: View {
                     let formatter = Formatter()
                     formatter.formattedSource = "...formatting, please wait..."
                     
-                    SwiftUIWindow.open {window in
+                    SwiftUIWindow.open { window in
                         let _ = (window.title = objName)
-                        FormattedView(formatter: formatter)
+                        FormattedView(formatter: formatter, onDone: { window.close() })
                     }
                     .closeOnEscape(true)
 
@@ -43,8 +43,8 @@ struct SourceView: View {
                         formatter.formattedSource = formatted
                     }
                 }
-                label: { Text("Format&View") }
-                
+                label: { Text("Format & View") }
+
                 Button {
                     let formatter = Formatter()
                     formatter.formattedSource = "...formatting, please wait..."
@@ -52,7 +52,7 @@ struct SourceView: View {
                         _ = await formatter.formatSource(name: objName, text: text)
                     }
                 }
-                label: { Text("Format&Save") }
+                label: { Text("Format & Save") }
                     .disabled(true)
             }
 //            ScrollView {

@@ -32,21 +32,19 @@ struct DBDetailObjectMainView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0.0) {
             Form {
-                TextField("Object ID", value: $dbObject.objectId, format: .number.grouping(.never))
-                TextField("Created", value: $dbObject.createDate, format: .dateTime)
-                TextField("Last DDL", value: $dbObject.lastDDLDate, format: .dateTime)
-                TextField("Edition", text: Binding(get: { dbObject.editionName ?? "" } , set: {_ in}))
-                HStack {
-                    Toggle("Editionable", isOn: $dbObject.isEditionable)
-                    Toggle("Valid", isOn: $dbObject.isValid)
+                LabeledContent("Object ID", value: dbObject.objectId.formatted(.number.grouping(.never)))
+                LabeledContent("Created", value: dbObject.createDate?.formatted(date: .abbreviated, time: .standard) ?? Constants.nullValue)
+                LabeledContent("Last DDL", value: dbObject.lastDDLDate?.formatted(date: .abbreviated, time: .standard) ?? Constants.nullValue)
+                LabeledContent("Edition", value: dbObject.editionName ?? Constants.nullValue)
+                LabeledContent("Editionable") {
+                    BoolIndicator(value: dbObject.isEditionable)
+                }
+                LabeledContent("Valid") {
+                    BoolIndicator(value: dbObject.isValid, trueColor: .green, falseColor: .red)
                 }
             }
-            .padding()
-            .overlay(
-                RoundedRectangle(cornerRadius: 25)
-                    .stroke(.quaternary, lineWidth: 2)
-            )
-            .padding([.top, .leading, .trailing])
+            .formStyle(.grouped)
+
             if hasProcedureContent {
                 PackageProceduresListView(dbObject: dbObject)
             } else {
@@ -76,7 +74,7 @@ struct DBDetailObjectDetailsView: View {
 struct DBDetailView: View {
     @Binding var dbObject: DBCacheObject
     @EnvironmentObject private var cache: DBCacheVM
-    @State private var selectedTab: String = "details"
+    @AppStorage("dbDetailSelectedTab") private var selectedTab: DBDetailTab = .details
     @State private var hasAppliedInitialTab = false
 
     var body: some View {
@@ -85,25 +83,21 @@ struct DBDetailView: View {
                 .padding([.top, .leading, .trailing])
 
             TabView(selection: $selectedTab) {
-                DBDetailObjectMainView(dbObject: $dbObject)
-                    .frame(alignment: .topLeading)
-                    .tabItem {
-                        Text("Main")
-                    }
-                    .tag("main")
+                Tab("Main", systemImage: "info.circle", value: DBDetailTab.main) {
+                    DBDetailObjectMainView(dbObject: $dbObject)
+                        .frame(alignment: .topLeading)
+                }
 
-                DBDetailObjectDetailsView(dbObject: $dbObject)
-                    .tabItem {
-                        Text("Details")
-                    }
-                    .tag("details")
+                Tab("Details", systemImage: "list.bullet.rectangle", value: DBDetailTab.details) {
+                    DBDetailObjectDetailsView(dbObject: $dbObject)
+                }
             }
         }
         .onAppear {
             guard !hasAppliedInitialTab else { return }
             hasAppliedInitialTab = true
             if let tab = cache.initialDetailTab {
-                selectedTab = tab.rawValue
+                selectedTab = tab
                 cache.initialDetailTab = nil
             }
         }
@@ -115,17 +109,19 @@ struct DBDetailViewHeader: View {
     @State private var isRefreshing = false
     @State private var isLoadingSource = false
     @EnvironmentObject private var cache: DBCacheVM
-    
+
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
             DBDetailViewHeaderImage(type: Binding( get: { OracleObjectType(rawValue: dbObject.type) ?? .unknown}, set: {_ in }))
-                .foregroundColor(Color.blue)
+                .labelStyle(.titleAndIcon)
+                .font(.title3)
             Text("\(dbObject.name) (\(dbObject.owner))")
                 .textSelection(.enabled)
+                .font(.title3)
+                .bold()
             Spacer()
-            
-            // edit object source
-            Button {
+
+            Button("Edit Source", systemImage: "square.and.pencil") {
                 guard !isLoadingSource else { return }
                 Task(priority: .background) {
                     isLoadingSource = true
@@ -134,28 +130,26 @@ struct DBDetailViewHeader: View {
                     }
                     isLoadingSource = false
                 }
-            } label: {
-                Image(systemName: "doc.circle").foregroundColor(.blue)
-                    .rotationEffect(Angle.degrees(isLoadingSource ? 360 : 0))
-                    .animation(.linear(duration: 2.0).repeat(while: isLoadingSource, autoreverses: false), value: isLoadingSource)
             }
-                .buttonStyle(.borderless)
-                .help("Edit")
-            
-            // refresh
-            Button(action: refresh, label: {
-                Image(systemName: "arrow.clockwise.circle").foregroundColor(.blue)
-                    .rotationEffect(Angle.degrees(isRefreshing ? 360 : 0))
-                    .animation(.linear(duration: 2.0).repeat(while: isRefreshing, autoreverses: false), value: isRefreshing)
+            .buttonStyle(.borderless)
+            .disabled(isLoadingSource)
+            .help("Open source in editor")
 
-            })
+            if isLoadingSource {
+                ProgressView().controlSize(.small)
+            }
+
+            Button("Refresh", systemImage: "arrow.clockwise", action: refresh)
                 .buttonStyle(.borderless)
                 .disabled(isRefreshing)
-                .help("Refresh")
+                .help("Refresh this object")
+
+            if isRefreshing {
+                ProgressView().controlSize(.small)
+            }
         }
-            .font(.title)
     }
-    
+
     func refresh() {
         Task(priority: .background) {
             await MainActor.run { isRefreshing = true }
@@ -186,7 +180,7 @@ struct DBDetailViewHeader: View {
 
 struct DBDetailViewHeaderImage: View {
     @Binding var type: OracleObjectType
-    
+
     var body: some View {
         switch type {
             case .table:
@@ -194,9 +188,9 @@ struct DBDetailViewHeaderImage: View {
             case .view:
                 Label("View", systemImage: "tablecells.badge.ellipsis")
             case .index:
-                Label("Index", systemImage: "decrease.indent")
+                Label("Index", systemImage: "list.bullet.indent")
             case .type:
-                Label("Type", systemImage: "t.square")
+                Label("Type", systemImage: "shippingbox")
             case .package:
                 Label("Package", systemImage: "ellipsis.curlybraces")
             case .procedure:
@@ -211,7 +205,20 @@ struct DBDetailViewHeaderImage: View {
     }
 }
 
+/// Non-interactive boolean presenter for read-only fields. Replaces
+/// `Toggle(isOn: .constant(...))`, which renders an interactive-looking
+/// switch that doesn't actually toggle.
+struct BoolIndicator: View {
+    let value: Bool
+    var trueColor: Color = .accentColor
+    var falseColor: Color = .secondary
 
+    var body: some View {
+        Image(systemName: value ? "checkmark.circle.fill" : "circle")
+            .foregroundStyle(value ? trueColor : falseColor)
+            .accessibilityLabel(value ? "Yes" : "No")
+    }
+}
 
 struct DBDetailView_Previews: PreviewProvider {
     static var previews: some View {

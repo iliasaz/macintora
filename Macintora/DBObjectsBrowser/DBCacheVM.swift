@@ -243,7 +243,6 @@ final class DBCacheVM: nonisolated ObservableObject {
     @AppStorage("cacheUpdateBatchSize") private var cacheUpdateBatchSize: Int = 200
     @AppStorage("includeSystemObjects") private var includeSystemObjects = false
     @AppStorage("cacheUpdateSessionLimit") private var cacheUpdateSessionLimit: Int = 5
-    @AppStorage("searchLimit") var searchLimit: Int = 20
 
     let connDetails: ConnectionDetails
     private var client: OracleClient?
@@ -298,6 +297,10 @@ final class DBCacheVM: nonisolated ObservableObject {
         }
         if let type = selectedObjectType {
             searchCriteria.selectedTypeFilter = type
+        } else if selectedObjectName != nil {
+            // Opened pre-focused on a bare `owner.name` reference of unknown
+            // type — don't let the per-type toggles hide the requested object.
+            searchCriteria.ignoreTypeFilter = true
         }
         self.initialDetailTab = initialDetailTab
         self.pendingSelectionName  = selectedObjectName

@@ -177,7 +177,13 @@ class DetailGridViewCoordinator: NSObject, nonisolated NSTableViewDelegate, noni
                 tabCol.sizeToFit()
                 tabCol.width += 20
                 tabCol.sortDescriptorPrototype = NSSortDescriptor(key: col, ascending: true)
-                tabCol.headerCell.attributedStringValue = NSAttributedString(string: col, attributes: [NSAttributedString.Key.font: NSFont.boldSystemFont(ofSize: 12), NSAttributedString.Key.foregroundColor: NSColor.systemBlue])
+                tabCol.headerCell.attributedStringValue = NSAttributedString(
+                    string: col,
+                    attributes: [
+                        .font: NSFont.preferredFont(forTextStyle: .headline),
+                        .foregroundColor: NSColor.secondaryLabelColor
+                    ]
+                )
                 
                 tableView.addTableColumn(tabCol)
                 tableView.columnWidths.append(tabCol.width)
@@ -223,7 +229,7 @@ class DetailGridViewCoordinator: NSObject, nonisolated NSTableViewDelegate, noni
         text.drawsBackground = false
         text.isBordered = false
         text.translatesAutoresizingMaskIntoConstraints = false
-        text.font = NSFont(name: "Source Code Pro", size: NSFont.systemFontSize)
+        text.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
         text.placeholderString = "this is a text field"
         text.maximumNumberOfLines = 1
         text.preferredMaxLayoutWidth = 400
@@ -276,7 +282,11 @@ class DetailGridViewCoordinator: NSObject, nonisolated NSTableViewDelegate, noni
     }
     
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
-        20.0
+        // Track Dynamic Type rather than the legacy 20-pt hard-coded
+        // value (Item 27): use the user's preferred body font size with
+        // a small leading margin so descenders aren't clipped.
+        let font = NSFont.preferredFont(forTextStyle: .body)
+        return ceil(font.boundingRectForFont.height) + 6
     }
     
     func tableView(_ tableView: NSTableView, sizeToFitWidthOfColumn column: Int) -> CGFloat {
