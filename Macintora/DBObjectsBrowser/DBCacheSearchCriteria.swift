@@ -22,6 +22,8 @@ struct DBCacheSearchCriteria: Equatable {
     var searchText = ""
     var ownerString: String
     var prefixString: String
+    /// Comma-separated name prefixes to *exclude* (e.g. "AQ$_, MLOG$_, BIN$").
+    var excludePrefixString: String
     var showTables: Bool
     var showViews: Bool
     var showIndexes: Bool
@@ -55,6 +57,10 @@ struct DBCacheSearchCriteria: Equatable {
         prefixString.components(separatedBy: ",").compactMap { let trimmed = $0.uppercased().trimmingCharacters(in: .whitespaces); return trimmed.isEmpty ? nil : trimmed }
     }
 
+    var namePrefixExclusionList: [String] {
+        excludePrefixString.components(separatedBy: ",").compactMap { let trimmed = $0.uppercased().trimmingCharacters(in: .whitespaces); return trimmed.isEmpty ? nil : trimmed }
+    }
+
     init(for tns: String) {
         self.tns = tns
         let d = UserDefaults.standard
@@ -68,8 +74,10 @@ struct DBCacheSearchCriteria: Equatable {
         self.showFunctions = d.object(forKey: Keys.showFunctions) as? Bool ?? true
         let ownerList = d.dictionary(forKey: Keys.ownerList) as? [String: String] ?? [:]
         let prefixList = d.dictionary(forKey: Keys.prefixList) as? [String: String] ?? [:]
+        let excludeList = d.dictionary(forKey: Keys.excludePrefixList) as? [String: String] ?? [:]
         self.ownerString = ownerList[tns] ?? ""
         self.prefixString = prefixList[tns] ?? ""
+        self.excludePrefixString = excludeList[tns] ?? ""
     }
 
     func persist() {
@@ -88,6 +96,19 @@ struct DBCacheSearchCriteria: Equatable {
         var prefixList = d.dictionary(forKey: Keys.prefixList) as? [String: String] ?? [:]
         prefixList[tns] = prefixString
         d.set(prefixList, forKey: Keys.prefixList)
+        var excludeList = d.dictionary(forKey: Keys.excludePrefixList) as? [String: String] ?? [:]
+        excludeList[tns] = excludePrefixString
+        d.set(excludeList, forKey: Keys.excludePrefixList)
+    }
+
+    /// Restores the popover to the "Default" state: every type on, no
+    /// owner/prefix/exclude restriction, no forced single-type filter.
+    /// Leaves `searchText` alone — the search field is a separate control.
+    mutating func reset() {
+        applyPreset(.default)
+        ownerString = ""
+        prefixString = ""
+        excludePrefixString = ""
     }
 
     var predicate: NSPredicate {
@@ -120,6 +141,10 @@ struct DBCacheSearchCriteria: Equatable {
         if !namePrefixInclusionList.isEmpty {
             predicates.append(NSCompoundPredicate.init(type: .or, subpredicates: namePrefixInclusionList.map { NSPredicate.init(format: "name_ BEGINSWITH[c] %@", $0) } ))
         }
+        if !namePrefixExclusionList.isEmpty {
+            let anyExcluded = NSCompoundPredicate(type: .or, subpredicates: namePrefixExclusionList.map { NSPredicate(format: "name_ BEGINSWITH[c] %@", $0) })
+            predicates.append(NSCompoundPredicate(notPredicateWithSubpredicate: anyExcluded))
+        }
 
         log.cache.debug("criteria: \(predicates, privacy: .public)")
         return NSCompoundPredicate.init(type: .and, subpredicates: predicates)
@@ -136,6 +161,26 @@ struct DBCacheSearchCriteria: Equatable {
         static let showFunctions = "showFunctions"
         static let ownerList = "ownerList"
         static let prefixList = "prefixList"
+        static let excludePrefixList = "excludePrefixList"
+    }
+}
+
+extension DBCacheSearchCriteria {
+    /// The `showXXX` storage key path that backs a given object type, or nil
+    /// for types without a toggle (`.unknown`). Lets the filter UI iterate
+    /// `OracleObjectType.displayOrder` instead of hand-listing toggles.
+    static func showKeyPath(for type: OracleObjectType) -> WritableKeyPath<DBCacheSearchCriteria, Bool>? {
+        switch type {
+        case .table:     \.showTables
+        case .view:      \.showViews
+        case .index:     \.showIndexes
+        case .package:   \.showPackages
+        case .procedure: \.showProcedures
+        case .function:  \.showFunctions
+        case .trigger:   \.showTriggers
+        case .type:      \.showTypes
+        case .unknown:   nil
+        }
     }
 }
 

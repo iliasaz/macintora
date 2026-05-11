@@ -58,7 +58,8 @@ struct DBCacheMainView: View {
     @Environment(\.openWindow) private var openWindow
     @State private var reportDisplayed = false
     @State private var columnVisibility = NavigationSplitViewVisibility.all
-    @State private var filterInspectorPresented = false
+    @State private var filterPopoverPresented = false
+    @State private var searchPalettePresented = false
     /// Local mirror of the search field. Debounced into
     /// `cache.searchCriteria.searchText` so the predicate doesn't recompute
     /// on every keystroke (HIG: Item 18).
@@ -132,9 +133,13 @@ struct DBCacheMainView: View {
         .navigationSubtitle(navigationSubtitle)
         .searchable(text: $pendingSearchText, placement: .sidebar, prompt: "Filter objects")
         .searchFocused($focus, equals: .search)
-        .inspector(isPresented: $filterInspectorPresented) {
-            QuickFilterView(quickFilters: $cache.searchCriteria)
-                .inspectorColumnWidth(min: 220, ideal: 260, max: 360)
+        .sheet(isPresented: $searchPalettePresented) {
+            DBSearchPalette(
+                tns: cache.connDetails.tns,
+                onReveal: { obj in revealObject(obj) },
+                onOpenInNewWindow: { obj in handleRowAction(.openInNewWindow, obj) }
+            )
+            .environment(\.managedObjectContext, viewContext)
         }
         .background(WindowObserver { window in
             DBBrowserWindowRegistry.shared.register(vm: cache, window: window)
@@ -190,6 +195,17 @@ struct DBCacheMainView: View {
         var dict = UserDefaults.standard.dictionary(forKey: "dbBrowserLastSelection") as? [String: String] ?? [:]
         dict[tns] = "\(obj.owner)|\(obj.name)|\(obj.type)"
         UserDefaults.standard.set(dict, forKey: "dbBrowserLastSelection")
+        DBBrowserRecents.record(tns: tns, DBPinnedKey(obj))
+    }
+
+    /// Brings a palette-picked object into view: scopes the list to its type
+    /// (so it definitely passes the filter), then routes the selection through
+    /// the `pendingSelection*` mechanism so it lands after the list refreshes.
+    private func revealObject(_ obj: DBCacheObject) {
+        cache.searchCriteria.selectedTypeFilter = obj.type
+        cache.pendingSelectionOwner = obj.owner
+        cache.pendingSelectionName  = obj.name
+        cache.pendingSelectionType  = obj.type
     }
 
     private func restoreLastSelectionIfNeeded() {
@@ -273,6 +289,12 @@ struct DBCacheMainView: View {
             self.pendingSearchText = ""
             cache?.searchCriteria.searchText = ""
         }
+        commandsBox.openSearchPalette = {
+            self.searchPalettePresented = true
+        }
+        commandsBox.openFilterPopover = {
+            self.filterPopoverPresented = true
+        }
         commandsBox.selectMainTab = {
             UserDefaults.standard.set(DBDetailTab.main.rawValue, forKey: "dbDetailSelectedTab")
         }
@@ -303,6 +325,11 @@ struct DBCacheMainView: View {
         }
 
         ToolbarItemGroup(placement: .status) {
+            Button { searchPalettePresented = true } label: {
+                Label("Search", systemImage: "magnifyingglass")
+            }
+            .help("Search objects (⌘K)")
+
             Button { reportDisplayed.toggle() } label: {
                 Label("Counts", systemImage: "sum")
             }
@@ -312,11 +339,15 @@ struct DBCacheMainView: View {
             .help("Show Cache counts")
 
             Button {
-                filterInspectorPresented.toggle()
+                filterPopoverPresented.toggle()
             } label: {
                 Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
             }
-            .help("Filter")
+            .help("Filter & scope")
+            .popover(isPresented: $filterPopoverPresented, arrowEdge: .bottom) {
+                QuickFilterView(quickFilters: $cache.searchCriteria)
+                    .environment(\.managedObjectContext, viewContext)
+            }
 
             if cache.isReloading {
                 ProgressView()

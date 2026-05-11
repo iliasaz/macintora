@@ -26,7 +26,7 @@ final class DBCacheSearchCriteriaTests: XCTestCase {
         "showTables", "showViews", "showIndexes", "showPackages",
         "showTypes", "showTriggers", "showProcedures", "showFunctions",
     ]
-    private static let dictKeys = ["ownerList", "prefixList"]
+    private static let dictKeys = ["ownerList", "prefixList", "excludePrefixList"]
 
     private var savedDefaults: [String: Any?] = [:]
 
@@ -243,6 +243,61 @@ final class DBCacheSearchCriteriaTests: XCTestCase {
         var criteria = DBCacheSearchCriteria(for: Self.testTNS)
         criteria.selectedTypeFilter = "VIEW"
         XCTAssertNil(criteria.matchingPreset)
+    }
+
+    // MARK: - Exclude-prefix
+
+    func test_excludePrefix_addsNotBeginsWithClause() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        let before = criteria
+        criteria.excludePrefixString = "AQ$_, MLOG$_"
+
+        XCTAssertNotEqual(before, criteria)
+        XCTAssertEqual(criteria.namePrefixExclusionList, ["AQ$_", "MLOG$_"])
+        let format = criteria.predicate.predicateFormat
+        XCTAssertTrue(format.contains("NOT"), "expected a NOT clause; format = \(format)")
+        XCTAssertTrue(format.contains("AQ$_") && format.contains("MLOG$_"), "format = \(format)")
+        XCTAssertTrue(format.contains("BEGINSWITH[c]"), "format = \(format)")
+    }
+
+    func test_excludePrefix_emptyString_addsNoClause() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.excludePrefixString = "   ,  "
+        XCTAssertTrue(criteria.namePrefixExclusionList.isEmpty)
+        XCTAssertFalse(criteria.predicate.predicateFormat.contains("NOT"))
+    }
+
+    func test_excludePrefix_roundTripsPerTNS() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.excludePrefixString = "BIN$"
+        criteria.persist()
+        XCTAssertEqual(DBCacheSearchCriteria(for: Self.testTNS).excludePrefixString, "BIN$")
+    }
+
+    func test_reset_clearsTogglesOwnersAndPrefixes_butNotSearchText() {
+        var criteria = DBCacheSearchCriteria(for: Self.testTNS)
+        criteria.showIndexes = false
+        criteria.ownerString = "HR"
+        criteria.prefixString = "DBMS"
+        criteria.excludePrefixString = "AQ$_"
+        criteria.selectedTypeFilter = "TABLE"
+        criteria.searchText = "EMP"
+        criteria.reset()
+
+        XCTAssertTrue(criteria.showIndexes)
+        XCTAssertEqual(criteria.matchingPreset, .default)
+        XCTAssertEqual(criteria.ownerString, "")
+        XCTAssertEqual(criteria.prefixString, "")
+        XCTAssertEqual(criteria.excludePrefixString, "")
+        XCTAssertNil(criteria.selectedTypeFilter)
+        XCTAssertEqual(criteria.searchText, "EMP", "reset must leave the separate search field alone")
+    }
+
+    func test_showKeyPath_coversEveryRealType() {
+        for type in OracleObjectType.displayOrder {
+            XCTAssertNotNil(DBCacheSearchCriteria.showKeyPath(for: type), "missing toggle keyPath for \(type)")
+        }
+        XCTAssertNil(DBCacheSearchCriteria.showKeyPath(for: .unknown))
     }
 
     // MARK: - Persistence round-trip cont.

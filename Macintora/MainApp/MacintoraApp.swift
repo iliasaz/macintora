@@ -484,6 +484,13 @@ struct DBBrowserMenuCommands: Commands {
 
             Divider()
 
+            Button("Search Objects…") { box?.openSearchPalette?() }
+                .disabled(!isAvailable)
+                .keyboardShortcut("k", modifiers: [.command])
+
+            Button("Filter & Scope…") { box?.openFilterPopover?() }
+                .disabled(!isAvailable)
+
             Button("Focus Search") { box?.focusSearch?() }
                 .disabled(!isAvailable)
                 .keyboardShortcut("f", modifiers: [.command])

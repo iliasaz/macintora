@@ -63,7 +63,9 @@ struct DBBrowserSidebar: View {
             counts[raw] = (try? context.count(for: countReq)) ?? 0
             let invalidReq = DBCacheObject.fetchRequest()
             invalidReq.predicate = NSPredicate(format: "type_ = %@ AND isValid == NO", raw)
-            if let n = try? context.count(for: invalidReq), n > 0 { invalid.insert(raw) }
+            if let invalidCount = try? context.count(for: invalidReq), invalidCount > 0 {
+                invalid.insert(raw)
+            }
         }
         typeCounts = counts
         typesWithInvalid = invalid
