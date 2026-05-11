@@ -390,6 +390,7 @@ private struct DBCacheSidebarList: View {
                         } header: {
                             Text(section.id ?? "(unknown)")
                         }
+                        .headerProminence(.increased)
                     }
                 }
                 .listStyle(.sidebar)

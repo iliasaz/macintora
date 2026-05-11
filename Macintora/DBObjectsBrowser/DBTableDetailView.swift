@@ -104,7 +104,7 @@ struct DBTableDetailView: View {
 
                     SwiftUIWindow.open { window in
                         let _ = (window.title = dbObject.name)
-                        FormattedView(formatter: formatter)
+                        FormattedView(formatter: formatter, onDone: { window.close() })
                     }
                     .closeOnEscape(true)
 
