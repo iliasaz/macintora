@@ -38,60 +38,32 @@ struct DBTableDetailView: View {
 
     var sqlText: String { tables.first?.sqltext ?? "" }
 
-    private var tableHeader: some View {
-        Form {
-            LabeledContent("Partitioned") {
-                BoolIndicator(value: tables.first?.isPartitioned ?? false)
-            }
-            LabeledContent("Row Count", value: tables.first?.numRows.formatted() ?? Constants.nullValue)
-            LabeledContent("Last Analyzed", value: tables.first?.lastAnalyzed?.formatted(date: .abbreviated, time: .shortened) ?? Constants.nullValue)
-        }
-        .formStyle(.grouped)
-    }
-
-    private var viewHeader: some View {
-        Form {
-            LabeledContent("Editioning") {
-                BoolIndicator(value: tables.first?.isEditioning ?? false)
-            }
-            LabeledContent("Read Only") {
-                BoolIndicator(value: tables.first?.isReadOnly ?? false)
-            }
-        }
-        .formStyle(.grouped)
-    }
-
     var body: some View {
-        VStack {
-            if tables.first?.isView ?? false { viewHeader } else { tableHeader }
+        TabView(selection: $selectedTab) {
+            Tab("Columns", systemImage: "rectangle.split.3x1", value: DBTableDetailTab.columns) {
+                DetailGridView(rows: Array(columns).sorted(by: columnSortFn), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
+                    .id(dbObject.id)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
 
-            TabView(selection: $selectedTab) {
-                Tab("Columns", systemImage: "rectangle.split.3x1", value: DBTableDetailTab.columns) {
-                    DetailGridView(rows: Array(columns).sorted(by: columnSortFn), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
-                        .id(dbObject.id)
-                        .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
+            if !(tables.first?.isView ?? false) {
+                Tab("Indexes", systemImage: "list.bullet.indent", value: DBTableDetailTab.indexes) {
+                    TableIndexListView(dbObject: dbObject)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
 
-                if !(tables.first?.isView ?? false) {
-                    Tab("Indexes", systemImage: "list.bullet.indent", value: DBTableDetailTab.indexes) {
-                        TableIndexListView(dbObject: dbObject)
-                            .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
-                    }
-
-                    Tab("Triggers", systemImage: "bolt", value: DBTableDetailTab.triggers) {
-                        TableTriggerListView(dbObject: dbObject)
-                            .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300, maxHeight: .infinity, alignment: .topLeading)
-                    }
+                Tab("Triggers", systemImage: "bolt", value: DBTableDetailTab.triggers) {
+                    TableTriggerListView(dbObject: dbObject)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
+            }
 
-                if tables.first?.isView ?? false {
-                    Tab("SQL", systemImage: "doc.text", value: DBTableDetailTab.sql) {
-                        viewSqlTab
-                    }
+            if tables.first?.isView ?? false {
+                Tab("SQL", systemImage: "doc.text", value: DBTableDetailTab.sql) {
+                    viewSqlTab
                 }
             }
         }
-        .padding()
     }
 
     private var viewSqlTab: some View {

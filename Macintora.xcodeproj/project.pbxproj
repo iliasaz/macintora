@@ -97,6 +97,7 @@
 		49B0C0DE0000000000000123 /* OracleObjectType+UI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000023 /* OracleObjectType+UI.swift */; };
 		49B0C0DE0000000000000124 /* DBBrowserPinnedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000024 /* DBBrowserPinnedStore.swift */; };
 		49B0C0DE0000000000000125 /* DBBrowserSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000025 /* DBBrowserSidebar.swift */; };
+		49B0C0DE0000000000000126 /* DBDetailInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000026 /* DBDetailInspectorView.swift */; };
 		49B0C0DE0000000000000130 /* DBBrowserInputMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000030 /* DBBrowserInputMapperTests.swift */; };
 		49B0C0DE0000000000000131 /* DBBrowserWindowRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000031 /* DBBrowserWindowRegistryTests.swift */; };
 		49B0C0DE0000000000000132 /* DBCacheVMInitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */; };
@@ -328,6 +329,7 @@
 		49B0C0DE0000000000000023 /* OracleObjectType+UI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OracleObjectType+UI.swift"; sourceTree = "<group>"; };
 		49B0C0DE0000000000000024 /* DBBrowserPinnedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserPinnedStore.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000025 /* DBBrowserSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserSidebar.swift; sourceTree = "<group>"; };
+		49B0C0DE0000000000000026 /* DBDetailInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBDetailInspectorView.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000030 /* DBBrowserInputMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserInputMapperTests.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000031 /* DBBrowserWindowRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserWindowRegistryTests.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheVMInitTests.swift; sourceTree = "<group>"; };
@@ -533,6 +535,7 @@
 				49B0C0DE0000000000000023 /* OracleObjectType+UI.swift */,
 				49B0C0DE0000000000000024 /* DBBrowserPinnedStore.swift */,
 				49B0C0DE0000000000000025 /* DBBrowserSidebar.swift */,
+				49B0C0DE0000000000000026 /* DBDetailInspectorView.swift */,
 				498288AD28B7DC5700A28B04 /* CoreData */,
 			);
 			path = DBObjectsBrowser;
@@ -1210,6 +1213,7 @@
 				49B0C0DE0000000000000123 /* OracleObjectType+UI.swift in Sources */,
 				49B0C0DE0000000000000124 /* DBBrowserPinnedStore.swift in Sources */,
 				49B0C0DE0000000000000125 /* DBBrowserSidebar.swift in Sources */,
+				49B0C0DE0000000000000126 /* DBDetailInspectorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
