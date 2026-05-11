@@ -70,6 +70,7 @@ struct DBCacheMainView: View {
     @SectionedFetchRequest var items: SectionedFetchResults<String?, DBCacheObject>
     @State private var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
     @State private var commandsBox = DBBrowserCommandsBox()
+    @StateObject private var pinned: DBBrowserPinnedStore
     @FocusState private var focus: DBBrowserFocus?
 
     init(cache: DBCacheVM) {
@@ -80,6 +81,7 @@ struct DBCacheMainView: View {
             fetchRequest: DBCacheObject.fetchRequest(predicate: cache.searchCriteria.predicate),
             sectionIdentifier: \DBCacheObject.owner_,
             animation: .default)
+        _pinned = StateObject(wrappedValue: DBBrowserPinnedStore(tns: cache.connDetails.tns))
     }
 
     /// Selects the pending object once `items` has been populated.
@@ -103,11 +105,14 @@ struct DBCacheMainView: View {
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            DBCacheSidebarList(
+            DBBrowserSidebar(
                 items: items,
+                cache: cache,
+                pinned: pinned,
                 listSelection: $listSelection,
                 onContextAction: handleRowAction
             )
+            .navigationSplitViewColumnWidth(min: 320, ideal: 360, max: 480)
         } detail: {
             if let selectedItem = listSelection {
                 DBDetailView(dbObject: Binding(get: { selectedItem }, set: {_ in }))
@@ -347,56 +352,6 @@ enum DBCacheRowAction {
     case reveal
     case openInNewWindow
     case editSource
-}
-
-private struct DBCacheSidebarList: View {
-    let items: SectionedFetchResults<String?, DBCacheObject>
-    @Binding var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
-    let onContextAction: (DBCacheRowAction, DBCacheObject) -> Void
-
-    var body: some View {
-        Group {
-            if items.isEmpty {
-                ContentUnavailableView.search
-            } else {
-                List(selection: $listSelection) {
-                    ForEach(items) { section in
-                        Section {
-                            ForEach(section) { item in
-                                DBCacheListEntryView(dbObject: item)
-                                    .tag(item)
-                                    .draggable("\(item.owner).\(item.name)") {
-                                        DBCacheListEntryView(dbObject: item)
-                                    }
-                                    .contextMenu {
-                                        Button("Copy Name") {
-                                            onContextAction(.copyName, item)
-                                        }
-                                        Button("Copy Owner.Name") {
-                                            onContextAction(.copyQualifiedName, item)
-                                        }
-                                        Divider()
-                                        Button("Reveal in Sidebar") {
-                                            onContextAction(.reveal, item)
-                                        }
-                                        Button("Open in New Window") {
-                                            onContextAction(.openInNewWindow, item)
-                                        }
-                                        Button("Open Source in Editor") {
-                                            onContextAction(.editSource, item)
-                                        }
-                                    }
-                            }
-                        } header: {
-                            Text(section.id ?? "(unknown)")
-                        }
-                        .headerProminence(.increased)
-                    }
-                }
-                .listStyle(.sidebar)
-            }
-        }
-    }
 }
 
 struct DBCacheMainView_Previews: PreviewProvider {
