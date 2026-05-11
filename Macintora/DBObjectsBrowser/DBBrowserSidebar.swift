@@ -2,12 +2,14 @@
 //  DBBrowserSidebar.swift
 //  Macintora
 //
-//  Sidebar composition: 52px-wide type rail on the left + native sectioned
-//  List of objects on the right. The rail filters the list to a single
-//  Oracle object type by mutating `selectedTypeFilter` on the criteria.
+//  Sidebar composition: a vertical type rail on the left + the native
+//  sectioned object List on the right. The rail filters the list to a single
+//  Oracle object type via `selectedTypeFilter`; a "Pinned" section sits above
+//  the per-owner sections.
 //
-//  A "Pinned" section is rendered above the type-scoped owner sections.
-//  Pinned objects come from `DBBrowserPinnedStore` (per-TNS, UserDefaults).
+//  Both panes are built from `List` so they inherit the macOS source-list
+//  treatment — most importantly, the rows are inset below the unified title
+//  bar instead of being painted under the traffic lights.
 //
 
 import SwiftUI
@@ -20,10 +22,18 @@ struct DBBrowserSidebar: View {
     @Binding var listSelection: SectionedFetchResults<String?, DBCacheObject>.Section.Element?
     let onContextAction: (DBCacheRowAction, DBCacheObject) -> Void
 
+    @Environment(\.managedObjectContext) private var viewContext
+    @State private var typeCounts: [String: Int] = [:]
+    @State private var typesWithInvalid: Set<String> = []
+
     var body: some View {
         HStack(spacing: 0) {
-            DBBrowserTypeRail(criteria: $cache.searchCriteria)
-                .frame(width: 52)
+            DBBrowserTypeRail(
+                criteria: $cache.searchCriteria,
+                counts: typeCounts,
+                typesWithInvalid: typesWithInvalid
+            )
+            .frame(width: 56)
 
             Divider()
 
@@ -34,32 +44,60 @@ struct DBBrowserSidebar: View {
                 onContextAction: onContextAction
             )
         }
+        .task(id: cache.lastUpdatedStr) {
+            await refreshTypeStats()
+        }
+    }
+
+    /// Total per-type object counts (ignoring the live filter — the rail must
+    /// show what's *available* so the user can switch to it) plus which types
+    /// currently have at least one invalid object.
+    private func refreshTypeStats() async {
+        let context = viewContext
+        var counts: [String: Int] = [:]
+        var invalid: Set<String> = []
+        for type in OracleObjectType.displayOrder {
+            let raw = type.rawValue
+            let countReq = DBCacheObject.fetchRequest()
+            countReq.predicate = NSPredicate(format: "type_ = %@", raw)
+            counts[raw] = (try? context.count(for: countReq)) ?? 0
+            let invalidReq = DBCacheObject.fetchRequest()
+            invalidReq.predicate = NSPredicate(format: "type_ = %@ AND isValid == NO", raw)
+            if let n = try? context.count(for: invalidReq), n > 0 { invalid.insert(raw) }
+        }
+        typeCounts = counts
+        typesWithInvalid = invalid
     }
 }
 
 // MARK: - Type rail
 
 /// Vertical column of object types. Tapping a type pins the list to that one
-/// type via `selectedTypeFilter`; tapping the already-active type clears the
-/// pin and falls back to the per-type toggles.
+/// type via `selectedTypeFilter`; tapping the already-active type clears it.
 struct DBBrowserTypeRail: View {
     @Binding var criteria: DBCacheSearchCriteria
+    let counts: [String: Int]
+    let typesWithInvalid: Set<String>
 
     var body: some View {
-        VStack(spacing: 2) {
+        List {
             ForEach(OracleObjectType.displayOrder, id: \.self) { type in
-                TypeRailButton(
+                TypeRailRow(
                     type: type,
+                    count: counts[type.rawValue] ?? 0,
+                    hasInvalid: typesWithInvalid.contains(type.rawValue),
                     isSelected: criteria.selectedTypeFilter == type.rawValue
                 ) {
                     toggle(type)
                 }
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             }
-            Spacer(minLength: 0)
         }
-        .padding(.vertical, 6)
-        .frame(maxHeight: .infinity)
-        .background(.regularMaterial)
+        .listStyle(.sidebar)
+        .scrollIndicators(.hidden)
+        .environment(\.defaultMinListRowHeight, 1)
     }
 
     private func toggle(_ type: OracleObjectType) {
@@ -72,37 +110,49 @@ struct DBBrowserTypeRail: View {
     }
 }
 
-private struct TypeRailButton: View {
+private struct TypeRailRow: View {
     let type: OracleObjectType
+    let count: Int
+    let hasInvalid: Bool
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 2) {
+            VStack(spacing: 1) {
                 Image(systemName: type.symbolName)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(type.tint)
-                    .frame(width: 24, height: 20)
+                    .foregroundStyle(isSelected ? Color.accentColor : type.tint)
+                    .frame(height: 18)
+                    .overlay(alignment: .topTrailing) {
+                        if hasInvalid {
+                            Circle()
+                                .fill(.red)
+                                .frame(width: 5, height: 5)
+                                .offset(x: 6, y: -2)
+                        }
+                    }
+                Text(count, format: .number)
+                    .font(.system(size: 9, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .monospacedDigit()
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 5)
-            .background {
+            .padding(.vertical, 6)
+            .background(alignment: .leading) {
                 if isSelected {
-                    Rectangle()
-                        .fill(Color.accentColor.opacity(0.18))
-                        .overlay(alignment: .leading) {
-                            Rectangle()
-                                .fill(Color.accentColor)
-                                .frame(width: 2)
-                        }
+                    ZStack(alignment: .leading) {
+                        Rectangle().fill(Color.accentColor.opacity(0.16))
+                        Rectangle().fill(Color.accentColor).frame(width: 2)
+                    }
                 }
             }
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .help(type.label + "s — \(isSelected ? "click to clear filter" : "click to scope to this type")")
-        .accessibilityLabel("Filter by \(type.label)s")
+        .help("\(type.label)s — \(isSelected ? "click to clear filter" : "click to show only \(type.label.lowercased())s")")
+        .accessibilityLabel("\(type.label)s, \(count)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -122,11 +172,15 @@ struct DBBrowserObjectList: View {
                 if !pinnedRows.isEmpty {
                     Section {
                         ForEach(pinnedRows) { item in
-                            row(for: item, showPin: true)
+                            row(for: item, inPinnedSection: true)
                         }
                     } header: {
-                        Label("Pinned", systemImage: "pin.fill")
-                            .foregroundStyle(.tint)
+                        sectionHeader(
+                            title: Text("Pinned"),
+                            count: pinnedRows.count,
+                            systemImage: "pin.fill",
+                            tint: true
+                        )
                     }
                     .headerProminence(.increased)
                 }
@@ -137,12 +191,27 @@ struct DBBrowserObjectList: View {
                             row(for: item)
                         }
                     } header: {
-                        Text(section.id ?? "(unknown)")
+                        sectionHeader(title: Text(section.id ?? "(unknown)"), count: section.count)
                     }
                     .headerProminence(.increased)
                 }
             }
             .listStyle(.sidebar)
+        }
+    }
+
+    @ViewBuilder
+    private func sectionHeader(title: Text, count: Int, systemImage: String? = nil, tint: Bool = false) -> some View {
+        HStack(spacing: 5) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .foregroundStyle(tint ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+            }
+            title
+            Spacer(minLength: 4)
+            Text(count, format: .number)
+                .monospacedDigit()
+                .foregroundStyle(.tertiary)
         }
     }
 
@@ -158,30 +227,32 @@ struct DBBrowserObjectList: View {
                 found.append(obj)
             }
         }
-        // Preserve user-defined pin order (insertion order in the store).
         let positions = Dictionary(uniqueKeysWithValues: pinned.keys.enumerated().map { ($1, $0) })
         return found.sorted { positions[DBPinnedKey($0), default: .max] < positions[DBPinnedKey($1), default: .max] }
     }
 
     @ViewBuilder
-    private func row(for item: DBCacheObject, showPin: Bool = false) -> some View {
+    private func row(for item: DBCacheObject, inPinnedSection: Bool = false) -> some View {
         let pinKey = DBPinnedKey(item)
-        DBCacheListEntryView(dbObject: item, showPinIndicator: !showPin && pinned.isPinned(pinKey))
-            .tag(item)
-            .draggable("\(item.owner).\(item.name)") {
-                DBCacheListEntryView(dbObject: item)
+        DBCacheListEntryView(
+            dbObject: item,
+            showPinIndicator: !inPinnedSection && pinned.isPinned(pinKey)
+        )
+        .tag(item)
+        .draggable("\(item.owner).\(item.name)") {
+            DBCacheListEntryView(dbObject: item)
+        }
+        .contextMenu {
+            Button("Copy Name") { onContextAction(.copyName, item) }
+            Button("Copy Owner.Name") { onContextAction(.copyQualifiedName, item) }
+            Divider()
+            Button(pinned.isPinned(pinKey) ? "Unpin" : "Pin") {
+                pinned.toggle(pinKey)
             }
-            .contextMenu {
-                Button("Copy Name") { onContextAction(.copyName, item) }
-                Button("Copy Owner.Name") { onContextAction(.copyQualifiedName, item) }
-                Divider()
-                Button(pinned.isPinned(pinKey) ? "Unpin" : "Pin") {
-                    pinned.toggle(pinKey)
-                }
-                Divider()
-                Button("Reveal in Sidebar") { onContextAction(.reveal, item) }
-                Button("Open in New Window") { onContextAction(.openInNewWindow, item) }
-                Button("Open Source in Editor") { onContextAction(.editSource, item) }
-            }
+            Divider()
+            Button("Reveal in Sidebar") { onContextAction(.reveal, item) }
+            Button("Open in New Window") { onContextAction(.openInNewWindow, item) }
+            Button("Open Source in Editor") { onContextAction(.editSource, item) }
+        }
     }
 }
