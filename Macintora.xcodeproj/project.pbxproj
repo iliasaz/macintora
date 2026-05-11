@@ -97,6 +97,10 @@
 		49B0C0DE0000000000000130 /* DBBrowserInputMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000030 /* DBBrowserInputMapperTests.swift */; };
 		49B0C0DE0000000000000131 /* DBBrowserWindowRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000031 /* DBBrowserWindowRegistryTests.swift */; };
 		49B0C0DE0000000000000132 /* DBCacheVMInitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */; };
+		49B0C0DE0000000000000133 /* DBBrowserCommandsBoxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000033 /* DBBrowserCommandsBoxTests.swift */; };
+		49B0C0DE0000000000000134 /* DBCacheSearchCriteriaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000034 /* DBCacheSearchCriteriaTests.swift */; };
+		49B0C0DE0000000000000135 /* DBCacheObjectFetchRequestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000035 /* DBCacheObjectFetchRequestTests.swift */; };
+		49B0C0DE0000000000000136 /* DBBrowserMenuUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000036 /* DBBrowserMenuUITests.swift */; };
 		49B55F32270ADD8B00CFB3C7 /* MacintoraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */; };
 		49B55F36270ADD8B00CFB3C7 /* MainDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */; };
 		49B55F38270ADD8D00CFB3C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49B55F37270ADD8D00CFB3C7 /* Assets.xcassets */; };
@@ -320,6 +324,10 @@
 		49B0C0DE0000000000000030 /* DBBrowserInputMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserInputMapperTests.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000031 /* DBBrowserWindowRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserWindowRegistryTests.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheVMInitTests.swift; sourceTree = "<group>"; };
+		49B0C0DE0000000000000033 /* DBBrowserCommandsBoxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserCommandsBoxTests.swift; sourceTree = "<group>"; };
+		49B0C0DE0000000000000034 /* DBCacheSearchCriteriaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheSearchCriteriaTests.swift; sourceTree = "<group>"; };
+		49B0C0DE0000000000000035 /* DBCacheObjectFetchRequestTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheObjectFetchRequestTests.swift; sourceTree = "<group>"; };
+		49B0C0DE0000000000000036 /* DBBrowserMenuUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserMenuUITests.swift; sourceTree = "<group>"; };
 		49B55F2E270ADD8B00CFB3C7 /* Macintora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Macintora.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MacintoraApp.swift; sourceTree = "<group>"; };
 		49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainDocumentView.swift; sourceTree = "<group>"; };
@@ -604,6 +612,9 @@
 				49B0C0DE0000000000000030 /* DBBrowserInputMapperTests.swift */,
 				49B0C0DE0000000000000031 /* DBBrowserWindowRegistryTests.swift */,
 				49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */,
+				49B0C0DE0000000000000033 /* DBBrowserCommandsBoxTests.swift */,
+				49B0C0DE0000000000000034 /* DBCacheSearchCriteriaTests.swift */,
+				49B0C0DE0000000000000035 /* DBCacheObjectFetchRequestTests.swift */,
 			);
 			path = DBBrowser;
 			sourceTree = "<group>";
@@ -844,6 +855,7 @@
 				49DB001B0000001B /* EditTransformationsKeyEquivalentTests.swift */,
 				49DB001400000014 /* QuickViewUITests.swift */,
 				49DB002700000027 /* EditorShortcutsUITests.swift */,
+				49B0C0DE0000000000000036 /* DBBrowserMenuUITests.swift */,
 			);
 			path = MacintoraUITests;
 			sourceTree = "<group>";
@@ -1031,6 +1043,9 @@
 				49B0C0DE0000000000000130 /* DBBrowserInputMapperTests.swift in Sources */,
 				49B0C0DE0000000000000131 /* DBBrowserWindowRegistryTests.swift in Sources */,
 				49B0C0DE0000000000000132 /* DBCacheVMInitTests.swift in Sources */,
+				49B0C0DE0000000000000133 /* DBBrowserCommandsBoxTests.swift in Sources */,
+				49B0C0DE0000000000000134 /* DBCacheSearchCriteriaTests.swift in Sources */,
+				49B0C0DE0000000000000135 /* DBCacheObjectFetchRequestTests.swift in Sources */,
 				49DB302300000023 /* WorksheetCommandsBoxTests.swift in Sources */,
 				49DB302400000024 /* EditorToggleCommentBoxTests.swift in Sources */,
 				49DB302500000025 /* KeyboardShortcutsTests.swift in Sources */,
@@ -1192,6 +1207,7 @@
 				49DB401400000014 /* QuickViewUITests.swift in Sources */,
 				49DB401B0000001B /* EditTransformationsKeyEquivalentTests.swift in Sources */,
 				49DB402700000027 /* EditorShortcutsUITests.swift in Sources */,
+				49B0C0DE0000000000000136 /* DBBrowserMenuUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
