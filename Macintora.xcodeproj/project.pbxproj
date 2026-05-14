@@ -37,6 +37,11 @@
 		490E96EA2FA43C6300DDF37F /* ScriptRunnerUXTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E96E92FA43C6300DDF37F /* ScriptRunnerUXTests.swift */; };
 		49141400000000000000A002 /* PlsqlBlockFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49141400000000000000A001 /* PlsqlBlockFinder.swift */; };
 		49141400000000000000A004 /* GetCurrentSqlPlsqlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49141400000000000000A003 /* GetCurrentSqlPlsqlTests.swift */; };
+		490AB0DE00000004 /* CodeSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490AB0DE00000003 /* CodeSymbol.swift */; };
+		490AB0DE00000006 /* CodeSymbolExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490AB0DE00000005 /* CodeSymbolExtractor.swift */; };
+		490AB0DE00000008 /* CodeOutlineModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490AB0DE00000007 /* CodeOutlineModel.swift */; };
+		490AB0DE0000000A /* CodeOutlineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490AB0DE00000009 /* CodeOutlineView.swift */; };
+		490AB0DE0000000C /* CodeSymbolExtractorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490AB0DE0000000B /* CodeSymbolExtractorTests.swift */; };
 		49438678273753A000D7D464 /* ResultViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49438677273753A000D7D464 /* ResultViewModel.swift */; };
 		4944594C28D51D31007AB2BF /* SBMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594B28D51D31007AB2BF /* SBMainView.swift */; };
 		4944594E28D539D2007AB2BF /* SBVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4944594D28D539D2007AB2BF /* SBVM.swift */; };
@@ -90,7 +95,6 @@
 		49B0C0DE0000000000000012 /* DBCacheProcedure+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000002 /* DBCacheProcedure+CoreDataProperties.swift */; };
 		49B0C0DE0000000000000013 /* DBCacheProcedureArgument+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000003 /* DBCacheProcedureArgument+CoreDataClass.swift */; };
 		49B0C0DE0000000000000014 /* DBCacheProcedureArgument+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000004 /* DBCacheProcedureArgument+CoreDataProperties.swift */; };
-		49B0C0DE0000000000000015 /* PackageProceduresListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000005 /* PackageProceduresListView.swift */; };
 		49B0C0DE0000000000000120 /* DBBrowserInputMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000020 /* DBBrowserInputMapper.swift */; };
 		49B0C0DE0000000000000121 /* DBBrowserWindowRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000021 /* DBBrowserWindowRegistry.swift */; };
 		49B0C0DE0000000000000122 /* DBBrowserCommandsBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000022 /* DBBrowserCommandsBox.swift */; };
@@ -262,6 +266,11 @@
 		490E96E92FA43C6300DDF37F /* ScriptRunnerUXTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptRunnerUXTests.swift; sourceTree = "<group>"; };
 		49141400000000000000A001 /* PlsqlBlockFinder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlsqlBlockFinder.swift; sourceTree = "<group>"; };
 		49141400000000000000A003 /* GetCurrentSqlPlsqlTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetCurrentSqlPlsqlTests.swift; sourceTree = "<group>"; };
+		490AB0DE00000003 /* CodeSymbol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSymbol.swift; sourceTree = "<group>"; };
+		490AB0DE00000005 /* CodeSymbolExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSymbolExtractor.swift; sourceTree = "<group>"; };
+		490AB0DE00000007 /* CodeOutlineModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeOutlineModel.swift; sourceTree = "<group>"; };
+		490AB0DE00000009 /* CodeOutlineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeOutlineView.swift; sourceTree = "<group>"; };
+		490AB0DE0000000B /* CodeSymbolExtractorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSymbolExtractorTests.swift; sourceTree = "<group>"; };
 		49438677273753A000D7D464 /* ResultViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResultViewModel.swift; sourceTree = "<group>"; };
 		4944594B28D51D31007AB2BF /* SBMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBMainView.swift; sourceTree = "<group>"; };
 		4944594D28D539D2007AB2BF /* SBVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBVM.swift; sourceTree = "<group>"; };
@@ -324,7 +333,6 @@
 		49B0C0DE0000000000000002 /* DBCacheProcedure+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheProcedure+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		49B0C0DE0000000000000003 /* DBCacheProcedureArgument+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheProcedureArgument+CoreDataClass.swift"; sourceTree = "<group>"; };
 		49B0C0DE0000000000000004 /* DBCacheProcedureArgument+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBCacheProcedureArgument+CoreDataProperties.swift"; sourceTree = "<group>"; };
-		49B0C0DE0000000000000005 /* PackageProceduresListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackageProceduresListView.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000020 /* DBBrowserInputMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserInputMapper.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000021 /* DBBrowserWindowRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserWindowRegistry.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000022 /* DBBrowserCommandsBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserCommandsBox.swift; sourceTree = "<group>"; };
@@ -532,7 +540,6 @@
 				498288E428B7DCB000A28B04 /* TableIndexListView.swift */,
 				498288D028B7DCB000A28B04 /* WindowModifier.swift */,
 				49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */,
-				49B0C0DE0000000000000005 /* PackageProceduresListView.swift */,
 				49B0C0DE0000000000000020 /* DBBrowserInputMapper.swift */,
 				49B0C0DE0000000000000021 /* DBBrowserWindowRegistry.swift */,
 				49B0C0DE0000000000000022 /* DBBrowserCommandsBox.swift */,
@@ -723,6 +730,25 @@
 			path = Completion;
 			sourceTree = "<group>";
 		};
+		490AB0DE00000001 /* Outline */ = {
+			isa = PBXGroup;
+			children = (
+				490AB0DE00000003 /* CodeSymbol.swift */,
+				490AB0DE00000005 /* CodeSymbolExtractor.swift */,
+				490AB0DE00000007 /* CodeOutlineModel.swift */,
+				490AB0DE00000009 /* CodeOutlineView.swift */,
+			);
+			path = Outline;
+			sourceTree = "<group>";
+		};
+		490AB0DE00000002 /* Outline */ = {
+			isa = PBXGroup;
+			children = (
+				490AB0DE0000000B /* CodeSymbolExtractorTests.swift */,
+			);
+			path = Outline;
+			sourceTree = "<group>";
+		};
 		49CE5FEE27279F09009C2A94 /* Results */ = {
 			isa = PBXGroup;
 			children = (
@@ -759,6 +785,7 @@
 				49C0000700000007 /* MacintoraEditor+Completion.swift */,
 				49141400000000000000A001 /* PlsqlBlockFinder.swift */,
 				49DB002100000021 /* EditorToggleCommentBox.swift */,
+				490AB0DE00000001 /* Outline */,
 				49C0200000000000 /* Completion */,
 				49DB000D0000000D /* Plugins */,
 			);
@@ -773,6 +800,7 @@
 				49141400000000000000A003 /* GetCurrentSqlPlsqlTests.swift */,
 				49EE000100000001 /* MacintoraSTTextViewTests.swift */,
 				49DB002400000024 /* EditorToggleCommentBoxTests.swift */,
+				490AB0DE00000002 /* Outline */,
 				49C0300000000010 /* Completion */,
 				49DB001E0000001E /* Plugins */,
 			);
@@ -1023,6 +1051,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				490AB0DE0000000C /* CodeSymbolExtractorTests.swift in Sources */,
 				490E96D62FA426F500DDF37F /* ScriptRunnerLiveTests.swift in Sources */,
 				490E96C22FA423CE00DDF37F /* SubstitutionResolverTests.swift in Sources */,
 				49D0ECF42F9C1E1E0047540A /* EditorSelectionBridgeTests.swift in Sources */,
@@ -1079,6 +1108,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				490AB0DE00000004 /* CodeSymbol.swift in Sources */,
+				490AB0DE00000006 /* CodeSymbolExtractor.swift in Sources */,
+				490AB0DE00000008 /* CodeOutlineModel.swift in Sources */,
+				490AB0DE0000000A /* CodeOutlineView.swift in Sources */,
 				498288EB28B7DCB000A28B04 /* DBTableDetailView.swift in Sources */,
 				498288F428B7DCB000A28B04 /* FormField.swift in Sources */,
 				498288C328B7DC5700A28B04 /* DBCacheIndexColumn+CoreDataProperties.swift in Sources */,
@@ -1159,7 +1192,6 @@
 				49B0C0DE0000000000000012 /* DBCacheProcedure+CoreDataProperties.swift in Sources */,
 				49B0C0DE0000000000000013 /* DBCacheProcedureArgument+CoreDataClass.swift in Sources */,
 				49B0C0DE0000000000000014 /* DBCacheProcedureArgument+CoreDataProperties.swift in Sources */,
-				49B0C0DE0000000000000015 /* PackageProceduresListView.swift in Sources */,
 				AA00000D0000000000000000 /* TnsEntry.swift in Sources */,
 				490E96C42FA4246E00DDF37F /* ScriptRunnerEvent.swift in Sources */,
 				AA0000030000000000000000 /* TnsParser.swift in Sources */,

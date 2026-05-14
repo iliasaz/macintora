@@ -68,9 +68,41 @@ extension MacintoraEditorRepresentable {
         /// auto-trigger can be cancelled.
         private var lastCursor: Int = 0
 
+        /// Range currently carrying the transient "you jumped here" highlight,
+        /// applied via rendering attributes (draw-time only — doesn't touch the
+        /// text storage, so it doesn't fight the Neon highlighter). `nil` when
+        /// nothing is flashed.
+        private var navigationHighlightRange: NSRange?
+        private var navigationHighlightClearTask: Task<Void, Never>?
+
         init(text: Binding<String>, selection: Binding<Range<String.Index>>) {
             self._text = text
             self._selection = selection
+        }
+
+        /// Briefly tints `range` (typically the source line a programmatic jump
+        /// landed on — code-outline navigation, Script Output's "reveal in
+        /// editor") with the system find/search-results colour so it's easy to
+        /// spot, then clears it. Out-of-bounds ranges are no-ops (STTextView's
+        /// rendering-attribute API ignores them).
+        @MainActor
+        func flashNavigationHighlight(_ range: NSRange, in textView: STTextView) {
+            navigationHighlightClearTask?.cancel()
+            if let previous = navigationHighlightRange {
+                textView.removeRenderingAttribute(.backgroundColor, range: previous)
+                navigationHighlightRange = nil
+            }
+            guard range.length > 0 else { return }
+            textView.addRenderingAttributes([.backgroundColor: NSColor.findHighlightColor], range: range)
+            navigationHighlightRange = range
+            navigationHighlightClearTask = Task { [weak self, weak textView] in
+                try? await Task.sleep(for: .seconds(1.5))
+                guard !Task.isCancelled, let self, let textView else { return }
+                if let lit = self.navigationHighlightRange {
+                    textView.removeRenderingAttribute(.backgroundColor, range: lit)
+                    self.navigationHighlightRange = nil
+                }
+            }
         }
 
         /// Builds the `CompletionCoordinator` using the previously installed

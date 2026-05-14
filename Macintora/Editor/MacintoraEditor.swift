@@ -240,6 +240,11 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
         if textView.text != text {
             context.coordinator.isApplyingExternalUpdate = true
             textView.text = text
+            // Replacing the document (e.g. switching DB Browser objects) can
+            // leave the viewport pointing past the new, shorter text — which
+            // crashes the Neon highlighter. Snap caret + viewport to the top.
+            textView.textSelection = NSRange(location: 0, length: 0)
+            textView.scrollRangeToVisible(NSRange(location: 0, length: 0))
             context.coordinator.isApplyingExternalUpdate = false
         }
 
@@ -247,7 +252,26 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
            textView.textSelection != newRange,
            !context.coordinator.isPushingSelection {
             textView.textSelection = newRange
+            // Programmatic selection changes (code-outline navigation, Script
+            // Output's "reveal in editor") should bring the target on screen and
+            // park it near the top of the viewport — `textSelection` alone
+            // doesn't scroll.
+            Self.revealNearTop(newRange, lengthHint: text.utf16.count, in: textView)
+            // …and flash the landing line so it's easy to spot.
+            context.coordinator.flashNavigationHighlight((text as NSString).lineRange(for: newRange), in: textView)
         }
+    }
+
+    /// Brings `range` on screen and biases the scroll so its first line sits
+    /// near the top of the viewport. Done entirely through STTextView's own
+    /// bounds-checked scrolling: first reveal the target, then reveal a
+    /// taller-than-viewport span starting at it so the scroll aligns the top
+    /// (a target near the document end just stays as high as the remaining
+    /// lines allow). `lengthHint` is the document's UTF-16 length.
+    private static func revealNearTop(_ range: NSRange, lengthHint: Int, in textView: STTextView) {
+        textView.scrollRangeToVisible(range)
+        let extent = min(2500, max(0, lengthHint - range.location))
+        textView.scrollRangeToVisible(NSRange(location: range.location, length: extent))
     }
 
     static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {

@@ -340,28 +340,15 @@ struct DBDetailContent: View {
     }
 }
 
-/// Code-object wrapper: source pane up top, member browser docked below for
-/// packages/procedures/functions that publish a member list.
+/// Code-object wrapper: the source viewer (with its own spec/body tabs and a
+/// navigable symbol outline rail). The old DB-sourced member list that used to
+/// dock below has been replaced by `CodeOutlineView` inside `SourceView`.
 struct CodeDetailContent: View {
     @Binding var dbObject: DBCacheObject
 
-    private var hasMembers: Bool {
-        switch OracleObjectType(rawValue: dbObject.type) {
-        case .package, .procedure, .function: true
-        default: false
-        }
-    }
-
     var body: some View {
-        VStack(spacing: 0) {
-            DBSourceDetailView(dbObject: $dbObject)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            if hasMembers {
-                Divider()
-                PackageProceduresListView(dbObject: dbObject)
-                    .frame(maxWidth: .infinity, idealHeight: 200, maxHeight: 280)
-            }
-        }
+        DBSourceDetailView(dbObject: $dbObject)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
