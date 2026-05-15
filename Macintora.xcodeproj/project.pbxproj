@@ -84,9 +84,9 @@
 		498288FB28B7DCB000A28B04 /* FormattedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E228B7DCB000A28B04 /* FormattedView.swift */; };
 		498288FC28B7DCB000A28B04 /* DBSourceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E328B7DCB000A28B04 /* DBSourceDetailView.swift */; };
 		498288FD28B7DCB000A28B04 /* TableIndexListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E428B7DCB000A28B04 /* TableIndexListView.swift */; };
+		498288FE28B7DCB000A28B04 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E528B7DCB000A28B04 /* Persistence.swift */; };
 		498288FE28B7DCB000A28B05 /* TableTableColumnsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288FF28B7DCB000A28B04 /* TableTableColumnsView.swift */; };
 		498288FF28B7DCB000A28B05 /* TableIndexColumnsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982880028B7DCB000A28B05 /* TableIndexColumnsView.swift */; };
-		498288FE28B7DCB000A28B04 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E528B7DCB000A28B04 /* Persistence.swift */; };
 		4982890128B7DCB000A28B04 /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E828B7DCB000A28B04 /* Queue.swift */; };
 		4982890528B7EF5E00A28B04 /* ConnectionDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982890428B7EF5E00A28B04 /* ConnectionDetails.swift */; };
 		4982890D28B95BC100A28B04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982890C28B95BC100A28B04 /* SettingsView.swift */; };
@@ -281,6 +281,7 @@
 		4947FEA9286FA73B00AEBE60 /* RunnableSQL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnableSQL.swift; sourceTree = "<group>"; };
 		4947FEAB2870F8E400AEBE60 /* BindVarInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BindVarInputView.swift; path = Macintora/Results/BindVarInputView.swift; sourceTree = SOURCE_ROOT; };
 		496FF1A02775259900CC0AD2 /* ResultViewWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultViewWrapper.swift; sourceTree = "<group>"; };
+		4982880028B7DCB000A28B05 /* TableIndexColumnsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableIndexColumnsView.swift; sourceTree = "<group>"; };
 		4982889628B1C41700A28B04 /* Formatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatter.swift; sourceTree = "<group>"; };
 		4982889C28B41F3A00A28B04 /* MacintoraTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacintoraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4982889E28B41F3A00A28B04 /* MacintoraTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraTests.swift; sourceTree = "<group>"; };
@@ -317,6 +318,7 @@
 		498288E428B7DCB000A28B04 /* TableIndexListView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TableIndexListView.swift; sourceTree = "<group>"; };
 		498288E528B7DCB000A28B04 /* Persistence.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
 		498288E828B7DCB000A28B04 /* Queue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Queue.swift; sourceTree = "<group>"; };
+		498288FF28B7DCB000A28B04 /* TableTableColumnsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTableColumnsView.swift; sourceTree = "<group>"; };
 		4982890428B7EF5E00A28B04 /* ConnectionDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionDetails.swift; sourceTree = "<group>"; };
 		4982890C28B95BC100A28B04 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		4999469327E1777700C62AB7 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
@@ -410,8 +412,6 @@
 		49EAEFA828C93263008F0B80 /* DBTriggerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBTriggerDetailView.swift; sourceTree = "<group>"; };
 		49EAEFAA28C9331C008F0B80 /* SourceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceView.swift; sourceTree = "<group>"; };
 		49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTriggerListView.swift; sourceTree = "<group>"; };
-		498288FF28B7DCB000A28B04 /* TableTableColumnsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTableColumnsView.swift; sourceTree = "<group>"; };
-		4982880028B7DCB000A28B05 /* TableIndexColumnsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableIndexColumnsView.swift; sourceTree = "<group>"; };
 		49EB5E0B29528995003A0E23 /* DBCacheMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheMainView.swift; sourceTree = "<group>"; };
 		49EE000100000001 /* MacintoraSTTextViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraSTTextViewTests.swift; sourceTree = "<group>"; };
 		49F481EF294A84A1005DC77F /* PersistencePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistencePreview.swift; sourceTree = "<group>"; };
