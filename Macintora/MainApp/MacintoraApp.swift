@@ -241,6 +241,7 @@ struct MacOraApp: App {
                 .frame(minWidth: 600, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
                 .environment(\.connectionStore, connectionStore)
                 .environment(\.keychainService, keychainService)
+                .macintoraAccentTint()
                 .task(id: config.fileURL) {
                     config.document.fileURL = config.fileURL
                 }
@@ -288,18 +289,21 @@ struct MacOraApp: App {
                 .environment(\.managedObjectContext, cache.persistenceController.container.viewContext)
                 .environment(\.connectionStore, connectionStore)
                 .environment(\.keychainService, keychainService)
+                .macintoraAccentTint()
         }
 
         WindowGroup(for: SBInputValue.self) { $value in
             SBMainView(inputValue: value ?? .preview())
                 .environment(\.connectionStore, connectionStore)
                 .environment(\.keychainService, keychainService)
+                .macintoraAccentTint()
         }
 
         Settings {
             SettingsView()
                 .environment(\.connectionStore, connectionStore)
                 .environment(\.keychainService, keychainService)
+                .macintoraAccentTint()
         }
 
         // Read-only cheatsheet listing every Macintora-specific shortcut.
@@ -308,6 +312,7 @@ struct MacOraApp: App {
         // and the user can't drag it down to a useless thumbnail.
         Window("Keyboard Shortcuts", id: KeyboardShortcuts.windowID) {
             KeyboardShortcutsView()
+                .macintoraAccentTint()
         }
         .windowResizability(.contentSize)
     }

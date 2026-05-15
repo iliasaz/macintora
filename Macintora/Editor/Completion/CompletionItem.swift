@@ -127,11 +127,15 @@ final class MacintoraCompletionItem: NSObject, STCompletionItem, @unchecked Send
         // contract for plain NSViews didn't propagate to the inner stack.
         // STTextView's own demo (`TextEdit/Mac/CompletionItem.swift`) uses
         // the same NSHostingView pattern.
+        // NSHostingView lives outside the scene tree, so the scene-root
+        // `.tint(...)` doesn't reach it. Re-apply via the same modifier so
+        // the completion icon honours the user's chosen accent.
         NSHostingView(rootView: CompletionRowView(
             displayText: displayText,
             secondaryText: secondaryText,
             symbolName: kind.symbolName,
-            allowsWrap: signatureInsertion != nil))
+            allowsWrap: signatureInsertion != nil)
+            .macintoraAccentTint())
     }
 }
 
@@ -151,7 +155,7 @@ private struct CompletionRowView: View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Image(systemName: symbolName)
                 .symbolRenderingMode(.monochrome)
-                .foregroundStyle(Color(nsColor: .controlAccentColor))
+                .foregroundStyle(Color.accentColor)
                 .frame(width: 14, alignment: .center)
 
             Text(displayText)

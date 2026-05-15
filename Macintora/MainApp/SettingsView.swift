@@ -10,7 +10,7 @@ import AppKit
 
 struct SettingsView: View {
     private enum Tabs: Hashable {
-        case editor, browser, connections
+        case editor, browser, appearance, connections
     }
     var body: some View {
         TabView {
@@ -25,12 +25,129 @@ struct SettingsView: View {
                 }
                 .tag(Tabs.browser)
                 .padding(10)
+            AppearanceSettings()
+                .tabItem {
+                    Label("Appearance", systemImage: "paintpalette")
+                }
+                .tag(Tabs.appearance)
             ConnectionsManagerView()
                 .tabItem {
                     Label("Connections", systemImage: "point.3.connected.trianglepath.dotted")
                 }
                 .tag(Tabs.connections)
         }
+    }
+}
+
+/// User-selectable app accent. `.system` opts out of overriding the macOS
+/// accent (no `.tint` applied at the scene root); the named cases override
+/// it with a fixed swatch matching the standard AppKit accent presets.
+enum AppAccentColor: String, CaseIterable, Identifiable {
+    case system
+    case blue
+    case purple
+    case pink
+    case red
+    case orange
+    case yellow
+    case green
+    case graphite
+
+    static let storageKey = "appAccentColor"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .system: "Match System"
+        case .blue: "Blue"
+        case .purple: "Purple"
+        case .pink: "Pink"
+        case .red: "Red"
+        case .orange: "Orange"
+        case .yellow: "Yellow"
+        case .green: "Green"
+        case .graphite: "Graphite"
+        }
+    }
+
+    /// `nil` means "don't override the system accent" — caller should skip
+    /// applying `.tint(...)` so views fall back to `NSColor.controlAccentColor`.
+    var color: Color? {
+        switch self {
+        case .system: nil
+        case .blue: .blue
+        case .purple: .purple
+        case .pink: .pink
+        case .red: .red
+        case .orange: .orange
+        case .yellow: .yellow
+        case .green: .green
+        case .graphite: Color(nsColor: .systemGray)
+        }
+    }
+}
+
+struct AppearanceSettings: View {
+    @AppStorage(AppAccentColor.storageKey) private var accentRaw: String = AppAccentColor.system.rawValue
+
+    private var accentBinding: Binding<AppAccentColor> {
+        Binding(
+            get: { AppAccentColor(rawValue: accentRaw) ?? .system },
+            set: { accentRaw = $0.rawValue }
+        )
+    }
+
+    var body: some View {
+        VStack {
+            Form {
+                Picker("Accent Color", selection: accentBinding) {
+                    ForEach(AppAccentColor.allCases) { accent in
+                        HStack {
+                            if let color = accent.color {
+                                Circle()
+                                    .fill(color)
+                                    .frame(width: 12, height: 12)
+                            } else {
+                                Circle()
+                                    .strokeBorder(Color.secondary, lineWidth: 1)
+                                    .frame(width: 12, height: 12)
+                            }
+                            Text(accent.displayName)
+                        }
+                        .tag(accent)
+                    }
+                }
+                .help("Overrides the macOS system accent within Macintora. Match System defers to your System Settings choice.")
+            }
+            Spacer()
+        }
+        .padding(20)
+    }
+}
+
+/// Reads the persisted `AppAccentColor` and applies `.tint(...)` when the
+/// user picked an explicit override. `.system` leaves the tint alone so
+/// SwiftUI falls back to `NSColor.controlAccentColor`.
+struct AppAccentTintModifier: ViewModifier {
+    @AppStorage(AppAccentColor.storageKey) private var accentRaw: String = AppAccentColor.system.rawValue
+
+    private var accent: AppAccentColor {
+        AppAccentColor(rawValue: accentRaw) ?? .system
+    }
+
+    func body(content: Content) -> some View {
+        if let color = accent.color {
+            content.tint(color)
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    func macintoraAccentTint() -> some View {
+        modifier(AppAccentTintModifier())
     }
 }
 
