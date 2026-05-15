@@ -22,26 +22,31 @@ struct QuickViewContent: View {
     let openInBrowserAction: (() -> Void)?
 
     var body: some View {
-        switch payload {
-        case .table(let table):
-            QuickViewTableView(payload: table,
-                               openInBrowserAction: openInBrowserAction)
-        case .packageOrType(let pkg):
-            QuickViewPackageView(payload: pkg,
-                                 openInBrowserAction: openInBrowserAction)
-        case .procedure(let proc):
-            QuickViewProcedureView(payload: proc,
+        // Quick View renders inside an NSHostingController popover (outside
+        // the scene tree), so re-apply the user-chosen accent here.
+        Group {
+            switch payload {
+            case .table(let table):
+                QuickViewTableView(payload: table,
                                    openInBrowserAction: openInBrowserAction)
-        case .column(let col):
-            QuickViewColumnView(payload: col,
-                                openInBrowserAction: openInBrowserAction)
-        case .unknownObject(let unknown):
-            QuickViewUnknownObjectView(payload: unknown,
+            case .packageOrType(let pkg):
+                QuickViewPackageView(payload: pkg,
+                                     openInBrowserAction: openInBrowserAction)
+            case .procedure(let proc):
+                QuickViewProcedureView(payload: proc,
                                        openInBrowserAction: openInBrowserAction)
-        case .notCached(let reference):
-            QuickViewNotCachedView(reference: reference,
-                                   openInBrowserAction: openInBrowserAction)
+            case .column(let col):
+                QuickViewColumnView(payload: col,
+                                    openInBrowserAction: openInBrowserAction)
+            case .unknownObject(let unknown):
+                QuickViewUnknownObjectView(payload: unknown,
+                                           openInBrowserAction: openInBrowserAction)
+            case .notCached(let reference):
+                QuickViewNotCachedView(reference: reference,
+                                       openInBrowserAction: openInBrowserAction)
+            }
         }
+        .macintoraAccentTint()
     }
 }
 

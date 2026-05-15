@@ -39,9 +39,7 @@ struct SettingsView: View {
     }
 }
 
-/// User-selectable app accent. `.system` opts out of overriding the macOS
-/// accent (no `.tint` applied at the scene root); the named cases override
-/// it with a fixed swatch matching the standard AppKit accent presets.
+/// User-selectable app accent; `.system` defers to the macOS system accent.
 enum AppAccentColor: String, CaseIterable, Identifiable {
     case system
     case blue
@@ -71,8 +69,7 @@ enum AppAccentColor: String, CaseIterable, Identifiable {
         }
     }
 
-    /// `nil` means "don't override the system accent" — caller should skip
-    /// applying `.tint(...)` so views fall back to `NSColor.controlAccentColor`.
+    /// `nil` means "skip `.tint(...)`" so SwiftUI falls back to the system accent.
     var color: Color? {
         switch self {
         case .system: nil
@@ -126,9 +123,7 @@ struct AppearanceSettings: View {
     }
 }
 
-/// Reads the persisted `AppAccentColor` and applies `.tint(...)` when the
-/// user picked an explicit override. `.system` leaves the tint alone so
-/// SwiftUI falls back to `NSColor.controlAccentColor`.
+/// Applies the persisted accent via `.tint(...)`; a no-op for `.system`.
 struct AppAccentTintModifier: ViewModifier {
     @AppStorage(AppAccentColor.storageKey) private var accentRaw: String = AppAccentColor.system.rawValue
 
