@@ -42,6 +42,7 @@ struct SettingsView: View {
 /// User-selectable app accent; `.system` defers to the macOS system accent.
 enum AppAccentColor: String, CaseIterable, Identifiable {
     case system
+    case copper
     case blue
     case purple
     case pink
@@ -52,12 +53,14 @@ enum AppAccentColor: String, CaseIterable, Identifiable {
     case graphite
 
     static let storageKey = "appAccentColor"
+    static let defaultValue: AppAccentColor = .copper
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
         case .system: "Match System"
+        case .copper: "Copper"
         case .blue: "Blue"
         case .purple: "Purple"
         case .pink: "Pink"
@@ -73,6 +76,7 @@ enum AppAccentColor: String, CaseIterable, Identifiable {
     var color: Color? {
         switch self {
         case .system: nil
+        case .copper: Color("CopperAccent")
         case .blue: .blue
         case .purple: .purple
         case .pink: .pink
@@ -86,7 +90,7 @@ enum AppAccentColor: String, CaseIterable, Identifiable {
 }
 
 struct AppearanceSettings: View {
-    @AppStorage(AppAccentColor.storageKey) private var accentRaw: String = AppAccentColor.system.rawValue
+    @AppStorage(AppAccentColor.storageKey) private var accentRaw: String = AppAccentColor.defaultValue.rawValue
 
     private var accentBinding: Binding<AppAccentColor> {
         Binding(
@@ -125,7 +129,7 @@ struct AppearanceSettings: View {
 
 /// Applies the persisted accent via `.tint(...)`; a no-op for `.system`.
 struct AppAccentTintModifier: ViewModifier {
-    @AppStorage(AppAccentColor.storageKey) private var accentRaw: String = AppAccentColor.system.rawValue
+    @AppStorage(AppAccentColor.storageKey) private var accentRaw: String = AppAccentColor.defaultValue.rawValue
 
     private var accent: AppAccentColor {
         AppAccentColor(rawValue: accentRaw) ?? .system
