@@ -8,50 +8,41 @@
 import SwiftUI
 import CoreData
 
+private enum DBTriggerTab: String, CaseIterable, Codable {
+    case body
+}
 
 struct DBTriggerDetailView: View {
     @Environment(\.managedObjectContext) var context
-    @FetchRequest private var tables: FetchedResults<DBCacheTrigger>
+    @AppStorage("dbTriggerDetailSelectedTab") private var selectedTab: DBTriggerTab = .body
+    @FetchRequest private var triggers: FetchedResults<DBCacheTrigger>
     @Binding var dbObject: DBCacheObject
 
     init(dbObject: Binding<DBCacheObject>) {
         self._dbObject = dbObject
-        _tables = FetchRequest<DBCacheTrigger>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@ ", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
+        _triggers = FetchRequest<DBCacheTrigger>(
+            sortDescriptors: [],
+            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@",
+                                   dbObject.name.wrappedValue,
+                                   dbObject.owner.wrappedValue)
+        )
     }
 
-    private var triggerForm: some View {
-        let trigger = tables.first
-        return Form {
-            Section("Trigger Details") {
-                LabeledContent("Type", value: trigger?.type ?? Constants.nullValue)
-                LabeledContent("When", value: trigger?.whenClause ?? Constants.nullValue)
-                LabeledContent("Column", value: trigger?.columnName ?? Constants.nullValue)
-                LabeledContent("Base Type", value: trigger?.objectType ?? Constants.nullValue)
-                LabeledContent("Base Owner", value: trigger?.objectOwner ?? Constants.nullValue)
-                LabeledContent("Base Name", value: trigger?.objectName ?? Constants.nullValue)
-                LabeledContent("Referencing", value: trigger?.referencingNames ?? Constants.nullValue)
-                LabeledContent("Description", value: trigger?.descr ?? Constants.nullValue)
-            }
-
-            Section("Timing") {
-                LabeledContent("Before Row") { BoolIndicator(value: trigger?.isBeforeRow ?? false) }
-                LabeledContent("After Row") { BoolIndicator(value: trigger?.isAfterRow ?? false) }
-                LabeledContent("Before Statement") { BoolIndicator(value: trigger?.isBeforeStatement ?? false) }
-                LabeledContent("After Statement") { BoolIndicator(value: trigger?.isAfterStatement ?? false) }
-                LabeledContent("Instead Of") { BoolIndicator(value: trigger?.isInsteadOfRow ?? false) }
-                LabeledContent("CrossEdition") { BoolIndicator(value: trigger?.isCrossEdition ?? false) }
-                LabeledContent("Fire Once") { BoolIndicator(value: trigger?.isFireOnce ?? false) }
-                LabeledContent("Enabled") { BoolIndicator(value: trigger?.isEnabled ?? false, trueColor: .green, falseColor: .red) }
-            }
-        }
-        .formStyle(.grouped)
+    private var bodyText: Binding<String> {
+        Binding<String>(get: { triggers.first?.body ?? "" }, set: { _ in })
     }
 
     var body: some View {
         VStack(alignment: .leading) {
-            triggerForm
-            SourceView(objName: $dbObject.name, text: Binding<String>(get: {tables.first?.body ?? ""}, set: {_ in}), title: "Body")
+            TabView(selection: $selectedTab) {
+                Tab("Body", systemImage: "doc.text.fill", value: DBTriggerTab.body) {
+                    SourceView(objName: $dbObject.name, text: bodyText, title: "Body")
+                        .padding(.vertical, 5)
+                }
+            }
         }
+        .frame(minWidth: 200, idealWidth: 1000, maxWidth: .infinity,
+               idealHeight: 1000, maxHeight: .infinity)
         .padding()
     }
 }

@@ -178,6 +178,10 @@ struct DBDetailAccordion: View {
     @Binding var dbObject: DBCacheObject
     @Binding var isOpen: Bool
 
+    private var oracleType: OracleObjectType {
+        OracleObjectType(rawValue: dbObject.type) ?? .unknown
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             Button {
@@ -194,6 +198,9 @@ struct DBDetailAccordion: View {
                     if !isOpen {
                         AccordionSummary(dbObject: dbObject)
                             .padding(.leading, 6)
+                        if oracleType == .trigger {
+                            TriggerAccordionSummary(name: dbObject.name, owner: dbObject.owner)
+                        }
                     }
                     Spacer(minLength: 0)
                     Text("⌘I")
@@ -213,8 +220,13 @@ struct DBDetailAccordion: View {
             .background(Color.secondary.opacity(0.06))
 
             if isOpen {
-                AccordionExpanded(dbObject: dbObject)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                VStack(spacing: 0) {
+                    AccordionExpanded(dbObject: dbObject)
+                    if oracleType == .trigger {
+                        TriggerAccordionExpanded(name: dbObject.name, owner: dbObject.owner)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             Divider()
@@ -313,6 +325,87 @@ private struct Field<Content: View>: View {
 private extension Field where Content == Text {
     init(label: String, value: String) {
         self.init(label: label) { Text(value) }
+    }
+}
+
+// MARK: - Trigger accordion extras
+
+/// Inline chips appended to the collapsed accordion summary when the selected
+/// object is a trigger. Surfaces the two things you most often want to see at
+/// a glance without expanding — the trigger's type (e.g. "BEFORE EACH ROW")
+/// and whether it's currently enabled.
+private struct TriggerAccordionSummary: View {
+    @FetchRequest private var triggers: FetchedResults<DBCacheTrigger>
+
+    init(name: String, owner: String) {
+        _triggers = FetchRequest<DBCacheTrigger>(
+            sortDescriptors: [],
+            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", name, owner)
+        )
+    }
+
+    var body: some View {
+        let trigger = triggers.first
+        HStack(spacing: 14) {
+            SummaryItem(label: "Type", value: trigger?.type ?? Constants.nullValue)
+            HStack(spacing: 4) {
+                Circle()
+                    .fill((trigger?.isEnabled ?? false) ? Color.green : Color.red)
+                    .frame(width: 6, height: 6)
+                Text((trigger?.isEnabled ?? false) ? "Enabled" : "Disabled")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .font(.caption)
+    }
+}
+
+/// Trigger-specific fields rendered below the generic accordion grid when the
+/// accordion is expanded. Replaces the old `triggerForm` that used to sit
+/// between the header and the body source — putting it here keeps the trigger
+/// layout aligned with packages (header on top, tabbed source below).
+private struct TriggerAccordionExpanded: View {
+    @FetchRequest private var triggers: FetchedResults<DBCacheTrigger>
+
+    init(name: String, owner: String) {
+        _triggers = FetchRequest<DBCacheTrigger>(
+            sortDescriptors: [],
+            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", name, owner)
+        )
+    }
+
+    private let columns = [GridItem(.flexible(), alignment: .topLeading),
+                           GridItem(.flexible(), alignment: .topLeading),
+                           GridItem(.flexible(), alignment: .topLeading),
+                           GridItem(.flexible(), alignment: .topLeading)]
+
+    var body: some View {
+        let trigger = triggers.first
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+            Field(label: "Type", value: trigger?.type ?? Constants.nullValue)
+            Field(label: "When", value: trigger?.whenClause ?? Constants.nullValue)
+            Field(label: "Column", value: trigger?.columnName ?? Constants.nullValue)
+            Field(label: "Base Type", value: trigger?.objectType ?? Constants.nullValue)
+            Field(label: "Base Owner", value: trigger?.objectOwner ?? Constants.nullValue)
+            Field(label: "Base Name", value: trigger?.objectName ?? Constants.nullValue)
+            Field(label: "Referencing", value: trigger?.referencingNames ?? Constants.nullValue)
+            Field(label: "Description", value: trigger?.descr ?? Constants.nullValue)
+
+            Field(label: "Before Row") { BoolIndicator(value: trigger?.isBeforeRow ?? false) }
+            Field(label: "After Row") { BoolIndicator(value: trigger?.isAfterRow ?? false) }
+            Field(label: "Before Statement") { BoolIndicator(value: trigger?.isBeforeStatement ?? false) }
+            Field(label: "After Statement") { BoolIndicator(value: trigger?.isAfterStatement ?? false) }
+            Field(label: "Instead Of") { BoolIndicator(value: trigger?.isInsteadOfRow ?? false) }
+            Field(label: "Cross Edition") { BoolIndicator(value: trigger?.isCrossEdition ?? false) }
+            Field(label: "Fire Once") { BoolIndicator(value: trigger?.isFireOnce ?? false) }
+            Field(label: "Enabled") {
+                BoolIndicator(value: trigger?.isEnabled ?? false, trueColor: .green, falseColor: .red)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.secondary.opacity(0.04))
     }
 }
 
