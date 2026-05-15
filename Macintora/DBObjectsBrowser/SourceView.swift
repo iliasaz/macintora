@@ -89,7 +89,6 @@ struct SourceView: View {
                     isSelectable: true,
                     wordWrap: .constant(true),
                     showsLineNumbers: true,
-                    highlightsSelectedLine: false,
                     accessibilityIdentifier: "editor.db.source",
                     revealGeneration: revealGeneration
                 )

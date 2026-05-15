@@ -26,7 +26,6 @@ struct FormattedView: View {
                 isSelectable: true,
                 wordWrap: .constant(true),
                 showsLineNumbers: true,
-                highlightsSelectedLine: false,
                 accessibilityIdentifier: "editor.db.formatted"
             )
             actionBar
