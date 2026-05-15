@@ -54,6 +54,12 @@ struct MacintoraEditor: View {
     let quickViewBox: EditorQuickViewBox?
     let openInBrowserBox: EditorOpenInBrowserBox?
     let toggleCommentBox: EditorToggleCommentBox?
+    /// Monotonically incremented by the host to request a fresh
+    /// reveal-and-flash of `selection` even when the selection range itself
+    /// didn't change (the canonical case: clicking the same code-outline row
+    /// twice in a row). Default `0` means "no reveal requests" — `updateNSView`
+    /// only acts when the value differs from the previous call.
+    let revealGeneration: Int
 
     @AppStorage("editorTheme") private var editorThemeRaw: String = EditorTheme.default.rawValue
 
@@ -70,7 +76,8 @@ struct MacintoraEditor: View {
         completionConfig: EditorCompletionConfig? = nil,
         quickViewBox: EditorQuickViewBox? = nil,
         openInBrowserBox: EditorOpenInBrowserBox? = nil,
-        toggleCommentBox: EditorToggleCommentBox? = nil
+        toggleCommentBox: EditorToggleCommentBox? = nil,
+        revealGeneration: Int = 0
     ) {
         self._text = text
         self._selection = selection
@@ -85,6 +92,7 @@ struct MacintoraEditor: View {
         self.quickViewBox = quickViewBox
         self.openInBrowserBox = openInBrowserBox
         self.toggleCommentBox = toggleCommentBox
+        self.revealGeneration = revealGeneration
     }
 
     private var editorTheme: EditorTheme {
@@ -106,7 +114,8 @@ struct MacintoraEditor: View {
             completionConfig: completionConfig,
             quickViewBox: quickViewBox,
             openInBrowserBox: openInBrowserBox,
-            toggleCommentBox: toggleCommentBox
+            toggleCommentBox: toggleCommentBox,
+            revealGeneration: revealGeneration
         )
         .id(editorTheme)
     }
@@ -127,6 +136,7 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
     let quickViewBox: EditorQuickViewBox?
     let openInBrowserBox: EditorOpenInBrowserBox?
     let toggleCommentBox: EditorToggleCommentBox?
+    let revealGeneration: Int
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, selection: $selection)
@@ -259,6 +269,20 @@ struct MacintoraEditorRepresentable: NSViewRepresentable {
             Self.revealNearTop(newRange, lengthHint: text.utf16.count, in: textView)
             // …and flash the landing line so it's easy to spot.
             context.coordinator.flashNavigationHighlight((text as NSString).lineRange(for: newRange), in: textView)
+        }
+
+        // Explicit reveal request from the host (the canonical case is the
+        // user clicking the *same* code-outline row twice — `selection`
+        // doesn't change so the block above is a no-op, but the user still
+        // expects the editor to scroll back and flash). Triggered by the host
+        // bumping `revealGeneration`; we just compare against the value seen
+        // on the previous pass.
+        if revealGeneration != context.coordinator.lastRevealGeneration {
+            context.coordinator.lastRevealGeneration = revealGeneration
+            if let nsRange = EditorSelectionBridge.nsRange(for: selection, in: text) {
+                Self.revealNearTop(nsRange, lengthHint: text.utf16.count, in: textView)
+                context.coordinator.flashNavigationHighlight((text as NSString).lineRange(for: nsRange), in: textView)
+            }
         }
     }
 

@@ -17,6 +17,10 @@ struct SourceView: View {
     @Binding var text: String
     @State var title: String
     @State private var selection: Range<String.Index> = "".startIndex..<"".endIndex
+    /// Bumped by the outline rail on every click so that re-clicking the same
+    /// row still forces the editor to scroll back and flash — `selection` alone
+    /// doesn't fire `updateNSView` when the value is unchanged.
+    @State private var revealGeneration: Int = 0
     @AppStorage("dbSourceOutlineVisible") private var showOutline = true
 
     init(objName: Binding<String>, text: Binding<String>, title: String) {
@@ -30,7 +34,8 @@ struct SourceView: View {
             if showOutline {
                 CodeOutlineView(source: $text,
                                 selection: $selection,
-                                accessibilityIdentifier: "outline.db.source")
+                                accessibilityIdentifier: "outline.db.source",
+                                onNavigate: { _ in revealGeneration &+= 1 })
                     .frame(minWidth: 200, idealWidth: 280, maxWidth: .infinity)
             }
 
@@ -85,7 +90,8 @@ struct SourceView: View {
                     wordWrap: .constant(true),
                     showsLineNumbers: true,
                     highlightsSelectedLine: false,
-                    accessibilityIdentifier: "editor.db.source"
+                    accessibilityIdentifier: "editor.db.source",
+                    revealGeneration: revealGeneration
                 )
                 .frame(maxWidth: .infinity, minHeight: 100, idealHeight: 300,
                        maxHeight: .infinity, alignment: .topLeading)

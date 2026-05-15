@@ -18,25 +18,43 @@
 //
 
 import Foundation
+import OSLog
 import STPluginNeon  // re-exports SwiftTreeSitter
 import TreeSitterResource
 
 enum CodeSymbolExtractor {
 
+    private static let log = Logger(subsystem: "com.iliasazonov.macintora", category: "outline")
+
     /// Symbols defined directly in `source`, in source order. Pass an existing
     /// `tree` to avoid re-parsing; otherwise one is built via `SQLParserHelper`.
     static func symbols(in source: String, tree: SwiftTreeSitter.Tree? = nil) -> [CodeSymbol] {
         guard !source.isEmpty else { return [] }
-        guard let root = (tree ?? SQLParserHelper.parse(source)).rootNode else { return [] }
+        guard let root = (tree ?? SQLParserHelper.parse(source)).rootNode else {
+            log.debug("symbols: no root for \(source.utf16.count, privacy: .public) utf16 units")
+            return []
+        }
 
         let collector = Collector(source: source)
         visitTopLevel(root, with: collector)
+        log.debug("""
+            symbols: \(collector.symbols.count, privacy: .public) extracted from \
+            \(source.utf16.count, privacy: .public) utf16 units; \
+            root=\(root.nodeType ?? "?", privacy: .public) hasError=\(root.hasError, privacy: .public)
+            """)
         return collector.symbols
     }
 
     /// Walks `program`'s children, descending through the `statement` wrapper
     /// the grammar puts around top-level DDL. `statement` nesting is shallow in
     /// practice, so the recursion is bounded.
+    ///
+    /// Also handles the **error-recovery** shape: when the grammar can't parse
+    /// the package shell (typically because of constructs it doesn't model yet —
+    /// `TYPE … IS RECORD`, `CURSOR … IS …`, `SUBTYPE`, `… EXCEPTION;`),
+    /// tree-sitter flattens the body's members into direct children of an
+    /// `ERROR` root. Picking them up here means a package whose declarations
+    /// confuse the parser still gets its procedures and functions outlined.
     private static func visitTopLevel(_ node: SwiftTreeSitter.Node, with collector: Collector) {
         for index in 0..<node.namedChildCount {
             guard let child = node.namedChild(at: index) else { continue }
@@ -47,8 +65,16 @@ enum CodeSymbolExtractor {
                 collector.collectStandaloneProgram(child)
             case "statement", "block":
                 visitTopLevel(child, with: collector)
+            // Error-recovery: surfaced as siblings under an `ERROR` root.
+            case "package_procedure", "package_function",
+                 "plsql_subprogram_declaration", "plsql_declaration",
+                 "plsql_type_record", "plsql_type_table", "plsql_type_varray",
+                 "plsql_type_ref_cursor", "plsql_subtype_definition",
+                 "plsql_cursor_definition", "plsql_exception_declaration",
+                 "plsql_pragma":
+                collector.handlePackageMember(child)
             default:
-                continue   // other statements, ERROR, comments — nothing to outline
+                continue   // other statements, comments — nothing to outline
             }
         }
     }
@@ -81,23 +107,59 @@ enum CodeSymbolExtractor {
         func collectPackageMembers(of package: SwiftTreeSitter.Node) {
             for index in 0..<package.namedChildCount {
                 guard let member = package.namedChild(at: index) else { continue }
-                switch member.nodeType {
-                case "package_procedure":
-                    add(named: member, kind: .procedure, detail: paramsDetail(of: member), isDeclaration: false)
-                case "package_function":
-                    add(named: member, kind: .function, detail: functionDetail(of: member), isDeclaration: false)
-                case "plsql_subprogram_declaration":
-                    let isFunction = member.child(byFieldName: "return_type") != nil
-                        || hasNamedChild(member, ofType: "keyword_function")
-                    add(named: member,
-                        kind: isFunction ? .function : .procedure,
-                        detail: isFunction ? functionDetail(of: member) : paramsDetail(of: member),
-                        isDeclaration: true)
-                case "plsql_declaration":
-                    addDeclaration(member)
-                default:
-                    continue
-                }
+                handlePackageMember(member)
+            }
+        }
+
+        /// Dispatches a single package member by node type. Shared between the
+        /// well-formed walk (`collectPackageMembers`) and the ERROR-root
+        /// recovery walk in `visitTopLevel`.
+        func handlePackageMember(_ member: SwiftTreeSitter.Node) {
+            switch member.nodeType {
+            case "package_procedure":
+                add(named: member, kind: .procedure, detail: paramsDetail(of: member), isDeclaration: false)
+            case "package_function":
+                add(named: member, kind: .function, detail: functionDetail(of: member), isDeclaration: false)
+            case "plsql_subprogram_declaration":
+                let isFunction = member.child(byFieldName: "return_type") != nil
+                    || hasNamedChild(member, ofType: "keyword_function")
+                add(named: member,
+                    kind: isFunction ? .function : .procedure,
+                    detail: isFunction ? functionDetail(of: member) : paramsDetail(of: member),
+                    isDeclaration: true)
+            case "plsql_declaration":
+                addDeclaration(member)
+            case "plsql_type_record":
+                add(named: member, kind: .type, detail: "RECORD", isDeclaration: false)
+            case "plsql_type_table":
+                let elem = member.child(byFieldName: "element_type").flatMap(text(of:)).map(normalized)
+                add(named: member, kind: .type,
+                    detail: elem.map { "TABLE OF \($0)" } ?? "TABLE", isDeclaration: false)
+            case "plsql_type_varray":
+                let elem = member.child(byFieldName: "element_type").flatMap(text(of:)).map(normalized)
+                add(named: member, kind: .type,
+                    detail: elem.map { "VARRAY OF \($0)" } ?? "VARRAY", isDeclaration: false)
+            case "plsql_type_ref_cursor":
+                let returnType = member.child(byFieldName: "return_type").flatMap(text(of:)).map(normalized)
+                add(named: member, kind: .type,
+                    detail: returnType.map { "REF CURSOR RETURN \($0)" } ?? "REF CURSOR",
+                    isDeclaration: false)
+            case "plsql_subtype_definition":
+                let base = member.child(byFieldName: "base_type").flatMap(text(of:)).map(normalized)
+                add(named: member, kind: .type,
+                    detail: base.map { "SUBTYPE OF \($0)" } ?? "SUBTYPE", isDeclaration: false)
+            case "plsql_cursor_definition":
+                add(named: member, kind: .cursor,
+                    detail: paramsDetail(of: member), isDeclaration: false)
+            case "plsql_exception_declaration":
+                add(named: member, kind: .exception, detail: nil, isDeclaration: false)
+            case "plsql_pragma":
+                // Pragmas don't introduce navigable names of their own (the
+                // identifier after PRAGMA is the directive, not a symbol). We
+                // still emit it so the user sees what's there.
+                add(named: member, kind: .pragma, detail: nil, isDeclaration: false)
+            default:
+                break
             }
         }
 

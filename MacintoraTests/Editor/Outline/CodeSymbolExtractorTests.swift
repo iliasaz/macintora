@@ -134,6 +134,32 @@ final class CodeSymbolExtractorTests: XCTestCase {
         XCTAssertTrue(names.contains("is_ok"))
     }
 
+    func test_packageBody_recoversMembers_whenShellFailsToParse() throws {
+        // When tree-sitter can't complete the `create_package_body` rule
+        // (e.g. PIE_C4_DSL: the body's first few functions use constructs the
+        // grammar doesn't fully model — user-defined return types, PIPE ROW,
+        // etc. — so the wrapper rule never resolves), the parser falls back
+        // to recovery and emits the body's members as siblings of the header
+        // tokens under an `ERROR` root. The outline must still find them.
+        //
+        // Minimal in-grammar repro: a CREATE PACKAGE BODY that's missing the
+        // closing `END;` produces the same flattened shape (verified via the
+        // PIE_C4_DSL diagnostic test).
+        let source = """
+        create or replace package body pkg as
+          function f return number as begin return 1; end f;
+          procedure p as begin null; end p;
+        """
+        // Sanity: confirm the fixture really does land on the recovery path.
+        let root = SQLParserHelper.parse(source).rootNode
+        XCTAssertEqual(root?.nodeType, "ERROR",
+                       "test fixture must reproduce the ERROR-root recovery shape")
+
+        let symbols = CodeSymbolExtractor.symbols(in: source)
+        XCTAssertEqual(symbols.map(\.name), ["f", "p"])
+        XCTAssertEqual(symbols.map(\.kind), [.function, .procedure])
+    }
+
     // MARK: - Standalone subprogram
 
     func test_standaloneFunction_listsItselfAndLocals() {

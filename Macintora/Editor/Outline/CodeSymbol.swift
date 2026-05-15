@@ -18,9 +18,16 @@ struct CodeSymbol: Identifiable, Hashable, Sendable {
         case function
         case variable
         case constant
+        case type        // TYPE … IS RECORD/TABLE/VARRAY/REF CURSOR; also SUBTYPE
+        case cursor      // CURSOR … IS …
+        case exception   // name EXCEPTION;
+        case pragma      // PRAGMA …;
 
         /// Order the outline groups symbols in (members first, then state).
-        static let displayOrder: [Kind] = [.procedure, .function, .variable, .constant]
+        static let displayOrder: [Kind] = [
+            .procedure, .function, .type, .cursor, .exception,
+            .variable, .constant, .pragma,
+        ]
 
         /// Short uppercase tag shown in the row badge.
         var badge: String {
@@ -29,6 +36,10 @@ struct CodeSymbol: Identifiable, Hashable, Sendable {
             case .function:  "FUNC"
             case .variable:  "VAR"
             case .constant:  "CONST"
+            case .type:      "TYPE"
+            case .cursor:    "CUR"
+            case .exception: "EXC"
+            case .pragma:    "PRAG"
             }
         }
 
@@ -39,6 +50,10 @@ struct CodeSymbol: Identifiable, Hashable, Sendable {
             case .function:  "Functions"
             case .variable:  "Variables"
             case .constant:  "Constants"
+            case .type:      "Types"
+            case .cursor:    "Cursors"
+            case .exception: "Exceptions"
+            case .pragma:    "Pragmas"
             }
         }
 
@@ -48,6 +63,10 @@ struct CodeSymbol: Identifiable, Hashable, Sendable {
             case .function:  "f.cursive"
             case .variable:  "diamond"
             case .constant:  "lock"
+            case .type:      "shippingbox"
+            case .cursor:    "tablecells"
+            case .exception: "exclamationmark.triangle"
+            case .pragma:    "tag"
             }
         }
 
@@ -60,6 +79,10 @@ struct CodeSymbol: Identifiable, Hashable, Sendable {
             case .function:  Color(red: 0x2D / 255, green: 0x94 / 255, blue: 0x60 / 255)
             case .variable:  .secondary
             case .constant:  Color(red: 0x19 / 255, green: 0x86 / 255, blue: 0x82 / 255)
+            case .type:      Color(red: 0x73 / 255, green: 0x5C / 255, blue: 0xB6 / 255)
+            case .cursor:    Color(red: 0x2E / 255, green: 0x7A / 255, blue: 0xB8 / 255)
+            case .exception: Color(red: 0xC3 / 255, green: 0x5A / 255, blue: 0x1A / 255)
+            case .pragma:    .secondary
             }
         }
     }

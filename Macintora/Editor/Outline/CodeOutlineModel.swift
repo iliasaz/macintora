@@ -15,12 +15,17 @@ import STPluginNeon  // re-exports SwiftTreeSitter
 @Observable
 final class CodeOutlineModel {
 
-    /// Scope chip above the symbol list.
+    /// Scope chip above the symbol list. Composite kinds (`.state`, `.types`)
+    /// collapse related raw kinds so the chip strip stays narrow.
     enum KindFilter: String, CaseIterable, Identifiable, Sendable {
         case all
         case procedures
         case functions
+        case types          // TYPE / SUBTYPE / REF CURSOR
+        case cursors        // CURSOR (with body)
+        case exceptions
         case state          // variables + constants
+        case pragmas
 
         var id: String { rawValue }
 
@@ -29,7 +34,11 @@ final class CodeOutlineModel {
             case .all:        "All"
             case .procedures: "Procs"
             case .functions:  "Funcs"
+            case .types:      "Types"
+            case .cursors:    "Cursors"
+            case .exceptions: "Excns"
             case .state:      "Vars"
+            case .pragmas:    "Pragmas"
             }
         }
 
@@ -38,7 +47,11 @@ final class CodeOutlineModel {
             case .all:        true
             case .procedures: kind == .procedure
             case .functions:  kind == .function
+            case .types:      kind == .type
+            case .cursors:    kind == .cursor
+            case .exceptions: kind == .exception
             case .state:      kind == .variable || kind == .constant
+            case .pragmas:    kind == .pragma
             }
         }
     }

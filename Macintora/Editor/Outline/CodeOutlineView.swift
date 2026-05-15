@@ -22,15 +22,22 @@ struct CodeOutlineView: View {
     /// Optional already-parsed tree for the initial pass; later edits re-parse.
     var tree: SwiftTreeSitter.Tree?
     var accessibilityIdentifier: String = "outline.code"
+    /// Fired after `navigate(to:)` has set `selection`. Hosts use it to bump
+    /// the editor's reveal-generation counter so that *repeat* clicks on the
+    /// same row still force a scroll-and-flash even though `selection` didn't
+    /// change.
+    var onNavigate: ((CodeSymbol) -> Void)?
 
     init(source: Binding<String>,
          selection: Binding<Range<String.Index>>,
          tree: SwiftTreeSitter.Tree? = nil,
-         accessibilityIdentifier: String = "outline.code") {
+         accessibilityIdentifier: String = "outline.code",
+         onNavigate: ((CodeSymbol) -> Void)? = nil) {
         self._source = source
         self._selection = selection
         self.tree = tree
         self.accessibilityIdentifier = accessibilityIdentifier
+        self.onNavigate = onNavigate
     }
 
     @State private var model = CodeOutlineModel()
@@ -105,6 +112,7 @@ struct CodeOutlineView: View {
     private func navigate(to symbol: CodeSymbol) {
         guard let range = EditorSelectionBridge.range(forUTF16: symbol.nameRange, in: source) else { return }
         selection = range
+        onNavigate?(symbol)
     }
 }
 

@@ -75,6 +75,11 @@ extension MacintoraEditorRepresentable {
         private var navigationHighlightRange: NSRange?
         private var navigationHighlightClearTask: Task<Void, Never>?
 
+        /// Last `revealGeneration` value observed from the SwiftUI side. Set
+        /// from `updateNSView`; used to detect host-requested reveals that
+        /// shouldn't be skipped just because `selection` didn't change.
+        var lastRevealGeneration: Int = 0
+
         init(text: Binding<String>, selection: Binding<Range<String.Index>>) {
             self._text = text
             self._selection = selection
