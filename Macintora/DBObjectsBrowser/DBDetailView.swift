@@ -330,10 +330,6 @@ private extension Field where Content == Text {
 
 // MARK: - Trigger accordion extras
 
-/// Inline chips appended to the collapsed accordion summary when the selected
-/// object is a trigger. Surfaces the two things you most often want to see at
-/// a glance without expanding — the trigger's type (e.g. "BEFORE EACH ROW")
-/// and whether it's currently enabled.
 private struct TriggerAccordionSummary: View {
     @FetchRequest private var triggers: FetchedResults<DBCacheTrigger>
 
@@ -361,10 +357,6 @@ private struct TriggerAccordionSummary: View {
     }
 }
 
-/// Trigger-specific fields rendered below the generic accordion grid when the
-/// accordion is expanded. Replaces the old `triggerForm` that used to sit
-/// between the header and the body source — putting it here keeps the trigger
-/// layout aligned with packages (header on top, tabbed source below).
 private struct TriggerAccordionExpanded: View {
     @FetchRequest private var triggers: FetchedResults<DBCacheTrigger>
 
