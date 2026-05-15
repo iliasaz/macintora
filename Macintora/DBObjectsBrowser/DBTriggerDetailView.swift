@@ -8,13 +8,8 @@
 import SwiftUI
 import CoreData
 
-private enum DBTriggerTab: String, CaseIterable, Codable {
-    case body
-}
-
 struct DBTriggerDetailView: View {
     @Environment(\.managedObjectContext) var context
-    @AppStorage("dbTriggerDetailSelectedTab") private var selectedTab: DBTriggerTab = .body
     @FetchRequest private var triggers: FetchedResults<DBCacheTrigger>
     @Binding var dbObject: DBCacheObject
 
@@ -33,17 +28,11 @@ struct DBTriggerDetailView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading) {
-            TabView(selection: $selectedTab) {
-                Tab("Body", systemImage: "doc.text.fill", value: DBTriggerTab.body) {
-                    SourceView(objName: $dbObject.name, text: bodyText, title: "Body")
-                        .padding(.vertical, 5)
-                }
-            }
-        }
-        .frame(minWidth: 200, idealWidth: 1000, maxWidth: .infinity,
-               idealHeight: 1000, maxHeight: .infinity)
-        .padding()
+        SourceView(objName: $dbObject.name, text: bodyText, title: "Body")
+            .padding(.vertical, 5)
+            .frame(minWidth: 200, idealWidth: 1000, maxWidth: .infinity,
+                   idealHeight: 1000, maxHeight: .infinity)
+            .padding()
     }
 }
 
