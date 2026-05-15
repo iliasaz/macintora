@@ -201,6 +201,9 @@ struct DBDetailAccordion: View {
                         if oracleType == .trigger {
                             TriggerAccordionSummary(name: dbObject.name, owner: dbObject.owner)
                         }
+                        if oracleType == .index {
+                            IndexAccordionSummary(name: dbObject.name, owner: dbObject.owner)
+                        }
                     }
                     Spacer(minLength: 0)
                     Text("⌘I")
@@ -225,6 +228,9 @@ struct DBDetailAccordion: View {
                     if oracleType == .trigger {
                         TriggerAccordionExpanded(name: dbObject.name, owner: dbObject.owner)
                     }
+                    if oracleType == .index {
+                        IndexAccordionExpanded(name: dbObject.name, owner: dbObject.owner)
+                    }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
@@ -244,9 +250,6 @@ private struct AccordionSummary: View {
             if let ddl = dbObject.lastDDLDate {
                 SummaryItem(label: "Last DDL", value: ddl.formatted(date: .abbreviated, time: .omitted))
             }
-            if OracleObjectType(rawValue: dbObject.type) == .index {
-                IndexAccordionSummaryExtras(dbObject: dbObject)
-            }
             HStack(spacing: 4) {
                 Circle()
                     .fill(dbObject.isValid ? Color.green : Color.red)
@@ -260,29 +263,30 @@ private struct AccordionSummary: View {
     }
 }
 
-private struct IndexAccordionSummaryExtras: View {
+private struct IndexAccordionSummary: View {
     @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
 
-    init(dbObject: DBCacheObject) {
+    init(name: String, owner: String) {
         _indexes = FetchRequest<DBCacheIndex>(
             sortDescriptors: [],
-            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner)
+            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", name, owner)
         )
     }
 
     var body: some View {
-        if let idx = indexes.first {
-            SummaryItem(label: "Rows", value: idx.numRows.formatted())
-            if let analyzed = idx.lastAnalyzed {
+        let idx = indexes.first
+        HStack(spacing: 14) {
+            SummaryItem(label: "Rows", value: idx?.numRows.formatted() ?? Constants.nullValue)
+            if let analyzed = idx?.lastAnalyzed {
                 SummaryItem(label: "Analyzed", value: analyzed.formatted(date: .abbreviated, time: .omitted))
             }
             HStack(spacing: 4) {
                 Text("Partitioned")
                     .foregroundStyle(.tertiary)
-                BoolIndicator(value: idx.isPartitioned)
-                    .font(.caption)
+                BoolIndicator(value: idx?.isPartitioned ?? false)
             }
         }
+        .font(.caption)
     }
 }
 
@@ -323,9 +327,6 @@ private struct AccordionExpanded: View {
             Field(label: "Valid") {
                 BoolIndicator(value: dbObject.isValid, trueColor: .green, falseColor: .red)
             }
-            if OracleObjectType(rawValue: dbObject.type) == .index {
-                IndexAccordionExpandedExtras(dbObject: dbObject)
-            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -333,26 +334,35 @@ private struct AccordionExpanded: View {
     }
 }
 
-private struct IndexAccordionExpandedExtras: View {
+private struct IndexAccordionExpanded: View {
     @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
 
-    init(dbObject: DBCacheObject) {
+    init(name: String, owner: String) {
         _indexes = FetchRequest<DBCacheIndex>(
             sortDescriptors: [],
-            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner)
+            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", name, owner)
         )
     }
 
+    private let columns = [GridItem(.flexible(), alignment: .topLeading),
+                           GridItem(.flexible(), alignment: .topLeading),
+                           GridItem(.flexible(), alignment: .topLeading),
+                           GridItem(.flexible(), alignment: .topLeading)]
+
     var body: some View {
-        if let idx = indexes.first {
+        let idx = indexes.first
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
             Field(label: "Partitioned") {
-                BoolIndicator(value: idx.isPartitioned)
+                BoolIndicator(value: idx?.isPartitioned ?? false)
             }
-            Field(label: "Row Count", value: idx.numRows.formatted())
+            Field(label: "Row Count", value: idx?.numRows.formatted() ?? Constants.nullValue)
             Field(label: "Last Analyzed",
-                  value: idx.lastAnalyzed?
+                  value: idx?.lastAnalyzed?
                     .formatted(date: .abbreviated, time: .shortened) ?? Constants.nullValue)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.secondary.opacity(0.04))
     }
 }
 
