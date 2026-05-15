@@ -78,13 +78,14 @@
 		498288F228B7DCB000A28B04 /* DBCacheSearchCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */; };
 		498288F428B7DCB000A28B04 /* FormField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DB28B7DCB000A28B04 /* FormField.swift */; };
 		498288F528B7DCB000A28B04 /* DBCacheListEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */; };
-		498288F628B7DCB000A28B04 /* DetailGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DD28B7DCB000A28B04 /* DetailGridView.swift */; };
 		498288F728B7DCB000A28B04 /* DBIndexDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DE28B7DCB000A28B04 /* DBIndexDetailView.swift */; };
 		498288F828B7DCB000A28B04 /* HostingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288DF28B7DCB000A28B04 /* HostingView.swift */; };
 		498288F928B7DCB000A28B04 /* DBCacheVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E028B7DCB000A28B04 /* DBCacheVM.swift */; };
 		498288FB28B7DCB000A28B04 /* FormattedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E228B7DCB000A28B04 /* FormattedView.swift */; };
 		498288FC28B7DCB000A28B04 /* DBSourceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E328B7DCB000A28B04 /* DBSourceDetailView.swift */; };
 		498288FD28B7DCB000A28B04 /* TableIndexListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E428B7DCB000A28B04 /* TableIndexListView.swift */; };
+		498288FE28B7DCB000A28B05 /* TableTableColumnsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288FF28B7DCB000A28B04 /* TableTableColumnsView.swift */; };
+		498288FF28B7DCB000A28B05 /* TableIndexColumnsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982880028B7DCB000A28B05 /* TableIndexColumnsView.swift */; };
 		498288FE28B7DCB000A28B04 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E528B7DCB000A28B04 /* Persistence.swift */; };
 		4982890128B7DCB000A28B04 /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498288E828B7DCB000A28B04 /* Queue.swift */; };
 		4982890528B7EF5E00A28B04 /* ConnectionDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4982890428B7EF5E00A28B04 /* ConnectionDetails.swift */; };
@@ -308,7 +309,6 @@
 		498288D928B7DCB000A28B04 /* DBCacheSearchCriteria.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheSearchCriteria.swift; sourceTree = "<group>"; };
 		498288DB28B7DCB000A28B04 /* FormField.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FormField.swift; sourceTree = "<group>"; };
 		498288DC28B7DCB000A28B04 /* DBCacheListEntryView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheListEntryView.swift; sourceTree = "<group>"; };
-		498288DD28B7DCB000A28B04 /* DetailGridView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DetailGridView.swift; sourceTree = "<group>"; };
 		498288DE28B7DCB000A28B04 /* DBIndexDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBIndexDetailView.swift; sourceTree = "<group>"; };
 		498288DF28B7DCB000A28B04 /* HostingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HostingView.swift; sourceTree = "<group>"; };
 		498288E028B7DCB000A28B04 /* DBCacheVM.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DBCacheVM.swift; sourceTree = "<group>"; };
@@ -410,6 +410,8 @@
 		49EAEFA828C93263008F0B80 /* DBTriggerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBTriggerDetailView.swift; sourceTree = "<group>"; };
 		49EAEFAA28C9331C008F0B80 /* SourceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceView.swift; sourceTree = "<group>"; };
 		49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTriggerListView.swift; sourceTree = "<group>"; };
+		498288FF28B7DCB000A28B04 /* TableTableColumnsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTableColumnsView.swift; sourceTree = "<group>"; };
+		4982880028B7DCB000A28B05 /* TableIndexColumnsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableIndexColumnsView.swift; sourceTree = "<group>"; };
 		49EB5E0B29528995003A0E23 /* DBCacheMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheMainView.swift; sourceTree = "<group>"; };
 		49EE000100000001 /* MacintoraSTTextViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacintoraSTTextViewTests.swift; sourceTree = "<group>"; };
 		49F481EF294A84A1005DC77F /* PersistencePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistencePreview.swift; sourceTree = "<group>"; };
@@ -547,7 +549,6 @@
 				498288E328B7DCB000A28B04 /* DBSourceDetailView.swift */,
 				49EAEFAA28C9331C008F0B80 /* SourceView.swift */,
 				498288D228B7DCB000A28B04 /* DBTableDetailView.swift */,
-				498288DD28B7DCB000A28B04 /* DetailGridView.swift */,
 				498288E228B7DCB000A28B04 /* FormattedView.swift */,
 				498288DB28B7DCB000A28B04 /* FormField.swift */,
 				498288D128B7DCB000A28B04 /* HorizontalLabelStyle.swift */,
@@ -559,6 +560,8 @@
 				498288E428B7DCB000A28B04 /* TableIndexListView.swift */,
 				498288D028B7DCB000A28B04 /* WindowModifier.swift */,
 				49EAEFC628CD5822008F0B80 /* TableTriggerListView.swift */,
+				498288FF28B7DCB000A28B04 /* TableTableColumnsView.swift */,
+				4982880028B7DCB000A28B05 /* TableIndexColumnsView.swift */,
 				49B0C0DE0000000000000020 /* DBBrowserInputMapper.swift */,
 				49B0C0DE0000000000000021 /* DBBrowserWindowRegistry.swift */,
 				49B0C0DE0000000000000022 /* DBBrowserCommandsBox.swift */,
@@ -1125,6 +1128,8 @@
 				49EAEFA728C83685008F0B80 /* DBCacheTrigger+CoreDataProperties.swift in Sources */,
 				4982889728B1C41700A28B04 /* Formatter.swift in Sources */,
 				49EAEFC728CD5822008F0B80 /* TableTriggerListView.swift in Sources */,
+				498288FE28B7DCB000A28B05 /* TableTableColumnsView.swift in Sources */,
+				498288FF28B7DCB000A28B05 /* TableIndexColumnsView.swift in Sources */,
 				498288F528B7DCB000A28B04 /* DBCacheListEntryView.swift in Sources */,
 				498288E928B7DCB000A28B04 /* WindowModifier.swift in Sources */,
 				4947FEAC2870F8E400AEBE60 /* BindVarInputView.swift in Sources */,
@@ -1134,7 +1139,6 @@
 				498288F928B7DCB000A28B04 /* DBCacheVM.swift in Sources */,
 				4982890528B7EF5E00A28B04 /* ConnectionDetails.swift in Sources */,
 				4999469427E1777700C62AB7 /* LogView.swift in Sources */,
-				498288F628B7DCB000A28B04 /* DetailGridView.swift in Sources */,
 				4982890D28B95BC100A28B04 /* SettingsView.swift in Sources */,
 				4944594E28D539D2007AB2BF /* SBVM.swift in Sources */,
 				49B55F60270ADFE300CFB3C7 /* MainModel.swift in Sources */,
