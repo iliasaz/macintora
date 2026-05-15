@@ -244,6 +244,9 @@ private struct AccordionSummary: View {
             if let ddl = dbObject.lastDDLDate {
                 SummaryItem(label: "Last DDL", value: ddl.formatted(date: .abbreviated, time: .omitted))
             }
+            if OracleObjectType(rawValue: dbObject.type) == .index {
+                IndexAccordionSummaryExtras(dbObject: dbObject)
+            }
             HStack(spacing: 4) {
                 Circle()
                     .fill(dbObject.isValid ? Color.green : Color.red)
@@ -254,6 +257,32 @@ private struct AccordionSummary: View {
             }
         }
         .font(.caption)
+    }
+}
+
+private struct IndexAccordionSummaryExtras: View {
+    @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
+
+    init(dbObject: DBCacheObject) {
+        _indexes = FetchRequest<DBCacheIndex>(
+            sortDescriptors: [],
+            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner)
+        )
+    }
+
+    var body: some View {
+        if let idx = indexes.first {
+            SummaryItem(label: "Rows", value: idx.numRows.formatted())
+            if let analyzed = idx.lastAnalyzed {
+                SummaryItem(label: "Analyzed", value: analyzed.formatted(date: .abbreviated, time: .omitted))
+            }
+            HStack(spacing: 4) {
+                Text("Partitioned")
+                    .foregroundStyle(.tertiary)
+                BoolIndicator(value: idx.isPartitioned)
+                    .font(.caption)
+            }
+        }
     }
 }
 
@@ -294,10 +323,36 @@ private struct AccordionExpanded: View {
             Field(label: "Valid") {
                 BoolIndicator(value: dbObject.isValid, trueColor: .green, falseColor: .red)
             }
+            if OracleObjectType(rawValue: dbObject.type) == .index {
+                IndexAccordionExpandedExtras(dbObject: dbObject)
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(Color.secondary.opacity(0.04))
+    }
+}
+
+private struct IndexAccordionExpandedExtras: View {
+    @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
+
+    init(dbObject: DBCacheObject) {
+        _indexes = FetchRequest<DBCacheIndex>(
+            sortDescriptors: [],
+            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", dbObject.name, dbObject.owner)
+        )
+    }
+
+    var body: some View {
+        if let idx = indexes.first {
+            Field(label: "Partitioned") {
+                BoolIndicator(value: idx.isPartitioned)
+            }
+            Field(label: "Row Count", value: idx.numRows.formatted())
+            Field(label: "Last Analyzed",
+                  value: idx.lastAnalyzed?
+                    .formatted(date: .abbreviated, time: .shortened) ?? Constants.nullValue)
+        }
     }
 }
 
