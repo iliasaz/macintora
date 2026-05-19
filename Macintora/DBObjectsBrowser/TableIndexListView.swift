@@ -12,12 +12,13 @@ struct TableIndexListView: View {
     @Environment(\.managedObjectContext) var context
     @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
     private var dbObject: DBCacheObject
+    @Binding var childSelection: DBChildSelection?
     @State private var selectedIndexRow: DBCacheIndex.ID?
 
-
-    init(dbObject: DBCacheObject) {
+    init(dbObject: DBCacheObject, childSelection: Binding<DBChildSelection?>) {
         self.dbObject = dbObject
         _indexes = FetchRequest<DBCacheIndex>(sortDescriptors: [NSSortDescriptor(key: "name_", ascending: true)], predicate: NSPredicate.init(format: "tableName_ = %@ and tableOwner_ = %@", dbObject.name, dbObject.owner))
+        _childSelection = childSelection
     }
 
     var body: some View {
@@ -41,12 +42,10 @@ struct TableIndexListView: View {
             TableColumn("Degree", value: \.degree )
         }
         .font(.system(.body, design: .monospaced))
+        .onChange(of: selectedIndexRow) { _, newID in
+            childSelection = newID
+                .flatMap { id in indexes.first { $0.id == id } }
+                .map(DBChildSelection.index)
+        }
     }
-
 }
-
-//struct TableIndexListView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        TableIndexListView()
-//    }
-//}

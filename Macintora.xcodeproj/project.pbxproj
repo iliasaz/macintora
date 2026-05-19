@@ -112,6 +112,7 @@
 		49B0C0DE0000000000000136 /* DBBrowserMenuUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000036 /* DBBrowserMenuUITests.swift */; };
 		49B0C0DE0000000000000137 /* DBBrowserPinnedStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000037 /* DBBrowserPinnedStoreTests.swift */; };
 		49B0C0DE0000000000000138 /* DBBrowserRecentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000038 /* DBBrowserRecentsTests.swift */; };
+		49B1AAF82FBC1B9D00CDB57E /* TableTableColumnsSortTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B1AAF72FBC1B9D00CDB57E /* TableTableColumnsSortTests.swift */; };
 		49B55F32270ADD8B00CFB3C7 /* MacintoraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */; };
 		49B55F36270ADD8B00CFB3C7 /* MainDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */; };
 		49B55F38270ADD8D00CFB3C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49B55F37270ADD8D00CFB3C7 /* Assets.xcassets */; };
@@ -343,6 +344,7 @@
 		49B0C0DE0000000000000036 /* DBBrowserMenuUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserMenuUITests.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000037 /* DBBrowserPinnedStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserPinnedStoreTests.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000038 /* DBBrowserRecentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserRecentsTests.swift; sourceTree = "<group>"; };
+		49B1AAF72FBC1B9D00CDB57E /* TableTableColumnsSortTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTableColumnsSortTests.swift; sourceTree = "<group>"; };
 		49B55F2E270ADD8B00CFB3C7 /* Macintora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Macintora.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		49B55F31270ADD8B00CFB3C7 /* MacintoraApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MacintoraApp.swift; sourceTree = "<group>"; };
 		49B55F35270ADD8B00CFB3C7 /* MainDocumentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainDocumentView.swift; sourceTree = "<group>"; };
@@ -665,6 +667,7 @@
 				49B0C0DE0000000000000035 /* DBCacheObjectFetchRequestTests.swift */,
 				49B0C0DE0000000000000037 /* DBBrowserPinnedStoreTests.swift */,
 				49B0C0DE0000000000000038 /* DBBrowserRecentsTests.swift */,
+				49B1AAF72FBC1B9D00CDB57E /* TableTableColumnsSortTests.swift */,
 			);
 			path = DBBrowser;
 			sourceTree = "<group>";
@@ -1081,6 +1084,7 @@
 				AA00001D0000000000000000 /* DocumentFlowTests.swift in Sources */,
 				AA0000380000000000000000 /* SavedConnectionTests.swift in Sources */,
 				490E96D22FA4256F00DDF37F /* ScriptOutputModelTests.swift in Sources */,
+				49B1AAF82FBC1B9D00CDB57E /* TableTableColumnsSortTests.swift in Sources */,
 				AA00003A0000000000000000 /* JDBCURLParserTests.swift in Sources */,
 				490E96E22FA429FB00DDF37F /* ScriptLoaderTests.swift in Sources */,
 				AA00003C0000000000000000 /* KeychainServiceTests.swift in Sources */,

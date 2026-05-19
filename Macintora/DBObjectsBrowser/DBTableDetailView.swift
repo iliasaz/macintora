@@ -22,11 +22,13 @@ struct DBTableDetailView: View {
     @AppStorage("dbTableDetailSelectedTab") private var selectedTab: DBTableDetailTab = .columns
     @FetchRequest private var tables: FetchedResults<DBCacheTable>
     @Binding var dbObject: DBCacheObject
+    @Binding var childSelection: DBChildSelection?
     @State var cursorPosition = (0,0)
     @State private var selection: NSRange?
 
-    init(dbObject: Binding<DBCacheObject>) {
+    init(dbObject: Binding<DBCacheObject>, childSelection: Binding<DBChildSelection?>) {
         self._dbObject = dbObject
+        self._childSelection = childSelection
         _tables = FetchRequest<DBCacheTable>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
     }
 
@@ -35,18 +37,18 @@ struct DBTableDetailView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab("Columns", systemImage: "rectangle.split.3x1", value: DBTableDetailTab.columns) {
-                TableTableColumnsView(dbObject: dbObject)
+                TableTableColumnsView(dbObject: dbObject, childSelection: $childSelection)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
 
             if !(tables.first?.isView ?? false) {
                 Tab("Indexes", systemImage: "list.bullet.indent", value: DBTableDetailTab.indexes) {
-                    TableIndexListView(dbObject: dbObject)
+                    TableIndexListView(dbObject: dbObject, childSelection: $childSelection)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
 
                 Tab("Triggers", systemImage: "bolt", value: DBTableDetailTab.triggers) {
-                    TableTriggerListView(dbObject: dbObject)
+                    TableTriggerListView(dbObject: dbObject, childSelection: $childSelection)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
             }
@@ -57,6 +59,7 @@ struct DBTableDetailView: View {
                 }
             }
         }
+        .onChange(of: selectedTab) { childSelection = nil }
     }
 
     private var viewSqlTab: some View {
@@ -89,16 +92,3 @@ struct DBTableDetailView: View {
         }
     }
 }
-
-//struct DBTableDetailView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        var cache = DBCacheVM.init(preview: true)
-//        let objCache = DBCacheObject(context: cache.persistenceController.container.viewContext)
-//        objCache.owner = "OWNER"
-//        objCache.name = "NAME"
-//        objCache.type = "TABLE"
-//        objCache.lastDDLDate = .now
-//        return DBTableDetailView(dbObject: objCache)
-//            .environment(\.managedObjectContext, cache.persistenceController.container.viewContext)
-//    }
-//}
