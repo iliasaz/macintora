@@ -30,7 +30,7 @@ struct DBCacheInputValue: Hashable, Codable, Equatable {
 
     /// Backward-compatible decoding: scenes persisted before this version lack
     /// the new fields; treat absent keys as nil rather than throwing.
-    init(from decoder: Decoder) throws {
+    init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         mainConnection     = try  c.decode(MainConnection.self,   forKey: .mainConnection)
         selectedOwner      = try? c.decodeIfPresent(String.self,   forKey: .selectedOwner)      ?? nil
@@ -241,7 +241,7 @@ struct DBCacheMainView: View {
         case .editSource:
             Task(priority: .background) {
                 if let url = await cache.editSource(dbObject: obj) {
-                    await MainActor.run { NSWorkspace.shared.open(url) }
+                    NSWorkspace.shared.open(url)
                 }
             }
         }
