@@ -16,23 +16,16 @@ private enum DBIndexTab: String, CaseIterable, Codable {
 struct DBIndexDetailView: View {
     @Environment(\.managedObjectContext) var context
     @AppStorage("dbIndexDetailSelectedTab") private var selectedTab: DBIndexTab = .columns
-    @FetchRequest private var columns: FetchedResults<DBCacheIndexColumn>
     @Binding var dbObject: DBCacheObject
-
-    let columnLabels = ["position", "columnName", "isDescending", "length"]
-    let booleanColumnLabels = ["isDescending"]
-    var columnSortFn = { (lhs: NSManagedObject, rhs: NSManagedObject) in (lhs as! DBCacheIndexColumn).position < (rhs as! DBCacheIndexColumn).position }
 
     init(dbObject: Binding<DBCacheObject>) {
         self._dbObject = dbObject
-        _columns = FetchRequest<DBCacheIndexColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "indexName_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
     }
 
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab("Columns", systemImage: "rectangle.split.3x1", value: DBIndexTab.columns) {
-                DetailGridView(rows: Array(columns).sorted(by: columnSortFn), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
-                    .id(dbObject.id)
+                TableIndexColumnsView(dbObject: dbObject)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
 

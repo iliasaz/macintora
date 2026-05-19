@@ -325,4 +325,17 @@ class SessionViewCoordinator: NSObject, nonisolated NSTableViewDelegate, nonisol
 }
 
 
+class CheckBox: NSButton {
+    var isUserInteractionEnabled = false
+    @objc public var checked: Bool {
+        get { return state == NSControl.StateValue.on }
+        set { state = newValue ? NSControl.StateValue.on : .off }
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        return isUserInteractionEnabled ? super.hitTest(point) : nil
+    }
+}
+
+
 

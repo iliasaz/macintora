@@ -21,19 +21,13 @@ struct DBTableDetailView: View {
     @Environment(\.managedObjectContext) var context
     @AppStorage("dbTableDetailSelectedTab") private var selectedTab: DBTableDetailTab = .columns
     @FetchRequest private var tables: FetchedResults<DBCacheTable>
-    @FetchRequest private var columns: FetchedResults<DBCacheTableColumn>
     @Binding var dbObject: DBCacheObject
     @State var cursorPosition = (0,0)
     @State private var selection: NSRange?
 
-    let columnLabels = ["columnID", "columnName", "dataType", "dataTypeMod", "dataTypeOwner", "length", "precision", "scale", "isNullable", "numNulls", "numDistinct", "isIdentity", "isHidden", "isVirtual", "isSysGen", "defaultValue","internalColumnID", ]
-    let booleanColumnLabels = ["isNullable", "isHidden", "isIdentity", "isSysGen", "isVirtual"]
-    var columnSortFn = { (lhs: NSManagedObject, rhs: NSManagedObject) in (lhs as! DBCacheTableColumn).internalColumnID < (rhs as! DBCacheTableColumn).internalColumnID }
-
     init(dbObject: Binding<DBCacheObject>) {
         self._dbObject = dbObject
         _tables = FetchRequest<DBCacheTable>(sortDescriptors: [], predicate: NSPredicate.init(format: "name_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
-        _columns = FetchRequest<DBCacheTableColumn>(sortDescriptors: [], predicate: NSPredicate.init(format: "tableName_ = %@ and owner_ = %@", dbObject.name.wrappedValue, dbObject.owner.wrappedValue))
     }
 
     var sqlText: String { tables.first?.sqltext ?? "" }
@@ -41,8 +35,7 @@ struct DBTableDetailView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab("Columns", systemImage: "rectangle.split.3x1", value: DBTableDetailTab.columns) {
-                DetailGridView(rows: Array(columns).sorted(by: columnSortFn), columnLabels: columnLabels, booleanColumnLabels: booleanColumnLabels, rowSortFn: columnSortFn)
-                    .id(dbObject.id)
+                TableTableColumnsView(dbObject: dbObject)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
 
