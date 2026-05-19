@@ -12,6 +12,13 @@ struct SettingsView: View {
     private enum Tabs: Hashable {
         case editor, browser, appearance, connections
     }
+
+    // Keep the Settings window at a consistent, usable size across tabs.
+    // Without this, the window resizes to fit the active pane (e.g. the
+    // single-picker Appearance tab) and the tab strip becomes hard to use.
+    private static let minPaneWidth: CGFloat = 760
+    private static let minPaneHeight: CGFloat = 500
+
     var body: some View {
         TabView {
             EditorSettings()
@@ -36,6 +43,7 @@ struct SettingsView: View {
                 }
                 .tag(Tabs.connections)
         }
+        .frame(minWidth: Self.minPaneWidth, minHeight: Self.minPaneHeight)
     }
 }
 
