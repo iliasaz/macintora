@@ -4,21 +4,25 @@
 //
 //  Created by Ilia Sazonov on 8/31/22.
 //
-//  v2 layout (design B picks consolidated):
+//  Layout:
 //   ┌──────────────────────────────────────────────────────────┐
-//   │  icon + qualified name              [Edit Source][↻][⌘I] │  ← header strip
-//   ├──────────────────────────────────────────────────────────┤
-//   │  ▶  Object details · Owner / ID / Last DDL · ● Valid      │  ← collapsed accordion
+//   │  icon + qualified name      [Edit Source][↻][Inspector ⌘I]│  ← header strip
 //   ├──────────────────────────────────────────────────────────┤
 //   │  ┌──────────────────────────┐  Tabs:                      │
-//   │  │ Columns content         │   Columns · Indexes ·        │  ← top-level tabs
-//   │  │ (gets the room)         │   Triggers · SQL             │
-//   │  └──────────────────────────┘                              │
+//   │  │ Content                  │   Columns · Indexes ·       │
+//   │  │ (gets the room)          │   Triggers · SQL            │
+//   │  └──────────────────────────┘                             │
 //   └──────────────────────────────────────────────────────────┘
 //                                              + right Inspector
+//   The inspector is the single home for object-level metadata
+//   (replacing the older collapsible "Object details" accordion).
+//   When a row is selected inside a sub-tab (Columns, Indexes,
+//   Triggers), the inspector swaps to that child's detail.
+//
 
 import SwiftUI
 import os
+import AppKit
 
 /// `Tab` retained as a type for back-compat with persisted `DBCacheInputValue`
 /// payloads but the dual Main/Details tab split is gone.
@@ -27,11 +31,20 @@ enum DBDetailTab: String, Codable, Hashable, CaseIterable, Sendable {
     case details
 }
 
+/// Unified child-row selection for table sub-tabs. The inspector dispatches on
+/// this to show a row-specific detail; when `nil` it shows object-level info
+/// for the current `dbObject`.
+enum DBChildSelection {
+    case column(DBCacheTableColumn)
+    case index(DBCacheIndex)
+    case trigger(DBCacheTrigger)
+}
+
 struct DBDetailView: View {
     @Binding var dbObject: DBCacheObject
     @EnvironmentObject private var cache: DBCacheVM
-    @AppStorage("dbDetailAccordionOpen") private var accordionOpen = false
     @AppStorage("dbDetailInspectorOpen") private var inspectorOpen = true
+    @State private var childSelection: DBChildSelection?
 
     var body: some View {
         // Inline right-rail composition. We're not using `.inspector` here
@@ -42,29 +55,27 @@ struct DBDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 DBDetailViewHeader(
                     dbObject: $dbObject,
-                    inspectorOpen: $inspectorOpen,
-                    accordionOpen: $accordionOpen
+                    inspectorOpen: $inspectorOpen
                 )
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
 
                 Divider()
 
-                DBDetailAccordion(dbObject: $dbObject, isOpen: $accordionOpen)
-
-                DBDetailContent(dbObject: $dbObject)
+                DBDetailContent(dbObject: $dbObject, childSelection: $childSelection)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if inspectorOpen {
                 Divider()
-                DBDetailInspectorView(dbObject: $dbObject)
+                DBDetailInspectorView(dbObject: $dbObject, childSelection: $childSelection)
                     .frame(width: 280)
-                    .background(.regularMaterial)
+                    .background(SidebarVisualEffect())
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
         .animation(.easeInOut(duration: 0.18), value: inspectorOpen)
+        .onChange(of: dbObject.objectId) { childSelection = nil }
     }
 }
 
@@ -73,7 +84,6 @@ struct DBDetailView: View {
 struct DBDetailViewHeader: View {
     @Binding var dbObject: DBCacheObject
     @Binding var inspectorOpen: Bool
-    @Binding var accordionOpen: Bool
     @State private var isRefreshing = false
     @State private var isLoadingSource = false
     @EnvironmentObject private var cache: DBCacheVM
@@ -132,12 +142,18 @@ struct DBDetailViewHeader: View {
                 ProgressView().controlSize(.small)
             }
 
-            Button("Inspector", systemImage: "sidebar.right") {
+            Button {
                 inspectorOpen.toggle()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "sidebar.right")
+                    Text("Inspector")
+                    KeyBadge(label: "\u{2318}I")
+                }
             }
             .buttonStyle(.borderless)
-            .keyboardShortcut("i", modifiers: [.option, .command])
-            .help("Toggle Inspector (⌥⌘I)")
+            .keyboardShortcut("i", modifiers: [.command])
+            .help("Toggle Inspector (\u{2318}I)")
         }
     }
 
@@ -169,315 +185,49 @@ struct DBDetailViewHeader: View {
     }
 }
 
-// MARK: - Accordion ("Object details")
-
-/// Collapsed: one-line summary strip. Expanded: 4-column grid of metadata.
-/// Default state is collapsed because Columns/Source typically deserves the
-/// space; users open the accordion when they specifically want metadata.
-struct DBDetailAccordion: View {
-    @Binding var dbObject: DBCacheObject
-    @Binding var isOpen: Bool
-
-    private var oracleType: OracleObjectType {
-        OracleObjectType(rawValue: dbObject.type) ?? .unknown
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.18)) { isOpen.toggle() }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: isOpen ? "chevron.down" : "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 12)
-                    Text("Object details")
-                        .font(.callout)
-                        .bold()
-                    if !isOpen {
-                        AccordionSummary(dbObject: dbObject)
-                            .padding(.leading, 6)
-                        if oracleType == .trigger {
-                            TriggerAccordionSummary(name: dbObject.name, owner: dbObject.owner)
-                        }
-                        if oracleType == .index {
-                            IndexAccordionSummary(name: dbObject.name, owner: dbObject.owner)
-                        }
-                    }
-                    Spacer(minLength: 0)
-                    Text("⌘I")
-                        .font(.system(size: 10, design: .monospaced))
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1)
-                        .background(RoundedRectangle(cornerRadius: 3).fill(Color.secondary.opacity(0.12)))
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .keyboardShortcut("i", modifiers: [.command])
-            .background(Color.secondary.opacity(0.06))
-
-            if isOpen {
-                VStack(spacing: 0) {
-                    AccordionExpanded(dbObject: dbObject)
-                    if oracleType == .trigger {
-                        TriggerAccordionExpanded(name: dbObject.name, owner: dbObject.owner)
-                    }
-                    if oracleType == .index {
-                        IndexAccordionExpanded(name: dbObject.name, owner: dbObject.owner)
-                    }
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
-            Divider()
-        }
-    }
-}
-
-private struct AccordionSummary: View {
-    let dbObject: DBCacheObject
-
-    var body: some View {
-        HStack(spacing: 14) {
-            SummaryItem(label: "Owner", value: dbObject.owner)
-            SummaryItem(label: "ID", value: dbObject.objectId.formatted(.number.grouping(.never)))
-            if let ddl = dbObject.lastDDLDate {
-                SummaryItem(label: "Last DDL", value: ddl.formatted(date: .abbreviated, time: .omitted))
-            }
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(dbObject.isValid ? Color.green : Color.red)
-                    .frame(width: 6, height: 6)
-                Text(dbObject.isValid ? "Valid" : "Invalid")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .font(.caption)
-    }
-}
-
-private struct IndexAccordionSummary: View {
-    @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
-
-    init(name: String, owner: String) {
-        _indexes = FetchRequest<DBCacheIndex>(
-            sortDescriptors: [],
-            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", name, owner)
-        )
-    }
-
-    var body: some View {
-        let idx = indexes.first
-        HStack(spacing: 14) {
-            SummaryItem(label: "Rows", value: idx?.numRows.formatted() ?? Constants.nullValue)
-            if let analyzed = idx?.lastAnalyzed {
-                SummaryItem(label: "Analyzed", value: analyzed.formatted(date: .abbreviated, time: .omitted))
-            }
-            HStack(spacing: 4) {
-                Text("Partitioned")
-                    .foregroundStyle(.tertiary)
-                BoolIndicator(value: idx?.isPartitioned ?? false)
-            }
-        }
-        .font(.caption)
-    }
-}
-
-private struct SummaryItem: View {
+/// Compact monospaced key-shortcut badge (e.g. "⌘I"). Renders the same chip
+/// styling that used to live next to the dropped "Object details" accordion.
+struct KeyBadge: View {
     let label: String
-    let value: String
 
     var body: some View {
-        HStack(spacing: 4) {
-            Text(label)
-                .foregroundStyle(.tertiary)
-            Text(value)
-                .foregroundStyle(.secondary)
-        }
+        Text(label)
+            .font(.system(size: 10, design: .monospaced))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(RoundedRectangle(cornerRadius: 3).fill(Color.secondary.opacity(0.12)))
+            .foregroundStyle(.tertiary)
     }
 }
 
-private struct AccordionExpanded: View {
-    let dbObject: DBCacheObject
-
-    private let columns = [GridItem(.flexible(), alignment: .topLeading),
-                           GridItem(.flexible(), alignment: .topLeading),
-                           GridItem(.flexible(), alignment: .topLeading),
-                           GridItem(.flexible(), alignment: .topLeading)]
-
-    var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
-            Field(label: "Owner", value: dbObject.owner)
-            Field(label: "Object ID", value: dbObject.objectId.formatted(.number.grouping(.never)))
-            Field(label: "Created",
-                  value: dbObject.createDate?
-                    .formatted(date: .abbreviated, time: .shortened) ?? Constants.nullValue)
-            Field(label: "Last DDL",
-                  value: dbObject.lastDDLDate?
-                    .formatted(date: .abbreviated, time: .shortened) ?? Constants.nullValue)
-            Field(label: "Edition", value: dbObject.editionName ?? Constants.nullValue)
-            Field(label: "Editionable", value: dbObject.isEditionable ? "Yes" : "No")
-            Field(label: "Valid") {
-                BoolIndicator(value: dbObject.isValid, trueColor: .green, falseColor: .red)
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.secondary.opacity(0.04))
-    }
-}
-
-private struct IndexAccordionExpanded: View {
-    @FetchRequest private var indexes: FetchedResults<DBCacheIndex>
-
-    init(name: String, owner: String) {
-        _indexes = FetchRequest<DBCacheIndex>(
-            sortDescriptors: [],
-            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", name, owner)
-        )
+/// `.sidebar` material backed by NSVisualEffectView so the inspector matches
+/// the translucent vibrancy of the navigation sidebar instead of the flat
+/// `.regularMaterial` panel look. `Material.bar` is the closest SwiftUI-native
+/// option but reads as a toolbar; the sidebar material is what we actually
+/// want here.
+struct SidebarVisualEffect: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let v = NSVisualEffectView()
+        v.material = .sidebar
+        v.blendingMode = .behindWindow
+        v.state = .followsWindowActiveState
+        return v
     }
 
-    private let columns = [GridItem(.flexible(), alignment: .topLeading),
-                           GridItem(.flexible(), alignment: .topLeading),
-                           GridItem(.flexible(), alignment: .topLeading),
-                           GridItem(.flexible(), alignment: .topLeading)]
-
-    var body: some View {
-        let idx = indexes.first
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
-            Field(label: "Partitioned") {
-                BoolIndicator(value: idx?.isPartitioned ?? false)
-            }
-            Field(label: "Row Count", value: idx?.numRows.formatted() ?? Constants.nullValue)
-            Field(label: "Last Analyzed",
-                  value: idx?.lastAnalyzed?
-                    .formatted(date: .abbreviated, time: .shortened) ?? Constants.nullValue)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.secondary.opacity(0.04))
-    }
-}
-
-private struct Field<Content: View>: View {
-    let label: String
-    @ViewBuilder let content: () -> Content
-
-    init(label: String, @ViewBuilder content: @escaping () -> Content) {
-        self.label = label
-        self.content = content
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased())
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(.tertiary)
-                .kerning(0.4)
-            content()
-                .font(.callout)
-        }
-    }
-}
-
-private extension Field where Content == Text {
-    init(label: String, value: String) {
-        self.init(label: label) { Text(value) }
-    }
-}
-
-// MARK: - Trigger accordion extras
-
-private struct TriggerAccordionSummary: View {
-    @FetchRequest private var triggers: FetchedResults<DBCacheTrigger>
-
-    init(name: String, owner: String) {
-        _triggers = FetchRequest<DBCacheTrigger>(
-            sortDescriptors: [],
-            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", name, owner)
-        )
-    }
-
-    var body: some View {
-        let trigger = triggers.first
-        HStack(spacing: 14) {
-            SummaryItem(label: "Type", value: trigger?.type ?? Constants.nullValue)
-            HStack(spacing: 4) {
-                Circle()
-                    .fill((trigger?.isEnabled ?? false) ? Color.green : Color.red)
-                    .frame(width: 6, height: 6)
-                Text((trigger?.isEnabled ?? false) ? "Enabled" : "Disabled")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .font(.caption)
-    }
-}
-
-private struct TriggerAccordionExpanded: View {
-    @FetchRequest private var triggers: FetchedResults<DBCacheTrigger>
-
-    init(name: String, owner: String) {
-        _triggers = FetchRequest<DBCacheTrigger>(
-            sortDescriptors: [],
-            predicate: NSPredicate(format: "name_ = %@ and owner_ = %@", name, owner)
-        )
-    }
-
-    private let columns = [GridItem(.flexible(), alignment: .topLeading),
-                           GridItem(.flexible(), alignment: .topLeading),
-                           GridItem(.flexible(), alignment: .topLeading),
-                           GridItem(.flexible(), alignment: .topLeading)]
-
-    var body: some View {
-        let trigger = triggers.first
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
-            Field(label: "Type", value: trigger?.type ?? Constants.nullValue)
-            Field(label: "When", value: trigger?.whenClause ?? Constants.nullValue)
-            Field(label: "Column", value: trigger?.columnName ?? Constants.nullValue)
-            Field(label: "Base Type", value: trigger?.objectType ?? Constants.nullValue)
-            Field(label: "Base Owner", value: trigger?.objectOwner ?? Constants.nullValue)
-            Field(label: "Base Name", value: trigger?.objectName ?? Constants.nullValue)
-            Field(label: "Referencing", value: trigger?.referencingNames ?? Constants.nullValue)
-            Field(label: "Description", value: trigger?.descr ?? Constants.nullValue)
-
-            Field(label: "Before Row") { BoolIndicator(value: trigger?.isBeforeRow ?? false) }
-            Field(label: "After Row") { BoolIndicator(value: trigger?.isAfterRow ?? false) }
-            Field(label: "Before Statement") { BoolIndicator(value: trigger?.isBeforeStatement ?? false) }
-            Field(label: "After Statement") { BoolIndicator(value: trigger?.isAfterStatement ?? false) }
-            Field(label: "Instead Of") { BoolIndicator(value: trigger?.isInsteadOfRow ?? false) }
-            Field(label: "Cross Edition") { BoolIndicator(value: trigger?.isCrossEdition ?? false) }
-            Field(label: "Fire Once") { BoolIndicator(value: trigger?.isFireOnce ?? false) }
-            Field(label: "Enabled") {
-                BoolIndicator(value: trigger?.isEnabled ?? false, trueColor: .green, falseColor: .red)
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.secondary.opacity(0.04))
-    }
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
 // MARK: - Content router
 
-/// Routes to the right detail body for the selected object's type. Drops the
-/// old `Main` (form-style overview) tab — its content now lives in the
-/// accordion + inspector.
+/// Routes to the right detail body for the selected object's type.
 struct DBDetailContent: View {
     @Binding var dbObject: DBCacheObject
+    @Binding var childSelection: DBChildSelection?
 
     var body: some View {
         switch OracleObjectType(rawValue: dbObject.type) ?? .unknown {
         case .table, .view:
-            DBTableDetailView(dbObject: $dbObject)
+            DBTableDetailView(dbObject: $dbObject, childSelection: $childSelection)
         case .type, .package, .procedure, .function:
             CodeDetailContent(dbObject: $dbObject)
         case .trigger:

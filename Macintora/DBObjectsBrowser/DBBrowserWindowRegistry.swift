@@ -107,7 +107,9 @@ struct WindowObserver: NSViewRepresentable {
     }
 
     func updateNSView(_ view: _WindowObserverView, context: Context) {
-        if let window = view.window {
+        // `NSView.window` is bridged as `unowned(unsafe)`; the explicit
+        // `unsafe` is Swift 6.2's required acknowledgment, not a silencer.
+        if let window = unsafe view.window {
             onWindowResolved(window)
         }
     }
@@ -128,13 +130,10 @@ final class _WindowObserverView: NSView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        if let window, !hasReported {
+        // See `WindowObserver.updateNSView` for why `unsafe` is required.
+        if let window = unsafe window, !hasReported {
             hasReported = true
-            // Fire on the next run-loop turn so SwiftUI's layout pass has
-            // completed and the window hierarchy is stable.
-            MainActor.assumeIsolated {
-                onWindowResolved(window)
-            }
+            onWindowResolved(window)
         }
     }
 }

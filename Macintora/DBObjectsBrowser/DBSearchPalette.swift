@@ -296,18 +296,18 @@ private struct SearchResultRow: View {
         return parts.joined(separator: " · ")
     }
 
-    /// Object name with the matched substring emphasised.
+    /// Object name with the matched substring emphasised. Builds an
+    /// `AttributedString` rather than concatenating `Text` values — the
+    /// `Text + Text` operator was deprecated in macOS 26 in favour of
+    /// attributed strings / Text interpolation.
     private var highlightedName: Text {
-        let name = object.name
-        guard !query.isEmpty,
-              let range = name.range(of: query, options: [.caseInsensitive])
-        else { return Text(name) }
-        let pre = String(name[name.startIndex..<range.lowerBound])
-        let mid = String(name[range])
-        let post = String(name[range.upperBound...])
-        return Text(pre)
-            + Text(mid).foregroundStyle(.tint).fontWeight(.semibold)
-            + Text(post)
+        var attr = AttributedString(object.name)
+        if !query.isEmpty,
+           let range = attr.range(of: query, options: [.caseInsensitive]) {
+            attr[range].foregroundColor = .accentColor
+            attr[range].font = .body.weight(.semibold)
+        }
+        return Text(attr)
     }
 }
 
