@@ -153,6 +153,17 @@ nonisolated enum OracleEndpoint {
         return nil
     }
 
+    /// Display name of the first registered ``WalletTLSProvider`` that can open
+    /// the wallet at `folder` passwordlessly, or `nil` if none can. Cheap enough
+    /// for UI use (delegates to each provider's `canHandle`). With no plugins
+    /// registered (the open-source build) this is always `nil`, so the UI shows
+    /// the normal password field.
+    static func passwordlessWalletProvider(forWalletAt folder: URL) -> String? {
+        PluginRegistry.shared.plugins(WalletTLSProvider.self)
+            .first { $0.canHandle(walletFolderAt: folder) }?
+            .displayName
+    }
+
     #if DEBUG
     /// Test hook: true if a registered plugin produces a usable TLS config for `folder`.
     static func _debugPluginProducesTLS(forWalletAt folder: URL) throws -> Bool {
