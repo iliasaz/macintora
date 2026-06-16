@@ -269,6 +269,14 @@ private struct TLSSettingsEditor<Field: Hashable>: View {
         )
     }
 
+    /// Name of a plugin that can open the current wallet folder without a
+    /// password (e.g. an auto-login wallet), or `nil` if a password is needed.
+    /// Always `nil` in the open-source build (no such plugin registered).
+    private var passwordlessProviderName: String? {
+        guard case let .wallet(path) = tls, !path.isEmpty else { return nil }
+        return OracleEndpoint.passwordlessWalletProvider(forWalletAt: URL(filePath: path))
+    }
+
     var body: some View {
         Picker("Mode", selection: modeBinding) {
             ForEach(Mode.allCases, id: \.self) { mode in
@@ -284,13 +292,20 @@ private struct TLSSettingsEditor<Field: Hashable>: View {
                     .disableAutocorrection(true)
                 Button("Choose…", action: chooseWalletFolder)
             }
-            SecureField("Wallet password", text: $walletPassword)
-                .textFieldStyle(.roundedBorder)
-                .focused(walletPasswordFocus, equals: walletPasswordField)
-                .onSubmit { onCommitWalletPassword() }
-            Text("Saved to Keychain when you press Enter or move to another field.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if let providerName = passwordlessProviderName {
+                Label("Auto-login wallet detected (\(providerName)) — no password needed.",
+                      systemImage: "checkmark.seal")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                SecureField("Wallet password", text: $walletPassword)
+                    .textFieldStyle(.roundedBorder)
+                    .focused(walletPasswordFocus, equals: walletPasswordField)
+                    .onSubmit { onCommitWalletPassword() }
+                Text("Saved to Keychain when you press Enter or move to another field.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

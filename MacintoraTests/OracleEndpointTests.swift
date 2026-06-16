@@ -139,4 +139,11 @@ final class OracleEndpointTests: XCTestCase {
             }
         }
     }
+
+    /// With no WalletTLSProvider plugins registered (the open-source build), the
+    /// editor's passwordless-detection helper returns nil, so the UI keeps
+    /// showing the password field.
+    func test_passwordlessWalletProviderNilWithoutPlugins() {
+        XCTAssertNil(OracleEndpoint.passwordlessWalletProvider(forWalletAt: URL(filePath: "/tmp/any-wallet")))
+    }
 }
