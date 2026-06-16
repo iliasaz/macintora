@@ -164,6 +164,34 @@ nonisolated enum OracleEndpoint {
             .displayName
     }
 
+    /// Pre-flight validation for a wallet connection test, surfaced before NIOSSL
+    /// so common misconfigurations get a clear message. Returns `nil` if the
+    /// wallet looks usable, otherwise a user-facing error string.
+    ///
+    /// When `passwordless` is true a plugin supplies the TLS material (e.g. an
+    /// auto-login wallet), so neither a wallet password nor `ewallet.pem` is
+    /// required — only the folder must exist. Otherwise the default path needs a
+    /// non-empty password and an `ewallet.pem`.
+    static func walletTestPreflightError(
+        folderPath: String,
+        passwordIsEmpty: Bool,
+        passwordless: Bool,
+        fileManager: FileManager = .default
+    ) -> String? {
+        guard fileManager.fileExists(atPath: folderPath) else {
+            return "Wallet folder '\(folderPath)' does not exist."
+        }
+        if passwordless { return nil }
+        if passwordIsEmpty {
+            return "Wallet password is empty. Enter it in the Wallet Password field and press Test again."
+        }
+        let pemPath = folderPath.hasSuffix("/") ? folderPath + "ewallet.pem" : folderPath + "/ewallet.pem"
+        guard fileManager.fileExists(atPath: pemPath) else {
+            return "ewallet.pem not found in '\(folderPath)'."
+        }
+        return nil
+    }
+
     #if DEBUG
     /// Test hook: true if a registered plugin produces a usable TLS config for `folder`.
     static func _debugPluginProducesTLS(forWalletAt folder: URL) throws -> Bool {

@@ -381,19 +381,17 @@ struct ConnectionsManagerView: View {
 
         // Surface the most common wallet misconfiguration before we even
         // hit NIOSSL — an empty wallet password produces a generic OpenSSL
-        // error that doesn't make the cause obvious.
+        // error that doesn't make the cause obvious. If a plugin opens this
+        // wallet passwordlessly (e.g. an auto-login wallet), the password /
+        // ewallet.pem checks don't apply — the plugin supplies the material.
         if case .wallet(let folderPath) = conn.tls {
-            if draftWalletPassword.isEmpty {
-                testStatus = .failure("Wallet password is empty. Enter it in the Wallet Password field and press Test again.")
-                return
-            }
-            if !FileManager.default.fileExists(atPath: folderPath) {
-                testStatus = .failure("Wallet folder '\(folderPath)' does not exist.")
-                return
-            }
-            let pemPath = folderPath.hasSuffix("/") ? folderPath + "ewallet.pem" : folderPath + "/ewallet.pem"
-            if !FileManager.default.fileExists(atPath: pemPath) {
-                testStatus = .failure("ewallet.pem not found in '\(folderPath)'.")
+            let passwordless = OracleEndpoint.passwordlessWalletProvider(forWalletAt: URL(filePath: folderPath)) != nil
+            if let message = OracleEndpoint.walletTestPreflightError(
+                folderPath: folderPath,
+                passwordIsEmpty: draftWalletPassword.isEmpty,
+                passwordless: passwordless
+            ) {
+                testStatus = .failure(message)
                 return
             }
         }

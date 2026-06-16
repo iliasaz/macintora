@@ -146,4 +146,38 @@ final class OracleEndpointTests: XCTestCase {
     func test_passwordlessWalletProviderNilWithoutPlugins() {
         XCTAssertNil(OracleEndpoint.passwordlessWalletProvider(forWalletAt: URL(filePath: "/tmp/any-wallet")))
     }
+
+    // MARK: - walletTestPreflightError()
+
+    func test_walletPreflightMissingFolder() {
+        let missing = tempDir.appending(path: "nope", directoryHint: .isDirectory).path
+        let msg = OracleEndpoint.walletTestPreflightError(folderPath: missing, passwordIsEmpty: false, passwordless: false)
+        XCTAssertEqual(msg.map { $0.contains("does not exist") }, true)
+    }
+
+    /// The reported bug: a passwordless (plugin-handled, auto-login) wallet must
+    /// NOT be rejected for an empty password, and must not require ewallet.pem.
+    func test_walletPreflightPasswordlessSkipsPasswordAndPem() throws {
+        // folder exists, no password, no ewallet.pem — still fine when passwordless
+        XCTAssertNil(OracleEndpoint.walletTestPreflightError(
+            folderPath: tempDir.path, passwordIsEmpty: true, passwordless: true))
+    }
+
+    func test_walletPreflightEmptyPasswordRejectedWhenNotPasswordless() {
+        let msg = OracleEndpoint.walletTestPreflightError(
+            folderPath: tempDir.path, passwordIsEmpty: true, passwordless: false)
+        XCTAssertEqual(msg.map { $0.contains("Wallet password is empty") }, true)
+    }
+
+    func test_walletPreflightMissingPemWhenNotPasswordless() {
+        let msg = OracleEndpoint.walletTestPreflightError(
+            folderPath: tempDir.path, passwordIsEmpty: false, passwordless: false)
+        XCTAssertEqual(msg.map { $0.contains("ewallet.pem") }, true)
+    }
+
+    func test_walletPreflightOKWithPasswordAndPem() throws {
+        try Data("x".utf8).write(to: tempDir.appending(path: "ewallet.pem", directoryHint: .notDirectory))
+        XCTAssertNil(OracleEndpoint.walletTestPreflightError(
+            folderPath: tempDir.path, passwordIsEmpty: false, passwordless: false))
+    }
 }
