@@ -22,6 +22,16 @@ extension Logger {
 
 let log = Logger().default
 
+/// Plugin composition root for this build — registers the plugins this binary
+/// ships. The public build registers public/built-in plugins only (none yet);
+/// a private/Pro build replaces this to also register its own.
+enum MacintoraPlugins {
+    static func registerAll() {
+        // Public/built-in plugins go here, e.g.:
+        // PluginRegistry.shared.register(SomePublicProvider())
+    }
+}
+
 /// Owns launch-time document handling. Two responsibilities:
 ///
 /// 1. Force an Untitled document on launch instead of the `NSOpenPanel` that
@@ -62,6 +72,8 @@ extension MacintoraAppDelegate: nonisolated NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        MacintoraPlugins.registerAll()
+
         // Wire ⌘U / ⌘L to NSText's `uppercaseWord:` / `lowercaseWord:` via
         // a local event monitor. Setting `keyEquivalent` on AppKit's
         // auto-injected Edit > Transformations menu items doesn't reliably
