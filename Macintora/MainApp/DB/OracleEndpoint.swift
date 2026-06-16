@@ -1,6 +1,7 @@
 import Foundation
 import OracleNIO
 import NIOSSL
+import MacintoraPluginAPI
 
 /// Resolves a document's ``ConnectionDetails`` against the app-wide
 /// ``ConnectionStore`` and produces the ``OracleConnection.Configuration``
@@ -116,17 +117,59 @@ nonisolated enum OracleEndpoint {
             let tls = TLSConfiguration.makeClientConfiguration()
             config.tls = try .require(.init(configuration: tls))
         case .wallet(let folderPath):
-            do {
-                let tls = try TLSConfiguration.makeOracleWalletConfiguration(
-                    wallet: folderPath,
-                    walletPassword: walletPassword ?? ""
-                )
-                config.tls = try .require(.init(configuration: tls))
-            } catch {
-                throw ResolveError.walletConfigurationFailed(error.localizedDescription)
+            // A registered WalletTLSProvider (e.g. a private plugin) gets first
+            // crack; nil means "not my wallet" → fall back to the default path.
+            if let material = pluginWalletMaterial(forWalletAt: URL(filePath: folderPath)) {
+                do {
+                    config.tls = try .require(.init(configuration: material.makeTLSConfiguration()))
+                } catch {
+                    throw ResolveError.walletConfigurationFailed(error.localizedDescription)
+                }
+            } else {
+                do {
+                    let tls = try TLSConfiguration.makeOracleWalletConfiguration(
+                        wallet: folderPath,
+                        walletPassword: walletPassword ?? ""
+                    )
+                    config.tls = try .require(.init(configuration: tls))
+                } catch {
+                    throw ResolveError.walletConfigurationFailed(error.localizedDescription)
+                }
             }
         }
 
         return config
+    }
+
+    /// First registered ``WalletTLSProvider`` that handles `folder`, if any.
+    /// A provider returning nil means "not my wallet"; a thrown error means it
+    /// recognised the wallet but failed — we fall back to the default path.
+    static func pluginWalletMaterial(forWalletAt folder: URL) -> WalletTLSMaterial? {
+        for provider in PluginRegistry.shared.plugins(WalletTLSProvider.self) {
+            if let material = try? provider.walletMaterial(forWalletAt: folder) {
+                return material
+            }
+        }
+        return nil
+    }
+
+    #if DEBUG
+    /// Test hook: true if a registered plugin produces a usable TLS config for `folder`.
+    static func _debugPluginProducesTLS(forWalletAt folder: URL) throws -> Bool {
+        guard let material = pluginWalletMaterial(forWalletAt: folder) else { return false }
+        _ = try material.makeTLSConfiguration()
+        return true
+    }
+    #endif
+}
+
+extension WalletTLSMaterial {
+    /// Build a client mutual-TLS configuration from the wallet's PKCS#12 bytes.
+    func makeTLSConfiguration() throws -> TLSConfiguration {
+        let bundle = try NIOSSLPKCS12Bundle(buffer: [UInt8](pkcs12DER), passphrase: passphrase)
+        var tls = TLSConfiguration.makeClientConfiguration()
+        tls.certificateChain = bundle.certificateChain.map { .certificate($0) }
+        tls.privateKey = .privateKey(bundle.privateKey)
+        return tls
     }
 }
