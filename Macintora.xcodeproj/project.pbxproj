@@ -108,6 +108,7 @@
 		49B0C0DE0000000000000132 /* DBCacheVMInitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */; };
 		49B0C0DE0000000000000133 /* DBBrowserCommandsBoxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000033 /* DBBrowserCommandsBoxTests.swift */; };
 		49B0C0DE0000000000000134 /* DBCacheSearchCriteriaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000034 /* DBCacheSearchCriteriaTests.swift */; };
+		49B0C0DE0000000000000150 /* DBCacheCatalogScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000050 /* DBCacheCatalogScopeTests.swift */; };
 		49B0C0DE0000000000000135 /* DBCacheObjectFetchRequestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000035 /* DBCacheObjectFetchRequestTests.swift */; };
 		49B0C0DE0000000000000136 /* DBBrowserMenuUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000036 /* DBBrowserMenuUITests.swift */; };
 		49B0C0DE0000000000000137 /* DBBrowserPinnedStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B0C0DE0000000000000037 /* DBBrowserPinnedStoreTests.swift */; };
@@ -341,6 +342,7 @@
 		49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheVMInitTests.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000033 /* DBBrowserCommandsBoxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserCommandsBoxTests.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000034 /* DBCacheSearchCriteriaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheSearchCriteriaTests.swift; sourceTree = "<group>"; };
+		49B0C0DE0000000000000050 /* DBCacheCatalogScopeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheCatalogScopeTests.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000035 /* DBCacheObjectFetchRequestTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBCacheObjectFetchRequestTests.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000036 /* DBBrowserMenuUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserMenuUITests.swift; sourceTree = "<group>"; };
 		49B0C0DE0000000000000037 /* DBBrowserPinnedStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBBrowserPinnedStoreTests.swift; sourceTree = "<group>"; };
@@ -666,6 +668,7 @@
 				49B0C0DE0000000000000032 /* DBCacheVMInitTests.swift */,
 				49B0C0DE0000000000000033 /* DBBrowserCommandsBoxTests.swift */,
 				49B0C0DE0000000000000034 /* DBCacheSearchCriteriaTests.swift */,
+				49B0C0DE0000000000000050 /* DBCacheCatalogScopeTests.swift */,
 				49B0C0DE0000000000000035 /* DBCacheObjectFetchRequestTests.swift */,
 				49B0C0DE0000000000000037 /* DBBrowserPinnedStoreTests.swift */,
 				49B0C0DE0000000000000038 /* DBBrowserRecentsTests.swift */,
@@ -1106,6 +1109,7 @@
 				49B0C0DE0000000000000132 /* DBCacheVMInitTests.swift in Sources */,
 				49B0C0DE0000000000000133 /* DBBrowserCommandsBoxTests.swift in Sources */,
 				49B0C0DE0000000000000134 /* DBCacheSearchCriteriaTests.swift in Sources */,
+				49B0C0DE0000000000000150 /* DBCacheCatalogScopeTests.swift in Sources */,
 				49B0C0DE0000000000000135 /* DBCacheObjectFetchRequestTests.swift in Sources */,
 				49B0C0DE0000000000000137 /* DBBrowserPinnedStoreTests.swift in Sources */,
 				49B0C0DE0000000000000138 /* DBBrowserRecentsTests.swift in Sources */,

@@ -120,25 +120,34 @@ struct QuickFilterView: View {
 
     private var schemasSection: some View {
         Section {
-            if distinctOwners.isEmpty {
-                Text("No schemas cached yet.")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 14)
-                    .padding(.bottom, 10)
-            } else {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 64), spacing: 6)], alignment: .leading, spacing: 6) {
-                    ForEach(distinctOwners, id: \.self) { owner in
-                        SchemaPill(
-                            owner: owner,
-                            isOn: ownerIsIncluded(owner),
-                            action: { toggleOwner(owner) }
-                        )
+            VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Include (blank = every schema you can access)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    TextField("HR, SCOTT", text: $quickFilters.ownerString)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(.body, design: .monospaced))
+                        .disableAutocorrection(true)
+                    Text("Listed schemas are fetched on the next refresh, even if not cached yet.")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+
+                if !distinctOwners.isEmpty {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 64), spacing: 6)], alignment: .leading, spacing: 6) {
+                        ForEach(distinctOwners, id: \.self) { owner in
+                            SchemaPill(
+                                owner: owner,
+                                isOn: ownerIsIncluded(owner),
+                                action: { toggleOwner(owner) }
+                            )
+                        }
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.bottom, 10)
             }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 10)
         } header: {
             SectionCaption("Schemas")
         }

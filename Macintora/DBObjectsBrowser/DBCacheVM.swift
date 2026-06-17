@@ -244,6 +244,13 @@ final class DBCacheVM: nonisolated ObservableObject {
     @AppStorage("includeSystemObjects") private var includeSystemObjects = false
     @AppStorage("cacheUpdateSessionLimit") private var cacheUpdateSessionLimit: Int = 5
 
+    /// Dictionary-view prefix for cache queries: `"dba"` when the connected
+    /// user can read the `DBA_*` catalog (SELECT_CATALOG_ROLE / DBA), otherwise
+    /// `"all"` so users with only CONNECT/RESOURCE still cache the objects they
+    /// can access. Resolved by `resolveCatalogScope()` at the start of every
+    /// refresh; defaults to `"dba"` until the first probe runs.
+    private(set) var catalogPrefix = "dba"
+
     let connDetails: ConnectionDetails
     private var client: OracleClient?
     private var clientRunTask: Task<Void, Never>?
@@ -366,6 +373,7 @@ final class DBCacheVM: nonisolated ObservableObject {
                     return
                 }
             }
+            await self.resolveCatalogScope()
             if withCleanup || cleanupOnly {
                 await self.cleanupDroppedObjects()
             }
@@ -454,7 +462,28 @@ final class DBCacheVM: nonisolated ObservableObject {
 
     // MARK: - Object discovery
 
-    func buildCleanupCheckQuery(for ids: String) -> String {
+    /// Probes whether the connected user can read the `DBA_*` dictionary views
+    /// and sets `catalogPrefix` accordingly. A user with only CONNECT/RESOURCE
+    /// gets ORA-00942 on `dba_objects`; we fall back to the `ALL_*` views, which
+    /// expose exactly the objects the user has privileges on — so the cache can
+    /// be populated without SELECT_CATALOG_ROLE or DBA grants. Requires a live
+    /// client connection.
+    func resolveCatalogScope() async {
+        do {
+            let canReadDBA: Bool = try await withClient { [oracleLogger] conn in
+                let stream = try await conn.execute("select 1 from dba_objects where rownum = 1", logger: oracleLogger)
+                for try await _ in stream { }
+                return true
+            }
+            catalogPrefix = canReadDBA ? "dba" : "all"
+        } catch {
+            log.cache.notice("DBA_* views not accessible; using ALL_* views for cache population. \(error.localizedDescription, privacy: .public)")
+            catalogPrefix = "all"
+        }
+        log.cache.debug("catalog scope resolved to \(self.catalogPrefix, privacy: .public)_* views")
+    }
+
+    func buildCleanupCheckQuery(for ids: String, prefix: String) -> String {
         """
         with rws as (select '\(ids)' str from dual)
         , ids as (select regexp_substr (str,'[^,]+', 1, level) id
@@ -462,16 +491,16 @@ final class DBCacheVM: nonisolated ObservableObject {
         )
         select to_number(ids.id) object_id
         from ids
-        where not exists (select 1 from dba_objects o where o.object_id = ids.id)
+        where not exists (select 1 from \(prefix)_objects o where o.object_id = ids.id)
         """
     }
 
-    func buildObjectQuerySQL(ignoreLastUpdate: Bool = false) -> String {
+    func buildObjectQuerySQL(prefix: String, ignoreLastUpdate: Bool = false) -> String {
         var sql = """
 select /*+ rule */ owner, object_name, object_type, object_id, created, editionable, edition_name, status
 , greatest(last_ddl_time
-, nvl(( select last_ddl_time from dba_objects o1 where o1.owner = o.owner and o1.object_name = o.object_name and o1.object_type = o.object_type || ' BODY'), o.last_ddl_time)) as last_ddl_time
-from dba_objects o
+, nvl(( select last_ddl_time from \(prefix)_objects o1 where o1.owner = o.owner and o1.object_name = o.object_name and o1.object_type = o.object_type || ' BODY'), o.last_ddl_time)) as last_ddl_time
+from \(prefix)_objects o
 """
         sql += " where object_type in ("
         sql += OracleObjectType.allCases.map { "'\($0.rawValue)'" }.joined(separator: ",")
@@ -482,7 +511,7 @@ from dba_objects o
             sql += ")"
         }
         if !includeSystemObjects {
-            sql += " and owner NOT in (select username from dba_users where oracle_maintained = 'Y')"
+            sql += " and owner NOT in (select username from \(prefix)_users where oracle_maintained = 'Y')"
         }
         if !searchCriteria.namePrefixInclusionList.isEmpty {
             sql += " and ( "
@@ -495,7 +524,7 @@ from dba_objects o
             dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
             let lstString = dateFormatter.string(from: lstDate)
             sql += " and ( last_ddl_time > to_date('\(lstString)', 'yyyy-mm-dd hh24:mi:ss') or"
-            sql += " exists (select 1 from dba_objects o1 where o1.owner = o.owner and o1.object_name = o.object_name and o1.object_type = o.object_type || ' BODY'"
+            sql += " exists (select 1 from \(prefix)_objects o1 where o1.owner = o.owner and o1.object_name = o.object_name and o1.object_type = o.object_type || ' BODY'"
             sql += " and o1.last_ddl_time > to_date('\(lstString)', 'yyyy-mm-dd hh24:mi:ss') ) )"
         }
         return sql
@@ -506,7 +535,7 @@ from dba_objects o
             log.cache.error("Not connected to Oracle database")
             return
         }
-        let sql = buildObjectQuerySQL(ignoreLastUpdate: ignoreLastUpdate)
+        let sql = buildObjectQuerySQL(prefix: catalogPrefix, ignoreLastUpdate: ignoreLastUpdate)
         await cacheState.startSession()
         do {
             try await withClient { [cacheUpdatePrefetchSize, oracleLogger, objectQueues] conn in
@@ -634,9 +663,9 @@ from dba_objects o
         guard !objs.isEmpty else { return [] }
         var sql: String
         if isView {
-            sql = "select owner, view_name table_name, 0 num_rows, null last_analyzed, 'NO' partitioned, editioning_view, read_only, text from dba_views where (owner, view_name) in ("
+            sql = "select owner, view_name table_name, 0 num_rows, null last_analyzed, 'NO' partitioned, editioning_view, read_only, text from \(catalogPrefix)_views where (owner, view_name) in ("
         } else {
-            sql = "select owner, table_name, num_rows, last_analyzed, partitioned, 'N' editioning_view, 'N' read_only, null text from dba_tables where (owner, table_name) in ("
+            sql = "select owner, table_name, num_rows, last_analyzed, partitioned, 'N' editioning_view, 'N' read_only, null text from \(catalogPrefix)_tables where (owner, table_name) in ("
         }
         var bindings = OracleBindings()
         var placeholders: [String] = []
@@ -651,6 +680,7 @@ from dba_objects o
         let logger = oracleLogger
         let finalSQL = sql
         let finalBindings = bindings
+        let prefix = catalogPrefix
         return try await withClient { conn in
             var options = StatementOptions()
             options.prefetchRows = 1000
@@ -683,7 +713,7 @@ from dba_objects o
             var tables: [TableDTO] = []
             tables.reserveCapacity(pending.count)
             for t in pending {
-                let columns = (try? await Self.fetchTableColumns(on: &conn, owner: t.owner, table: t.name, logger: logger)) ?? []
+                let columns = (try? await Self.fetchTableColumns(on: &conn, owner: t.owner, table: t.name, catalogPrefix: prefix, logger: logger)) ?? []
                 tables.append(TableDTO(
                     owner: t.owner,
                     name: t.name,
@@ -700,9 +730,9 @@ from dba_objects o
         }
     }
 
-    private static func fetchTableColumns(on conn: inout sending OracleClient.PooledConnection, owner: String, table: String, logger: Logging.Logger) async throws -> [TableColumnDTO] {
+    private static func fetchTableColumns(on conn: inout sending OracleClient.PooledConnection, owner: String, table: String, catalogPrefix: String, logger: Logging.Logger) async throws -> [TableColumnDTO] {
         let statement: OracleStatement = """
-            select owner, table_name, column_name, data_type, data_precision, data_scale, data_length, nullable, column_id, data_default, num_distinct, identity_column, num_nulls, hidden_column, virtual_column, user_generated, internal_column_id from dba_tab_cols where owner = \(owner) and table_name = \(table)
+            select owner, table_name, column_name, data_type, data_precision, data_scale, data_length, nullable, column_id, data_default, num_distinct, identity_column, num_nulls, hidden_column, virtual_column, user_generated, internal_column_id from \(unescaped: catalogPrefix)_tab_cols where owner = \(owner) and table_name = \(table)
             """
         let stream = try await conn.execute(statement, logger: logger)
         var cols: [TableColumnDTO] = []
@@ -782,7 +812,7 @@ from dba_objects o
 
     private func fetchIndexes(_ objs: [OracleObject]) async throws -> [IndexDTO] {
         guard !objs.isEmpty else { return [] }
-        var sql = "select owner, index_name, index_type, table_owner, table_name, tablespace_name, uniqueness, leaf_blocks, distinct_keys, avg_leaf_blocks_per_key, avg_data_blocks_per_key, clustering_factor, status, num_rows, sample_size, last_analyzed, degree, partitioned, visibility from dba_indexes where index_type != 'LOB' and (owner, index_name) in ("
+        var sql = "select owner, index_name, index_type, table_owner, table_name, tablespace_name, uniqueness, leaf_blocks, distinct_keys, avg_leaf_blocks_per_key, avg_data_blocks_per_key, clustering_factor, status, num_rows, sample_size, last_analyzed, degree, partitioned, visibility from \(catalogPrefix)_indexes where index_type != 'LOB' and (owner, index_name) in ("
         var bindings = OracleBindings()
         var placeholders: [String] = []
         for (i, obj) in objs.enumerated() {
@@ -796,6 +826,7 @@ from dba_objects o
         let logger = oracleLogger
         let finalSQL = sql
         let finalBindings = bindings
+        let prefix = catalogPrefix
         return try await withClient { conn in
             var options = StatementOptions()
             options.prefetchRows = 1000
@@ -839,7 +870,7 @@ from dba_objects o
             var indexes: [IndexDTO] = []
             indexes.reserveCapacity(pending.count)
             for idx in pending {
-                let columns = (try? await Self.fetchIndexColumns(on: &conn, owner: idx.owner, index: idx.name, logger: logger)) ?? []
+                let columns = (try? await Self.fetchIndexColumns(on: &conn, owner: idx.owner, index: idx.name, catalogPrefix: prefix, logger: logger)) ?? []
                 indexes.append(IndexDTO(
                     owner: idx.owner,
                     name: idx.name,
@@ -867,9 +898,9 @@ from dba_objects o
         }
     }
 
-    private static func fetchIndexColumns(on conn: inout sending OracleClient.PooledConnection, owner: String, index: String, logger: Logging.Logger) async throws -> [IndexColumnDTO] {
+    private static func fetchIndexColumns(on conn: inout sending OracleClient.PooledConnection, owner: String, index: String, catalogPrefix: String, logger: Logging.Logger) async throws -> [IndexColumnDTO] {
         let statement: OracleStatement = """
-            select index_owner, index_name, column_name, column_position, column_length, descend from dba_ind_columns where index_owner = \(owner) and index_name = \(index)
+            select index_owner, index_name, column_name, column_position, column_length, descend from \(unescaped: catalogPrefix)_ind_columns where index_owner = \(owner) and index_name = \(index)
             """
         let stream = try await conn.execute(statement, logger: logger)
         var cols: [IndexColumnDTO] = []
@@ -934,7 +965,7 @@ from dba_objects o
 
     private func fetchTriggers(_ objs: [OracleObject]) async throws -> [TriggerDTO] {
         guard !objs.isEmpty, objs.count < 1000 else { return [] }
-        var sql = "select owner, trigger_name, trigger_type, triggering_event, table_owner, base_object_type, table_name, column_name, referencing_names, when_clause, status, description, action_type, trigger_body, crossedition, before_statement, before_row, after_row, after_statement, instead_of_row, fire_once from dba_triggers where owner in ($OWNERS$) and trigger_name in ($NAMES$)"
+        var sql = "select owner, trigger_name, trigger_type, triggering_event, table_owner, base_object_type, table_name, column_name, referencing_names, when_clause, status, description, action_type, trigger_body, crossedition, before_statement, before_row, after_row, after_statement, instead_of_row, fire_once from \(catalogPrefix)_triggers where owner in ($OWNERS$) and trigger_name in ($NAMES$)"
         var bindings = OracleBindings()
         let owners = objs.map { $0.owner }.unique()
         let names = objs.map { $0.name }.unique()
@@ -1046,7 +1077,7 @@ from dba_objects o
     }
 
     private func fetchSourceRows(_ objs: [OracleObject]) async throws -> [SourceRowDTO] {
-        var sql = "select type, owner, name, text from dba_source where owner in ($OWNERS$) and name in ($NAMES$) and type in (:ts, :tb) order by type, owner, name, line"
+        var sql = "select type, owner, name, text from \(catalogPrefix)_source where owner in ($OWNERS$) and name in ($NAMES$) and type in (:ts, :tb) order by type, owner, name, line"
         var bindings = OracleBindings()
         let owners = objs.map { $0.owner }.unique()
         let names = objs.map { $0.name }.unique()
@@ -1149,7 +1180,7 @@ from dba_objects o
 
     private func fetchProcedures(_ objs: [OracleObject]) async throws -> [ProcedureDTO] {
         guard !objs.isEmpty else { return [] }
-        var sql = "select owner, object_name, procedure_name, object_type, subprogram_id, overload, aggregate, pipelined, parallel, deterministic, result_cache, authid, impltypeowner, impltypename from all_procedures where (owner, object_name) in ("
+        var sql = "select owner, object_name, procedure_name, object_type, subprogram_id, overload, aggregate, pipelined, parallel, deterministic, result_cache, authid, impltypeowner, impltypename from \(catalogPrefix)_procedures where (owner, object_name) in ("
         var bindings = OracleBindings()
         var placeholders: [String] = []
         for (i, obj) in objs.enumerated() {
@@ -1199,7 +1230,7 @@ from dba_objects o
 
     private func fetchProcedureArguments(_ objs: [OracleObject]) async throws -> [ProcedureArgumentDTO] {
         guard !objs.isEmpty else { return [] }
-        var sql = "select owner, package_name, object_name, subprogram_id, overload, argument_name, position, sequence, data_level, data_type, in_out, data_length, data_precision, data_scale, char_length, defaulted, default_value, type_owner, type_name, type_subname, pls_type from all_arguments where (owner, nvl(package_name, object_name)) in ("
+        var sql = "select owner, package_name, object_name, subprogram_id, overload, argument_name, position, sequence, data_level, data_type, in_out, data_length, data_precision, data_scale, char_length, defaulted, default_value, type_owner, type_name, type_subname, pls_type from \(catalogPrefix)_arguments where (owner, nvl(package_name, object_name)) in ("
         var bindings = OracleBindings()
         var placeholders: [String] = []
         for (i, obj) in objs.enumerated() {
@@ -1394,7 +1425,7 @@ from dba_objects o
     }
 
     func cleanupDroppedObjectsBatch(for idStr: String) async -> [Int] {
-        let sql = buildCleanupCheckQuery(for: idStr)
+        let sql = buildCleanupCheckQuery(for: idStr, prefix: catalogPrefix)
         let logger = oracleLogger
         do {
             return try await withClient { conn -> [Int] in
@@ -1462,11 +1493,12 @@ from dba_objects o
     }
 
     func refreshObject(_ currentObj: OracleObject) async {
+        await resolveCatalogScope()
         let sql: OracleStatement = """
             select /*+ rule */ owner, object_name, object_type, object_id, created, editionable, edition_name, status
             , greatest(last_ddl_time
-            , nvl(( select last_ddl_time from dba_objects o1 where o1.owner = o.owner and o1.object_name = o.object_name and o1.object_type = o.object_type || ' BODY'), o.last_ddl_time)) as last_ddl_time
-            from dba_objects o
+            , nvl(( select last_ddl_time from \(unescaped: catalogPrefix)_objects o1 where o1.owner = o.owner and o1.object_name = o.object_name and o1.object_type = o.object_type || ' BODY'), o.last_ddl_time)) as last_ddl_time
+            from \(unescaped: catalogPrefix)_objects o
             where object_type = \(currentObj.type.rawValue) and owner = \(currentObj.owner) and object_name = \(currentObj.name)
             """
         let logger = oracleLogger
@@ -1640,12 +1672,16 @@ from dba_objects o
             log.cache.error("Could not get DB version, \(error.localizedDescription, privacy: .public)")
             return
         }
+        // DBID comes from v$database, which a CONNECT/RESOURCE user can't read.
+        // It's only used to detect that the TNS alias now points at a different
+        // database (to clear a stale cache), so a failure here must not abort
+        // metadata refresh or cache population — fall back to the known/zero id.
         let dbid: Int64
         do {
             dbid = try await Int64(getDBid())
         } catch {
-            log.cache.error("Could not get DBID, \(error.localizedDescription, privacy: .public)")
-            return
+            log.cache.notice("Could not read DBID (v$database not accessible); continuing without it. \(error.localizedDescription, privacy: .public)")
+            dbid = dbs.first?.dbid ?? 0
         }
 
         if let db = dbs.first {
@@ -1654,7 +1690,7 @@ from dba_objects o
                 db.versionFull = localDbVersionFull
                 db.versionMajor = Int16(localDbVersionMajor)
             }
-            if dbid != db.dbid {
+            if dbid != 0, dbid != db.dbid {
                 db.dbid = dbid
                 clearCache()
             }
